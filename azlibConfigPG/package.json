@@ -1,0 +1,19 @@
+{
+	"name": "azlibConfigPG",
+	"version": "0.0.1",
+	"description": "config postrgres for neodigenite",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Douglas Meredith",
+	"license": "Apache-2.0",
+	"bin": {
+		"azlibConfigPG": "./index.js"
+	},
+	"dependencies": {
+		"global-modules-path": "^2.0.0",
+		"pg-promise": "^7.4.1",
+		"prompt": "^1.0.0"
+	}
+}
