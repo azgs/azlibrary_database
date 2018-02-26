@@ -1,0 +1,20 @@
+{
+    "name": "azlibConfigGDB",
+    "version": "0.0.1",
+    "description": "command line tool for configuring gdb in postgis",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Douglas Meredith",
+    "license": "Apache-2.0",
+    "bin": {
+        "azlibConfigGDB": "./index.js"
+    },
+    "dependencies": {
+        "gdal": "^0.9.6",
+        "ogr2ogr": "^1.2.1",
+        "pg-promise": "^7.4.1",
+        "prompt": "^1.0.0"
+    }
+}
