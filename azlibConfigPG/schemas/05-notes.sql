@@ -8,7 +8,7 @@ CREATE TYPE date_method AS ENUM('U/Pb','C14','U/Th','Ar/Ar','K/Ar','Rb/Sr','K/Ca
 
 --This table holdes the location and basic metadata information for miscellaneous notes, meaning notes that do not fit into the AZGS data standard
 CREATE TABLE notes.misc_notes (
-	note_id serial PRIMARY KEY,
+	misc_note_id serial PRIMARY KEY,
 	collection_id integer NOT NULL REFERENCES collections(collection_id),
 	informal_name text NOT NULL,
 	note_type note_type,
@@ -18,11 +18,11 @@ CREATE TABLE notes.misc_notes (
 
 --This table holds the location and basic metadata information for notes meeting the AZGS standard
 CREATE TABLE notes.standard_notes (
-	entry_id serial PRIMARY KEY,
+	standard_note_id serial PRIMARY KEY,
 	collection_id integer REFERENCES collections(collection_id),
 	station_id text NOT NULL, -- What the actual content creator called it
-	early_interval_id integer REFERENCES dicts.intervals(int_id), 
-	late_interval_id integer REFERENCES dicts.intervals(int_id),
+	early_interval_id integer REFERENCES dicts.intervals(interval_id), 
+	late_interval_id integer REFERENCES dicts.intervals(interval_id),
 	early_age numeric, -- Should add some checks to make sure number is compatible with interval
 	late_age numeric,
 	geom geometry NOT NULL,
@@ -32,10 +32,10 @@ CREATE TABLE notes.standard_notes (
 );
 
 --This table describes notes matching age estimates taken from field data. This schema only allows a single dating type U/Pb per entry. If an individual hand sample has more than one date type, then it should be listed as separate entries (i.e., diff entry_id), but the station_id in notes.standard_notes should be the same
-CREATE TABLE notes.standard_age (
-	entry_id integer PRIMARY KEY REFERENCES notes.standard_notes(entry_id),
-	early_interval_id integer NOT NULL REFERENCES dicts.intervals(int_id), 
-	late_interval_id integer NOT NULL REFERENCES dicts.intervals(int_id),
+CREATE TABLE notes.standard_ages (
+	standard_age_id integer PRIMARY KEY REFERENCES notes.standard_notes(standard_note_id),
+	early_interval_id integer NOT NULL REFERENCES dicts.intervals(interval_id), 
+	late_interval_id integer NOT NULL REFERENCES dicts.intervals(interval_id),
 	early_age numeric, -- Should add some checks to make sure number is compatible with interval
 	late_age numeric,
 	absolute_dates boolean NOT NULL,
@@ -48,8 +48,8 @@ CREATE TABLE notes.standard_age (
 );
 
 --This table desribes notes describing the lithology of a specimen. Users can add whatever they want in the base sample description and comments field in notes.standard_notes, but this section will be limited to options from the macrostrat dictionaries. It's true that this concat string format is not third normal form, but works for our purposes.
-CREATE TABLE notes.standard_lithology (
-	entry_id integer PRIMARY KEY REFERENCES notes.standard_notes(entry_id),
+CREATE TABLE notes.standard_lithologies (
+	standard_lithology_id integer PRIMARY KEY REFERENCES notes.standard_notes(standard_note_id),
 	lith_class text[],
 	lith_group text[],
 	lith_type text[],
@@ -60,17 +60,17 @@ CREATE TABLE notes.standard_lithology (
 );
 
 --Create a percentage of minerals
-CREATE TABLE notes.mineral_percent (
-	percent_id serial PRIMARY KEY,
-	entry_id integer NOT NULL REFERENCES notes.standard_notes(entry_id),
+CREATE TABLE notes.mineral_percentages (
+	mineral_percentage_id serial PRIMARY KEY,
+	standard_note_id integer NOT NULL REFERENCES notes.standard_notes(standard_note_id),
 	mineral_id integer NOT NULL REFERENCES dicts.minerals(mineral_id),
 	mineral_percent numeric NOT NULL
 );
 
 --Create a percentage of grain size
-CREATE TABLE notes.grain_size (
-	percent_id serial PRIMARY KEY,
-	entry_id integer NOT NULL REFERENCES notes.standard_notes(entry_id),
+CREATE TABLE notes.grain_sizes (
+	grain_size_id serial PRIMARY KEY,
+	standard_note_id integer NOT NULL REFERENCES notes.standard_notes(standard_note_id),
 	grain_id integer NOT NULL REFERENCES dicts.grainsize(grain_id),
 	grain_percent numeric NOT NULL
 );
