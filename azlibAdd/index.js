@@ -59,7 +59,8 @@ promise.then((password) => {
 	const metadata = require(process.cwd() + "/" + args[0] + "/project.json");
 		
 	//First, create a new projects record for this project
-	//TODO: Will this always be true? Might need to check for existing record first
+	//TODO: public_id is no longer required by collections, so what to do with this insert?
+	//TODO: Might need to check for existing record first
 	const projectsInsert = 
 		"insert into public.projects (project_name, project_desc) values ($$" +
 		metadata.metadata.idinfo.citation.citeinfo.title + "$$, $$" +
@@ -70,7 +71,6 @@ promise.then((password) => {
 	console.log("project_id = " + data.project_id);
 
 	//Next, create a new record in the collections table
-	//TODO: Would like to change this table name to "collections"
 	const collectionsInsert = 
 		"insert into public.collections (project_id, azgs_path) values (" +
 		data.project_id + ", $$" +
