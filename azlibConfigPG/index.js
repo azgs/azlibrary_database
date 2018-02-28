@@ -50,6 +50,9 @@ pwPromise.then((password) => {
 		
 	//set up PostGIS
 	return db.none('create extension postgis').catch(error => {throw new Error(error);});
+}).then(() => { 		
+	//set up hstore
+	return db.none('create extension hstore').catch(error => {throw new Error(error);});
 }).then(() => {
 
 	//TODO: Kind of cheesy to have to do this to get path to schemas folder. Is there a better way?
