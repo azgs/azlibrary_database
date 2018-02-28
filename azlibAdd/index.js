@@ -10,6 +10,8 @@ if (args[0] === "--help") {
 	return;
 }
 
+const datasetName = args[0].split("/").pop(); //The last element in the path
+
 const pgp = require("pg-promise")({
 	 //Initialization Options
 });
@@ -18,7 +20,9 @@ let db;
 let existingTables;
 //Create list of layers in new gdb
 const gdal = require("gdal");
-const dataset = gdal.open(process.cwd() + "/" + args[0] + "/" + args[0] + ".gdb");
+console.log(process.cwd() + "/" + args[0] + "/" + datasetName +".gdb");
+//const dataset = gdal.open(process.cwd() + "/" + args[0] + "/" + args[0] + ".gdb");
+const dataset = gdal.open(process.cwd() + "/" + args[0] + "/" + datasetName +".gdb");
 const layers = dataset.layers.map((layer, i) => {
 	return args[1] + '."' + layer.name + '"';
 });
@@ -56,7 +60,7 @@ promise.then((password) => {
 
 	//TODO: This filename will need to be mandated by the dir structure definition
 	//TODO: In fact, we'll probably want a format validation module here to go through the whole directory
-	const metadata = require(process.cwd() + "/" + args[0] + "/project.json");
+	const metadata = require(process.cwd() + "/" + args[0] + "/" + datasetName + ".json");
 		
 	//First, create a new projects record for this project
 	//TODO: public_id is no longer required by collections, so what to do with this insert?
@@ -100,7 +104,7 @@ promise.then((password) => {
 
 	//append new gdb to existing gdb
 	const ogrPromise = new Promise((resolve, reject) => {
-		ogr2ogr(args[0] + "/" + args[0] + ".gdb")
+		ogr2ogr(args[0] + "/" + datasetName + ".gdb")
 		.format('PostgreSQL')
 		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-append'])
 		.destination('PG:host=localhost user=' + args[3] + ' password=' + args[4] + ' dbname=' + args[2] + ' schemas=' + args[1])
@@ -114,6 +118,56 @@ promise.then((password) => {
 	});
 	return ogrPromise.catch(error => {throw new Error(error);});
 }).then(data => {
+	const jsonPath = process.cwd() + "/" + args[0] + "/" +  datasetName + ".json";
+	let jsonMetadata	
+	try {
+		jsonMetadata = require(jsonPath);
+	} catch (err) {
+		console.log("JSON metadata file not found");
+		return Promise.resolve();
+	}
+
+	const metadataInsert = 
+		"insert into metadata.json_entries (collection_id, metadata, metadata_file) values (" +
+		collectionID + ", $$" +
+		JSON.stringify(jsonMetadata) + "$$, $$" +
+		jsonPath + "$$)";
+	//console.log(metadataInsert);
+	return db.none(metadataInsert).catch(error => {throw new Error(error);});
+}).then(() => {
+	//read xml file
+	const xmlPath = process.cwd() + "/" + args[0] + "/" + datasetName + ".xml";
+	let xmlMetadata
+	let fs = require('fs');
+
+	filePromise = new Promise((resolve, reject) => {
+		fs.readFile(xmlPath, 'utf-8', function (error, data){
+			if(error) {
+				console.log(error);
+				resolve(null);
+			}
+			resolve(data);    
+		}); 
+	});
+	return filePromise.catch(error => {throw new Error(error);});
+}).then((data) => {      
+	if (data === null) {
+		console.log("no xml data");
+		return Promise.resolve();
+	}
+	//console.log("xml data = " + data);
+	const xmlPath = process.cwd() + "/" + args[0] + "/" + datasetName + ".xml";
+	const metadataInsert = 
+		"insert into metadata.xml_entries (collection_id, textdata, xmldata, metadata_file) values (" +
+		collectionID + ", $$" + 
+		data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
+		data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
+		xmlPath + "$$)";
+	console.log(metadataInsert);
+	return db.none(metadataInsert).catch(error => {throw new Error(error);});
+//}).then(() => {
+//	db.one("select XMLSERIALIZE ( DOCUMENT metadata AS text ) from metadata.xml_entries where collection_id = 1").then(data => {console.log(data); return Promise.resolve()});
+}).then(() => {
 	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).then(() => {
 	//find any new tables brought in with this gdb
@@ -159,6 +213,7 @@ promise.then((password) => {
 })
 .catch(error => {
 	console.log(error); 
+	pgp.end();
 });
 
 
