@@ -41,5 +41,17 @@ Usage guidance is also available from the command line by typing:
 	azlibAdd --help
 
 
+Source directory format:
+------------------------
+
+The source directory must be in the following layout (note: this is still evolving):
+
+<dir name>
+	|
+	|--<dir name>.gdb
+	|
+	|--[<dir name>.json]
+	|
+	|--[<dir name>.xml]
 
 
