@@ -21,8 +21,8 @@ CREATE TABLE notes.standard_notes (
 	standard_note_id serial PRIMARY KEY,
 	collection_id integer REFERENCES collections(collection_id),
 	station_id text NOT NULL, -- What the actual content creator called it
-	early_interval_id integer REFERENCES dicts.intervals(interval_id), 
-	late_interval_id integer REFERENCES dicts.intervals(interval_id),
+	early_interval_id integer REFERENCES dicts.intervals(int_id), 
+	late_interval_id integer REFERENCES dicts.intervals(int_id),
 	early_age numeric, -- Should add some checks to make sure number is compatible with interval
 	late_age numeric,
 	geom geometry NOT NULL,
@@ -34,8 +34,8 @@ CREATE TABLE notes.standard_notes (
 --This table describes notes matching age estimates taken from field data. This schema only allows a single dating type U/Pb per entry. If an individual hand sample has more than one date type, then it should be listed as separate entries (i.e., diff entry_id), but the station_id in notes.standard_notes should be the same
 CREATE TABLE notes.standard_ages (
 	standard_age_id integer PRIMARY KEY REFERENCES notes.standard_notes(standard_note_id),
-	early_interval_id integer NOT NULL REFERENCES dicts.intervals(interval_id), 
-	late_interval_id integer NOT NULL REFERENCES dicts.intervals(interval_id),
+	early_interval_id integer NOT NULL REFERENCES dicts.intervals(int_id), 
+	late_interval_id integer NOT NULL REFERENCES dicts.intervals(int_id),
 	early_age numeric, -- Should add some checks to make sure number is compatible with interval
 	late_age numeric,
 	absolute_dates boolean NOT NULL,
