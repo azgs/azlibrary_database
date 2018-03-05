@@ -117,56 +117,15 @@ promise.then((password) => {
 		});
 	});
 	return ogrPromise.catch(error => {throw new Error(error);});
-}).then(data => {
-	const jsonPath = process.cwd() + "/" + args[0] + "/" +  datasetName + ".json";
-	let jsonMetadata	
-	try {
-		jsonMetadata = require(jsonPath);
-	} catch (err) {
-		console.log("JSON metadata file not found");
-		return Promise.resolve();
-	}
 
-	const metadataInsert = 
-		"insert into metadata.json_entries (collection_id, metadata, metadata_file) values (" +
-		collectionID + ", $$" +
-		JSON.stringify(jsonMetadata) + "$$, $$" +
-		jsonPath + "$$)";
-	//console.log(metadataInsert);
-	return db.none(metadataInsert).catch(error => {throw new Error(error);});
 }).then(() => {
-	//read xml file
-	const xmlPath = process.cwd() + "/" + args[0] + "/" + datasetName + ".xml";
-	let xmlMetadata
-	let fs = require('fs');
-
-	filePromise = new Promise((resolve, reject) => {
-		fs.readFile(xmlPath, 'utf-8', function (error, data){
-			if(error) {
-				console.log(error);
-				resolve(null);
-			}
-			resolve(data);    
-		}); 
-	});
-	return filePromise.catch(error => {throw new Error(error);});
-}).then((data) => {      
-	if (data === null) {
-		console.log("no xml data");
-		return Promise.resolve();
-	}
-	//console.log("xml data = " + data);
-	const xmlPath = process.cwd() + "/" + args[0] + "/" + datasetName + ".xml";
-	const metadataInsert = 
-		"insert into metadata.xml_entries (collection_id, textdata, xmldata, metadata_file) values (" +
-		collectionID + ", $$" + 
-		data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-		data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-		xmlPath + "$$)";
-	console.log(metadataInsert);
-	return db.none(metadataInsert).catch(error => {throw new Error(error);});
-//}).then(() => {
-//	db.one("select XMLSERIALIZE ( DOCUMENT metadata AS text ) from metadata.xml_entries where collection_id = 1").then(data => {console.log(data); return Promise.resolve()});
+	const promises = [
+		require("./metadata").upload(args[0], datasetName, collectionID, db),
+		require("./notes").upload(),
+		require("./documents").upload(),
+		require("./images").upload()
+	];
+	return Promise.all(promises).catch(error => {throw new Error(error);})
 }).then(() => {
 	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).then(() => {
