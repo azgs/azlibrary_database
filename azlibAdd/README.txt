@@ -48,10 +48,32 @@ The source directory must be in the following layout (note: this is still evolvi
 
 <dir name>
 	|
-	|--<dir name>.gdb
+	|-- metadata
+	|	|
+	|	|-- 0..n xml files with naming format <type>-<name>.xml
+	|	|
+	|	|-- 0..n json files with naming format <type>-<name>.json
 	|
-	|--[<dir name>.json]
+	|--notes
+	|	|
+	|	|-- <TBD>
+	|	
+	|-- documents
+	|	|
+	|	|-- <TBD>
 	|
-	|--[<dir name>.xml]
+	|-- images
+	|	|
+	|	|-- <TBD>
+	|
+	|--geodata
+		|
+		|--<schema name> or "legacy"
+			|
+			|-- if not "legacy" then <dir name>.gdb
+			|			OR
+			|-- if "legacy" then whatever (shp, etc.)
+				note: if format is recognized, software will attempt to determine a
+				bounding box around the data and store this in the db
 
 
