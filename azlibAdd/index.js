@@ -17,20 +17,8 @@ const pgp = require("pg-promise")({
 });
 let db;
 
-let existingTables;
-//Create list of layers in new gdb
-const gdal = require("gdal");
-console.log(process.cwd() + "/" + args[0] + "/" + datasetName +".gdb");
-//const dataset = gdal.open(process.cwd() + "/" + args[0] + "/" + args[0] + ".gdb");
-const dataset = gdal.open(process.cwd() + "/" + args[0] + "/" + datasetName +".gdb");
-const layers = dataset.layers.map((layer, i) => {
-	return args[1] + '."' + layer.name + '"';
-});
-
 let collectionID;
 let uploadID;
-
-const ogr2ogr = require('ogr2ogr');
 
 // get password sorted
 let promise = new Promise((resolve) => {
@@ -93,33 +81,8 @@ promise.then((password) => {
 }).then(data => {
 	uploadID = data.upload_id;
 
-	//Create list of existing tables for comparison to new gdb content
-	return db.any("select table_name from information_schema.tables where table_schema='" +  args[1] + "'")
-	.catch(error => {throw new Error(error);});
-}).then(tables => {
-	existingTables = tables.map((table, i) => {
-		return args[1] + '."' + table.table_name + '"';
-	});
-	//console.log("existing tables"); console.log(existingTables);
-
-	//append new gdb to existing gdb
-	const ogrPromise = new Promise((resolve, reject) => {
-		ogr2ogr(args[0] + "/" + datasetName + ".gdb")
-		.format('PostgreSQL')
-		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-append'])
-		.destination('PG:host=localhost user=' + args[3] + ' password=' + args[4] + ' dbname=' + args[2] + ' schemas=' + args[1])
-		.exec(function(error, data) {
-			if (error) {
-				reject(error);
-			} else {
-				resolve(data);
-			}
-		});
-	});
-	return ogrPromise.catch(error => {throw new Error(error);});
-
-}).then(() => {
 	const promises = [
+		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[1], args[3], args[4]),
 		require("./metadata").upload(args[0], datasetName, collectionID, db),
 		require("./notes").upload(),
 		require("./documents").upload(),
@@ -129,41 +92,7 @@ promise.then((password) => {
 }).then(() => {
 	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).then(() => {
-	//find any new tables brought in with this gdb
-	const newTables = layers.reduce((acc, layer) => {
-		if (!existingTables.includes(layer)) {
-			acc.push(layer);
-		}
-		return acc;
-	}, []);
-	console.log("new tables"); console.log(newTables);
 
-	//add collection_id column to each new table
-	const newTablePromises = newTables.map(table => {
-		//console.log(table);
-		return db.none('alter table ' + table + ' add column collection_id integer references public.collections (collection_id)')
-		.then(() => {
-			console.log("successfully added collection_id to " + table)
-		})
-		.catch(error => {throw new Error(error);});
-	});               
-	return Promise.all(newTablePromises).catch(error => {throw new Error(error);});
-}).then (() => {
-	//Set collection_id in each record that has a null
-	//TODO: This approach is a little janky
-	const cidPromises = layers.map((layer, i) => {
-		//console.log("layer = " + layer);
-		return db.none("update " + layer + 
-			" set collection_id = " + collectionID +
-			" where collection_id is null")
-		.then(() => {
-			console.log("successfully updated collection_id for " + layer);
-		})
-		.catch(error => {throw new Error(error);});
-	});
-	return Promise.all(cidPromises).catch(error => {throw new Error(error);});
-}).then(() => {
-	console.log(args[0] + ".gdb successfully added");
 	return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
 	.catch(error => {throw new Error(error);});
 }).then(() => {
