@@ -41,6 +41,7 @@ let promise = new Promise((resolve) => {
 
 
 promise.then((password) => {
+/*
 	args[4] = password;
 
 	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
@@ -48,7 +49,7 @@ promise.then((password) => {
 
 	//TODO: This filename will need to be mandated by the dir structure definition
 	//TODO: In fact, we'll probably want a format validation module here to go through the whole directory
-	const metadata = require(process.cwd() + "/" + args[0] + "/" + datasetName + ".json");
+	const metadata = require(process.cwd() + "/" + args[0] + "/metadata/" + datasetName + ".json");
 		
 	//First, create a new projects record for this project
 	//TODO: public_id is no longer required by collections, so what to do with this insert?
@@ -61,12 +62,19 @@ promise.then((password) => {
 	return db.one(projectsInsert).catch(error => {throw new Error(error);});
 }).then(data => {
 	console.log("project_id = " + data.project_id);
+*/
 
 	//Next, create a new record in the collections table
+	/*
 	const collectionsInsert = 
 		"insert into public.collections (project_id, azgs_path) values (" +
 		data.project_id + ", $$" +
 		"<path info here>" + "$$) returning collection_id";
+	*/
+	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
+	db = pgp(cn);
+	const collectionsInsert = 
+		"insert into public.collections (azgs_path) values ($$<path info here>$$) returning collection_id";
 	//console.log(collectionsInsert);
 	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
 }).then(data => {
@@ -82,11 +90,11 @@ promise.then((password) => {
 	uploadID = data.upload_id;
 
 	const promises = [
-		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[1], args[3], args[4]),
+		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
 		require("./metadata").upload(args[0], datasetName, collectionID, db),
-		require("./notes").upload(),
-		require("./documents").upload(),
-		require("./images").upload()
+		require("./notes").upload(args[0]),
+		require("./documents").upload(args[0]),
+		require("./images").upload(args[0])
 	];
 	return Promise.all(promises).catch(error => {throw new Error(error);})
 }).then(() => {
