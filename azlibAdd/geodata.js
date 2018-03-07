@@ -1,5 +1,35 @@
-exports.upload = (dir, datasetName, collectionID, db, dbName, geodataSchema, user, password) => {
+exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) => {
 	console.log("processing geodata");
+
+	dir = dir + "/geodata";
+
+	const fs = require('fs');
+	if (!fs.existsSync(dir)) {
+		console.log("No geodata directory found");
+		return Promise.resolve();
+	}
+
+	let geodataSchema;
+
+	//const fs = require('fs');
+	const path = require('path');
+	const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
+	const dirs = listDirs(dir);
+	console.log("dirs = ");console.log(dirs);
+	if (dirs.length > 1) {
+		return Promise.reject("Only one directory allowed in geodata");
+	} else if (dirs.includes("legacy")) {
+		return Promise.resolve(); //TODO: legacy not yet implemented
+	} else {
+		geodataSchema = dirs[0];
+		dir = dir + "/" + geodataSchema;
+	}
+	console.log("geodataSchema = " + geodataSchema);
+
+
+	if (geodataSchema === "legacy") {
+		return Promise.resolve(); //TODO: legacy not yet implemented
+	}
 
 	let existingTables;
 	//Create list of layers in new gdb
