@@ -1,4 +1,4 @@
-exports.upload = (dir) => {
+exports.upload = (dir, collectionID, db) => {
 	console.log("processing images");
 
 	dir = dir + "/images";
@@ -9,5 +9,5 @@ exports.upload = (dir) => {
 		return Promise.resolve();
 	}
 
-	return Promise.resolve();
+	return require("./metadata").upload(dir, "images", collectionID, db);
 };

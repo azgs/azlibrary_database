@@ -1,4 +1,4 @@
-exports.upload = (dir) => {	
+exports.upload = (dir, collectionID, db) => {	
 	console.log("processing notes");
 
 	dir = dir + "/notes";
@@ -9,5 +9,6 @@ exports.upload = (dir) => {
 		return Promise.resolve();
 	}
 
-	return Promise.resolve();
+	return require("./metadata").upload(dir, "notes", collectionID, db);
+
 };
