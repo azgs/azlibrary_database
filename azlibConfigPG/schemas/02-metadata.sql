@@ -7,6 +7,17 @@ create table metadata.types
 insert into metadata.types (type_name) values ('FGDC');
 insert into metadata.types (type_name) values ('ISO19139');
 
+CREATE TABLE metadata.metadata
+(
+	metadata_id serial PRIMARY KEY,
+	collection_id integer REFERENCES public.collections(collection_id) not null, 
+	type text references metadata.types(type_name) not null,
+	json_data jsonb not null,
+	metadata_file text not null
+);
+
+
+/*
 CREATE TABLE metadata.json_entries
 (
 	json_entry_id serial PRIMARY KEY,
@@ -25,4 +36,4 @@ CREATE TABLE metadata.xml_entries
 	--xmldata text, This does not behave as expected. Might revisit later.
 	metadata_file text
 );
-
+*/
