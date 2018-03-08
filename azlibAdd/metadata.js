@@ -1,4 +1,4 @@
-exports.upload = (dir, datasetName, collectionID, db) => {
+exports.upload = (dir, schemaName, collectionID, db) => {
 	console.log("processing metadata");
 
 	dir = dir + "/metadata";
@@ -35,31 +35,9 @@ exports.upload = (dir, datasetName, collectionID, db) => {
 			//console.log("type = " + type);
 
 			console.log("file = " + file);
-			//console.log("filerazzle = " + file.split('.')[file.split('.').length-1]);
-			if (file.split('.')[file.split('.').length-1].toUpperCase() === "JSON") {
-				return new Promise((resolve, reject) => {
-					console.log("processing json metadata");
-					
-					const jsonPath = process.cwd() + "/" + dir + "/" +  file;
-					const jsonMetadata = require(jsonPath);
-					//console.log(jsonMetadata);
-
-					const metadataInsert = 
-						"insert into metadata.json_entries (collection_id, type, metadata, metadata_file) values (" +
-						collectionID + ", $$" +
-						type + "$$, $$" + 
-						JSON.stringify(jsonMetadata) + "$$, $$" +
-						jsonPath + "$$)";
-					//console.log(metadataInsert);
-					//return db.none(metadataInsert).catch(error => {/*throw new Error(error);*/console.log(error)});
-					db.none(metadataInsert).then(() => {
-						resolve();
-					}).catch(error => {reject(error);});
-		
-				}).catch(error => {/*throw new Error(error);*/console.log(error);});
-			} else if (file.split('.')[file.split('.').length-1].toUpperCase() === "XML") {
+			if (file.split('.')[file.split('.').length-1].toUpperCase() === "XML") {
 				new Promise((resolve, reject) => {
-					console.log("processing xml metadata");
+					console.log("processing xml metadata for " + file);
 
 					//read xml file
 					const xmlPath = process.cwd() + "/" + dir + "/" + file;
@@ -80,21 +58,38 @@ exports.upload = (dir, datasetName, collectionID, db) => {
 							console.log("no xml data");
 							resolve();
 						}
-						//console.log("xml data = " + data);
-						const metadataInsert = 
-							//"insert into metadata.xml_entries (collection_id, textdata, xmldata, metadata_file) values (" +
-							"insert into metadata.xml_entries (collection_id, type, textdata, metadata_file) values (" +
-							collectionID + ", $$" + 
-							type + "$$, $$" + 
-							data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-							//data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-							xmlPath + "$$)";
-						//console.log(metadataInsert);
-						//return db.none(metadataInsert).catch(error => {throw new Error(error);});
-						db.none(metadataInsert).then(() => {
-							resolve();
-						}).catch(error => {reject(error);});
-					});
+
+						const xml2js = require('xml2js').parseString;
+						new Promise((resolve, reject) => {
+							xml2js(data, function (err, result) {
+								if (err) {
+									reject(err);
+								}
+								resolve(result);
+							});
+						}).then((data) => {
+							//console.log("xml data = " + data);
+							const metadataInsert = 
+								//"insert into metadata.xml_entries (collection_id, textdata, xmldata, metadata_file) values (" +
+								//"insert into metadata.xml_entries (collection_id, type, textdata, metadata_file) values (" +
+								"insert into " + schemaName + ".metadata (collection_id, type, json_data, metadata_file) values (" +
+								collectionID + ", $$" + 
+								type + "$$, $$" + 
+								JSON.stringify(data) + "$$, $$" +
+								//data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
+								//data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
+								xmlPath + "$$)";
+							//console.log(metadataInsert);
+							//return db.none(metadataInsert).catch(error => {throw new Error(error);});
+							db.none(metadataInsert).then(() => {
+								resolve();
+							}).catch(error => {reject(error);});
+						}).catch(error => {
+							console.log("Malformed XML");
+							console.log(error);
+							//TODO: rethrow?
+						});
+					}).catch(error => {console.log(error);});
 
 				}).catch(error => {/*throw new Error(error);*/console.log(error);});
 			}
