@@ -50,19 +50,29 @@ The source directory must be in the following layout (note: this is still evolvi
 	|
 	|-- metadata
 	|	|
-	|	|-- 0..n xml files with naming format <type>-<name>.xml
-	|	|
-	|	|-- 0..n json files with naming format <type>-<name>.json
+	|	|-- 0..n xml files with naming format <type*>-<name>.xml
 	|
-	|--notes
+	|--[notes]
+	|	|
+	|	|-- [metadata]
+	|	|	|
+	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
 	|	|
 	|	|-- <TBD>
 	|	
-	|-- documents
+	|-- [documents]
+	|	|
+	|	|-- [metadata]
+	|	|	|
+	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
 	|	|
 	|	|-- <TBD>
 	|
-	|-- images
+	|-- [images]
+	|	|
+	|	|-- [metadata]
+	|	|	|
+	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
 	|	|
 	|	|-- <TBD>
 	|
@@ -75,5 +85,10 @@ The source directory must be in the following layout (note: this is still evolvi
 			|-- if "legacy" then whatever (shp, etc.)
 				note: if format is recognized, software will attempt to determine a
 				bounding box around the data and store this in the db
+
+*type = "FGDC" or "ISO19139"
+
+
+
 
 
