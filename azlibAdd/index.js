@@ -91,10 +91,10 @@ promise.then((password) => {
 
 	const promises = [
 		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
-		require("./metadata").upload(args[0], datasetName, collectionID, db),
-		require("./notes").upload(args[0]),
-		require("./documents").upload(args[0]),
-		require("./images").upload(args[0])
+		require("./metadata").upload(args[0], "metadata", collectionID, db),
+		require("./notes").upload(args[0], collectionID, db),
+		require("./documents").upload(args[0], collectionID, db),
+		require("./images").upload(args[0], collectionID, db)
 	];
 	return Promise.all(promises).catch(error => {throw new Error(error);})
 }).then(() => {
