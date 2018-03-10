@@ -1,15 +1,25 @@
-CREATE SCHEMA legacy;
+CREATE SCHEMA geodata;
 
-CREATE TABLE legacy.geodata
+CREATE TABLE geodata.legacy
 (
-	geodata_id serial PRIMARY KEY,
+	legacy_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id), 
 	name text,
 	path text,
 	geom geometry
 );
 
-CREATE TABLE legacy.metadata
+create table geodata.rasters
+(
+	raster_id serial PRIMARY KEY,
+	collection_id integer REFERENCES public.collections(collection_id),
+	raster bytea,
+	srid integer, 
+	tile_size integer
+	
+);
+
+CREATE TABLE geodata.metadata
 (
 	metadata_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id) not null, 
@@ -17,3 +27,5 @@ CREATE TABLE legacy.metadata
 	json_data jsonb not null,
 	metadata_file text not null
 );
+
+
