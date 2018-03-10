@@ -97,6 +97,7 @@ promise.then((password) => {
 		require("./images").upload(args[0], collectionID, db)
 	];
 	return Promise.all(promises).catch(error => {throw new Error(error);})
+	//return db.tx(promises => {return Promise.all(promises).catch(error => {throw new Error(error);})})
 }).then(() => {
 	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).then(() => {
@@ -109,6 +110,7 @@ promise.then((password) => {
 })
 .catch(error => {
 	console.log(error); 
+	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!closing pgp!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	pgp.end();
 });
 

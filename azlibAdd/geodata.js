@@ -16,6 +16,21 @@ exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) =>
 	const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
 	const dirs = listDirs(dir);
 	console.log("dirs = ");console.log(dirs);
+
+	const promises = dirs.map(thisDir => {
+		if (thisDir.toLowerCase() === "metadata") {
+			return require("./metadata").upload(dir, "geodata", collectionID, db);
+		} else if (thisDir.toLowerCase() === "legacy") {
+			return require("./legacy").upload(dir, collectionID, db);
+		} else {
+			return require("./gdb").upload(dir, thisDir, collectionID, db, dbName, user, password);
+		}
+	});
+
+	return Promise.all(promises);
+}
+
+/*
 	if (dirs.length > 1) {
 		return Promise.reject("Only one directory allowed in geodata");
 	} else if (dirs.includes("legacy")) {
@@ -103,6 +118,6 @@ exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) =>
 		return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 	});
 }
-
+*/
 
 
