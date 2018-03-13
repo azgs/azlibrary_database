@@ -76,6 +76,7 @@ promise.then((password) => {
 	const collectionsInsert = 
 		"insert into public.collections (azgs_path) values ($$<path info here>$$) returning collection_id";
 	//console.log(collectionsInsert);
+	//TODO: Do we want to allow updates to a collection?
 	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
 }).then(data => {
 	collectionID = data.collection_id;
