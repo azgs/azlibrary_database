@@ -78,13 +78,19 @@ The source directory must be in the following layout (note: this is still evolvi
 	|
 	|--geodata
 		|
+		|--[metadata]
+		|	|
+		|	|-- 0..n xml files with naming format <type*>-<name>.xml
+		|
 		|--<schema name> or "legacy"
 			|
-			|-- if not "legacy" then <dir name>.gdb
+			|-- if not "legacy" then <name>.gdb
 			|			OR
 			|-- if "legacy" then whatever (shp, etc.)
 				note: if format is recognized, software will attempt to determine a
 				bounding box around the data and store this in the db
+
+
 
 *type = "FGDC" or "ISO19139"
 
