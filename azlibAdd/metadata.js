@@ -36,7 +36,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 
 			console.log("file = " + file);
 			if (file.split('.')[file.split('.').length-1].toUpperCase() === "XML") {
-				new Promise((resolve, reject) => {
+				return new Promise((resolve, reject) => { 
 					console.log("processing xml metadata for " + file);
 
 					//read xml file
@@ -92,6 +92,8 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 					}).catch(error => {console.log(error);});
 
 				}).catch(error => {/*throw new Error(error);*/console.log(error);});
+			} else { //not an xml file
+				return Promise.resolve();
 			}
 		});
 		return Promise.all(promises);
