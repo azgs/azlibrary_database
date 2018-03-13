@@ -14,6 +14,7 @@
   "dependencies": {
     "gdal": "^0.9.6",
     "ogr2ogr": "^1.2.1",
+    "pdf-parse": "^1.0.8",
     "pg-promise": "^7.5.2",
     "prompt": "^1.0.0",
     "xml2js": "^0.4.19"
