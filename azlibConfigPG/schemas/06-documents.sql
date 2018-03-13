@@ -10,9 +10,11 @@ CREATE TABLE documents.documents (
 	doc_type doc_type,
 	azgs_path text NOT NULL UNIQUE,
 	doc_doi text,
+	text_search tsvector,
 	restricted boolean NOT NULL, -- Copyrighted, redacted, etc.
 	geom geometry
 );
+CREATE INDEX ts_idx ON documents.documents USING gin(text_search);
 
 CREATE TABLE documents.metadata
 (
