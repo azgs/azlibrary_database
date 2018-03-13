@@ -96,8 +96,15 @@ promise.then((password) => {
 		require("./documents").upload(args[0], collectionID, db),
 		require("./images").upload(args[0], collectionID, db)
 	];
-	return Promise.all(promises).catch(error => {throw new Error(error);})
-	//return db.tx(promises => {return Promise.all(promises).catch(error => {throw new Error(error);})})
+	//return Promise.all(promises).catch(error => {throw new Error(error);})
+	promiseUtil = require("./promise_util");
+	return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+		if (results.filter(result => result.status === "rejected").length === 0) {
+			return Promise.resolve();
+		} else {
+			return Promise.reject(results);
+		}
+	});
 }).then(() => {
 	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).then(() => {
@@ -105,13 +112,18 @@ promise.then((password) => {
 	return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
 	.catch(error => {throw new Error(error);});
 }).then(() => {
-	console.log("successfully completed upload");
+	console.log("successfully completed upload for collection_id " + collectionID);
 	pgp.end();
 })
 .catch(error => {
+	console.log("Error during upload of collection_id " + collectionID);
 	console.log(error); 
-	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!closing pgp!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	pgp.end();
+	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	const rollback = require("./rollback");
+	rollback.rollback(collectionID, db).then(() => {
+		console.log("rollback complete");
+		pgp.end();
+	}).catch(error => {console.log(error);});
 });
 
 
