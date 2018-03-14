@@ -9,5 +9,6 @@ exports.upload = (dir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	return Promise.resolve();
+	return require("./metadata").upload(dir, "geodata", collectionID, db);
+
 };

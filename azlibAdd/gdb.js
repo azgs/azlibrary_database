@@ -11,11 +11,12 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 		const fs = require('fs');
 		const path = require('path');
 		const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
-		const dirs = listDirs(dir);
+		let dirs = listDirs(dir);
+		dirs = dirs.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "GDB"); 
 		console.log("dirs = ");console.log(dirs);
 
 		if (dir.length === 0) {
-			return Promise.reject("No gdb directory allowed");
+			return Promise.reject("No gdb directory found");
 		} else if (dirs.length > 1) {
 			return Promise.reject("Only one gdb directory allowed");
 		} 
@@ -93,7 +94,11 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 			return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 		});
 
-	}).catch(error => {console.log(error);return Promise.reject(error);});
+	}).catch(error => {console.log(error);return Promise.reject(error);})
+	.then(() => {
+		return require("./metadata").upload(dir, "geodata", collectionID, db);
+	});
+
 
 
 	
