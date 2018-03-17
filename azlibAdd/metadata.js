@@ -10,6 +10,8 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		return Promise.resolve();
 	}
 
+	const idReturn = [];
+
 	//Get list of types for comparison to filenames
 	return db.any("select type_name from metadata.types").then((data) => {
 		const metadataTypes = data.map((type) => {
@@ -70,19 +72,17 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 						}).then((data) => {
 							//console.log("xml data = " + data);
 							const metadataInsert = 
-								//"insert into metadata.xml_entries (collection_id, textdata, xmldata, metadata_file) values (" +
-								//"insert into metadata.xml_entries (collection_id, type, textdata, metadata_file) values (" +
 								"insert into " + schemaName + ".metadata (collection_id, type, json_data, metadata_file) values (" +
 								collectionID + ", $$" + 
 								type + "$$, $$" + 
 								JSON.stringify(data) + "$$, $$" +
-								//data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-								//data.substr(1, data.length-1) + "$$, $$" + //There appears to be a garbage character at the beginning
-								xmlPath + "$$)";
+								xmlPath + "$$) returning metadata_id";
 							//console.log(metadataInsert);
 							//return db.none(metadataInsert).catch(error => {throw new Error(error);});
-							db.none(metadataInsert).then(() => {
-								resolve();
+							db.one(metadataInsert).then((data) => {
+								//console.log(file.substring(file.indexOf('-')+1, file.lastIndexOf('.')));
+								idReturn.push({file: file, metadataID: data.metadata_id});
+								resolve(data.metadata_id);
 							}).catch(error => {reject(error);});
 						}).catch(error => {
 							console.log("Malformed XML");
@@ -97,7 +97,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 			}
 		});
 		return Promise.all(promises);
-	}).catch(error => {console.log(error); throw new Error(error)});
+	}).catch(error => {console.log(error); throw new Error(error)}).then(() => Promise.resolve(idReturn));
 }
 
 
