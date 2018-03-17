@@ -1,20 +1,7 @@
 CREATE SCHEMA documents;
 
 --Create a type of acceptable images
-CREATE TYPE doc_type AS ENUM('report','journal','chapter','book','guide','misc','abstract');
-
---This is the master_table for the documents schema that details the location of documents and what they are associated with
-CREATE TABLE documents.documents (
-	document_id serial PRIMARY KEY,
-	collection_id integer REFERENCES public.collections(collection_id),
-	doc_type doc_type,
-	azgs_path text NOT NULL UNIQUE,
-	doc_doi text,
-	text_search tsvector,
-	restricted boolean NOT NULL, -- Copyrighted, redacted, etc.
-	geom geometry
-);
-CREATE INDEX ts_idx ON documents.documents USING gin(text_search);
+--CREATE TYPE doc_type AS ENUM('report','journal','chapter','book','guide','misc','abstract');
 
 CREATE TABLE documents.metadata
 (
@@ -24,3 +11,16 @@ CREATE TABLE documents.metadata
 	json_data jsonb not null,
 	metadata_file text not null
 );
+
+--This is the master_table for the documents schema that details the location of documents and what they are associated with
+CREATE TABLE documents.documents (
+	document_id serial PRIMARY KEY,
+	collection_id integer REFERENCES public.collections(collection_id),
+    metadata_id integer REFERENCES documents.metadata(metadata_id),
+	--doc_type doc_type,
+	path text NOT NULL UNIQUE,
+	text_search tsvector
+);
+CREATE INDEX ts_idx ON documents.documents USING gin(text_search);
+
+
