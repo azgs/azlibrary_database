@@ -1,6 +1,8 @@
 exports.upload = (dir, collectionID, db) => {
 	console.log("processing legacy geodata");
 
+	const srid = 4326;
+
 	dir = dir + "/raster";
 
 	const fs = require('fs');
@@ -63,7 +65,7 @@ exports.upload = (dir, collectionID, db) => {
 			
 			return db.tx(t => { //do insert-update inside a transaction
 
-				return exec('raster2pgsql -s 4326 -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a geodata.rasters -f raster')
+				return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a geodata.rasters -f raster')
 				.catch((stderr) => {
 					console.log("uhoh"); console.log(stderr);
 				})
@@ -75,6 +77,7 @@ exports.upload = (dir, collectionID, db) => {
 					const update = t.none("update geodata.rasters set " +
 						"collection_id = " + collectionID + 
 						", metadata_id = " + metadataID + 
+						", srid = " + srid +
 						" where collection_id is null").catch(error => {console.log(error); throw new Error(error);});
 					return t.batch([insert, update]);
 				});
