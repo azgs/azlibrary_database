@@ -14,15 +14,41 @@ exports.rollback = (collectionID, db) => {
 	return db.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id' and table_schema <> 'public'")	
 	.then(tables => {
 		//console.log(tables);
-		const promises = tables.map(table => {
+
+		const dataTables = [];
+		const metadataTables = tables.reduce((acc, table) => {
+			if (table.table_name.toUpperCase() === "METADATA") {
+		 		acc.push(table);
+			} else {
+				dataTables.push(table);
+			}
+			return acc;
+		}, []);	
+			
+		console.log("dataTables");console.log(dataTables);
+		console.log("metadataTables");console.log(metadataTables);
+
+		const dataPromises = dataTables.map(table => {
 			//console.log(table);
 			return db.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
 		});
 
+		const metadataPromises = metadataTables.map(table => {
+			//console.log(table);
+			return db.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
+		});
+
+		//First clean dataTables, then metadataTables (to avoid fk violations)
 		promiseUtil = require("./promise_util");
-		return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+		return Promise.all(dataPromises.map(promiseUtil.reflect)).then(results => {
 			if (results.filter(result => result.status === "rejected").length === 0) {
-				return Promise.resolve();
+				return Promise.all(metadataPromises.map(promiseUtil.reflect)).then(results => {
+					if (results.filter(result => result.status === "rejected").length === 0) {
+						return Promise.resolve(results);
+					} else {
+						return Promise.reject(results);
+					} 
+				});
 			} else {
 				return Promise.reject(results);
 			}
