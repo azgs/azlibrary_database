@@ -29,7 +29,15 @@ exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) =>
 		}
 	});
 
-	return Promise.all(promises);
+	promiseUtil = require("./promise_util");
+	return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+		if (results.filter(result => result.status === "rejected").length === 0) {
+			return Promise.resolve(results);
+		} else {
+			return Promise.reject(results);
+		} 
+	});
+
 }
 
 
