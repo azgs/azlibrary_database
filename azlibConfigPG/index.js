@@ -68,7 +68,7 @@ pwPromise.then((password) => {
 			//console.log(schemas[schema]);
 			db.none(schemas[schema])
 			.then(() => {
-				console.log(schema + " schema created");
+				console.log(schema + " initialized");
 				resolve();
 			})
 			.catch(error => {

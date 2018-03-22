@@ -70,16 +70,17 @@ CREATE TABLE dicts.grainsize
 	CONSTRAINT grainsize_pkey PRIMARY KEY (grain_id)
 );
 
-CREATE TABLE dicts.wof_languages (
+CREATE TABLE dicts.languages (
+	language_id serial PRIMARY KEY,
     language_name text,
     iso639_2 text,
     iso639_3 text,
     iso639_1 text
 );
 
-CREATE TABLE dicts.wof_arizona (
-    wof_id integer NOT NULL,
-    wof_name text,
+CREATE TABLE dicts.arizona_places (
+    arizona_place_id integer primary key,
+    arizona_place_name text,
     name_formal text,
     placetype text,
     iso2 text,
@@ -93,14 +94,18 @@ CREATE TABLE dicts.wof_arizona (
     geom geometry,
     within_arizona boolean
 );
+
 --COMMENT ON TABLE wof_arizona IS 'This is a subset of Macrostrats WOF database (from MapZen). It has all known localities within a 10° buffer of the state of arizona. Localities contained strictly within the state of Arizona are marked in the within_arizona field. This table is not 3rd normal order because the other_names field (foreign language names) is text string that must be parsed. The index for language acronyms is in the wof_languages table.';
 DO
 $do$
 BEGIN
-EXECUTE format($$COMMENT ON TABLE dicts.wof_arizona IS 'This is a subset of Macrostrats WOF database (from MapZen). It has all known localities within a 10° buffer of the state of arizona. Localities contained strictly within the state of Arizona are marked in the within_arizona field. This table is not 3rd normal order because the other_names field (foreign language names) is text string that must be parsed. The index for language acronyms is in the wof_languages table.';
+EXECUTE format($$COMMENT ON TABLE dicts.arizona_places IS 'This is a subset of Macrostrats WOF database (from MapZen). It has all known localities within a 10° buffer of the state of arizona. Localities contained strictly within the state of Arizona are marked in the within_arizona field. This table is not 3rd normal order because the other_names field (foreign language names) is text string that must be parsed. The index for language acronyms is in the wof_languages table.';
 $$);
 END
 $do$;
+
+CREATE INDEX arizona_places_geom_idx ON dicts.arizona_places USING gist (geom);
+
 
 
 COPY dicts.minerals FROM PROGRAM 'curl "https://macrostrat.org/api/v2/defs/minerals?all&format=csv"' WITH CSV HEADER;
@@ -114,6 +119,4 @@ COPY dicts.lith_attr FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/lith
 COPY dicts.environments FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/environments?all&format=csv"' WITH CSV HEADER;
 
 COPY dicts.grainsize FROM PROGRAM 'curl "https://dev.macrostrat.org/api/V2/defs/grainsizes?all&format=csv"' WITH CSV HEADER;
-
-
 
