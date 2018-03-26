@@ -26,7 +26,7 @@ create table geodata.rasters
     metadata_id integer REFERENCES geodata.metadata(metadata_id),
 	raster raster,
 	srid integer, 
-	tile_size integer
+	tile_size text
 	
 );
 
