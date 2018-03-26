@@ -1,7 +1,7 @@
 exports.upload = (dir, collectionID, db) => {
 	console.log("processing legacy geodata");
 
-	const srid = 4326;
+	//const srid = 4326;
 
 	dir = dir + "/raster";
 
@@ -11,19 +11,6 @@ exports.upload = (dir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	/*
-	const gdal = require("gdal");
-	const dataset = gdal.open(dir + "/" + "nasa_test_raster.tiff");
-	console.log("##################################################################");
-	console.log("number of bands: " + dataset.bands.count());
-	console.log("width: " + dataset.rasterSize.x);
-	console.log("height: " + dataset.rasterSize.y);
-	console.log("geotransform: " + dataset.geoTransform);
-	console.log("srs: " + (dataset.srs ? dataset.srs.toWKT() : 'null'));
-	console.log("##################################################################");
-	*/
-
-
 	const path = require('path');
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	let files = listFiles(dir);
@@ -32,7 +19,7 @@ exports.upload = (dir, collectionID, db) => {
 	//only interested in raster file types
 	files = files.filter(file => {
 		const ft = file.split('.')[file.split('.').length-1].toUpperCase();
-		return (ft === "TIFF" || ft === "TIF"); //TODO: other raster types here
+		return (ft === "TIFF" || ft === "TIF" /*|| ft === "NC"*/); //TODO: Indications are that netcdf is not supported by raster2pgsql (http://lists.osgeo.org/pipermail/postgis-users/2014-March/038765.html)
 	});
 
 
@@ -60,28 +47,59 @@ exports.upload = (dir, collectionID, db) => {
 			}, null);
 			console.log("metadataID = " + metadataID);
 
+			const gdal = require("gdal");
+			const dataset = gdal.open(dir + "/" + file);
+			const srs = (dataset.srs ? dataset.srs.toProj4() : 'null');
+			const tileSize = dataset.rasterSize.x/10 + "x" + dataset.rasterSize.y/10;
+			/*
+			console.log("##################################################################");
+			console.log("number of bands: " + dataset.bands.count());
+			console.log("width: " + dataset.rasterSize.x);
+			console.log("height: " + dataset.rasterSize.y);
+			console.log("geotransform: " + dataset.geoTransform);
+			console.log("srs: " + (dataset.srs ? dataset.srs.toWKT() : 'null'));
+			console.log("srs: " + (dataset.srs ? dataset.srs.toProj4() : 'null'));
+			console.log("##################################################################");
+			*/
+
 			const util = require('util');
 			const exec = util.promisify(require('child_process').exec);
-			
-			return db.tx(t => { //do insert-update inside a transaction
+		
+			return db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + srs + "')")
+			.then((data) => {
+				const srid = (data === null ? null : data.srid);
+				console.log("srid = " + srid);
 
-				return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a geodata.rasters -f raster')
-				.catch((stderr) => {
-					console.log("uhoh"); console.log(stderr);
-				})
-				.then((stdout) => {
-					console.log(stdout);
+				return db.tx(t => { //do insert-update inside a transaction
+
+					//return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a geodata.rasters -f raster')
+					return exec('raster2pgsql -I -C -M "' + dir + '/' + file + '" -a geodata.rasters -f raster -t ' + tileSize)
+					.catch((stderr) => {
+						console.log("Problem importing raster"); console.log(stderr);
+						throw new Error(stderr);
+					})
+					.then((stdout) => {
+						//console.log(stdout);
 					
-					const insert = t.multi(stdout.stdout.replace("VACUUM", "--VACUUM").replace("BEGIN;", "").replace("END;","")).catch(err => {console.log("oh no!");console.log(err);});
-					//TODO: srid
-					const update = t.none("update geodata.rasters set " +
-						"collection_id = " + collectionID + 
-						", metadata_id = " + metadataID + 
-						", srid = " + srid +
-						" where collection_id is null").catch(error => {console.log(error); throw new Error(error);});
-					return t.batch([insert, update]);
-				});
-			}).catch(error => {console.log(error);throw new Error(error);}); 
+						const insert = t.multi(stdout.stdout.replace("VACUUM", "--VACUUM").replace("BEGIN;", "").replace("END;","")).catch(err => {console.log("oh no!");console.log(err);});
+						//TODO: srid
+	console.log("update geodata.rasters set " +
+							"collection_id = " + collectionID + 
+							", metadata_id = " + metadataID + 
+							", srid = " + srid +
+							", tile_size = '" + tileSize + "'" +
+							" where collection_id is null");
+
+						const update = t.none("update geodata.rasters set " +
+							"collection_id = " + collectionID + 
+							", metadata_id = " + metadataID + 
+							", srid = " + srid +
+							", tile_size = '" + tileSize + "'" +
+							" where collection_id is null").catch(error => {console.log(error); throw new Error(error);});
+						return t.batch([insert, update]);
+					});
+				}).catch(error => {console.log(error);throw new Error(error);}); 
+			}).catch(error => {console.log(error);throw new Error(error);});
 
 		});
 		return Promise.all(promises).catch(error => {console.log(error); throw new Error(error);});
