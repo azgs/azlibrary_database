@@ -46,6 +46,9 @@ exports.upload = (dir, collectionID, db) => {
 				}
 			}, null);
 			console.log("metadataID = " + metadataID);
+			if (metadataID === null) {
+				console.log("WARNING: No metadata file found for raster file " + file);
+			}
 
 			const gdal = require("gdal");
 			const dataset = gdal.open(dir + "/" + file);
@@ -81,14 +84,8 @@ exports.upload = (dir, collectionID, db) => {
 					.then((stdout) => {
 						//console.log(stdout);
 					
+						//A little cleaning on the sql we got from raster2pgsql so that we can run it in a transaction with the update below
 						const insert = t.multi(stdout.stdout.replace("VACUUM", "--VACUUM").replace("BEGIN;", "").replace("END;","")).catch(err => {console.log("oh no!");console.log(err);});
-						//TODO: srid
-	console.log("update geodata.rasters set " +
-							"collection_id = " + collectionID + 
-							", metadata_id = " + metadataID + 
-							", srid = " + srid +
-							", tile_size = '" + tileSize + "'" +
-							" where collection_id is null");
 
 						const update = t.none("update geodata.rasters set " +
 							"collection_id = " + collectionID + 
