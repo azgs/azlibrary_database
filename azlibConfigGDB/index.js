@@ -58,7 +58,7 @@ promise.then((password) => {
 	const ogrPromise = new Promise((resolve, reject) => {
 		ogr2ogr(args[0])
 		.format('PostgreSQL')
-		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO'])
+		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-gt', 'unlimited'])
 		.destination('PG:host=localhost user=' + args[3] + ' password=' + args[4] + ' dbname=' + args[2] + ' schemas=' + args[1])
 		.exec((error, data) => {
 			if (error) {
