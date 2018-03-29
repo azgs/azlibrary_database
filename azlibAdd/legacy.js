@@ -69,7 +69,7 @@ exports.upload = (dir, collectionID, db) => {
 								"'" + dir + "/" + file + "'," +
 								"ST_MakeEnvelope(" + extent.minX + "," + extent.minY + "," + extent.maxX + "," + extent.maxY + "," + srid + ")" +
 				")").catch(error => {console.log("problem inserting legacy record:");console.log(error); throw new Error(error);});
-			}).catch(error => {console.log(error); throw new Error(error);});
+			}).catch(error => {console.log("problem obtaining srid:");console.log(error); throw new Error(error);});
 		});
 		return Promise.all(promises).catch(error => {console.log(error); throw new Error(error);});
 	});

@@ -91,13 +91,13 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 						});
 					}).catch(error => {console.log(error);});
 
-				}).catch(error => {/*throw new Error(error);*/console.log(error);});
+				}).catch(error => {console.log("Problem processing metadata file " + file);console.log(error);throw new Error(error);});
 			} else { //not an xml file
 				return Promise.resolve();
 			}
 		});
 		return Promise.all(promises);
-	}).catch(error => {console.log(error); throw new Error(error)}).then(() => Promise.resolve(idReturn));
+	}).catch(error => {console.log("Problem processing metadata for " + schemaName);console.log(error); throw new Error(error)}).then(() => Promise.resolve(idReturn));
 }
 
 
