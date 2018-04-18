@@ -118,5 +118,5 @@ COPY dicts.lith_attr FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/lith
 
 COPY dicts.environments FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/environments?all&format=csv"' WITH CSV HEADER;
 
-COPY dicts.grainsize FROM PROGRAM 'curl "https://dev.macrostrat.org/api/V2/defs/grainsizes?all&format=csv"' WITH CSV HEADER;
+COPY dicts.grainsize FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/grainsizes?all&format=csv"' WITH CSV HEADER;
 
