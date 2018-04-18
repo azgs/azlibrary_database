@@ -46,7 +46,7 @@ promise.then((password) => {
 	const ogrPromise = new Promise((resolve, reject) => {
 		ogr2ogr('PG:host=localhost user=' + args[5] + ' password=' + args[6] + ' dbname=' + args[4] + ' schemas=' + args[3])
 		.format(args[2])
-		.options(['-where', 'collection_id=' + args[0]])
+		.options(['-where', 'collection_id=' + args[0], '-lco', 'LAUNDER=NO'])
 		.destination(args[1])
 		.exec(function(error, data) {
 			if (error) {
