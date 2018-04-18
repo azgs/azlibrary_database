@@ -16,7 +16,11 @@ exports.upload = (dir, collectionID, db) => {
 	console.log("files = "); console.log(files);
 
 	//only interested in pdfs for now
-	files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
+	//files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
+	files = files.filter(file => {
+		const suffix = file.split('.')[file.split('.').length-1].toUpperCase();
+		return (suffix === "PDF" || suffix === "DOC" || suffix === "DOCX" || suffix === "TXT");
+	}); 
 
 	return require("./metadata").upload(dir, "documents", collectionID, db)
 	.then((metadataIDs) => {
@@ -70,6 +74,7 @@ exports.upload = (dir, collectionID, db) => {
 					}
 				}, null);
 
+				/*
 				const pdf = require('pdf-parse');
 				let dataBuffer = fs.readFileSync(dir + "/" + file);
 				return pdf(dataBuffer).then(data => {
@@ -81,6 +86,19 @@ exports.upload = (dir, collectionID, db) => {
 						"'" + dir + "/" + file + "', " +
 						"to_tsvector($$" + data.text + "$$))"); 
 				});
+				*/
+				const textExtractor = require('./text_extractor');
+				return textExtractor.extract(dir + "/" + file).then(data => {
+					//console.log(data.text); 
+					return t.none(
+						"insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
+						collectionID + ", " + 
+						metadataID + ", " +
+						"'" + dir + "/" + file + "', " +
+						"to_tsvector($$" + data.text + "$$))"); 
+				})
+				.catch(error => {console.log("problem processing " + file); console.log(error); throw new Error(error);});
+
 			});
 			return t.batch(inserts).catch(error => {console.log(error);throw new Error(error);});
 		});
