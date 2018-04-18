@@ -55,6 +55,21 @@ exports.upload = (dir, collectionID, db) => {
 			const extent = layer.getExtent();
 			const srs = (layer.srs ? layer.srs.toProj4() : 'null');
 
+			try {
+			console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+			const file2 = "stuff.dbf";
+			const dataset2 = gdal.open(dir + "/" + file2);
+			const layer2 = dataset2.layers.get(0);
+			const extent2 = layer2.getExtent();
+			const srs2 = (layer2.srs ? layer2.srs.toProj4() : 'null');
+			console.log("file = " + file2);
+			console.log("extent = ");console.log(extent2);
+			console.log("srs = " + srs2);
+			console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+			} catch (error) {
+				console.log(error);
+			}
+
 			//Get srid
 			return db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + srs + "')")
 			.then((data) => {
@@ -71,7 +86,7 @@ exports.upload = (dir, collectionID, db) => {
 				")").catch(error => {console.log("problem inserting legacy record:");console.log(error); throw new Error(error);});
 			}).catch(error => {console.log("problem obtaining srid:");console.log(error); throw new Error(error);});
 		});
-		return Promise.all(promises).catch(error => {console.log(error); throw new Error(error);});
+		return Promise.all(promises).catch(error => {console.log("Problem processing legacy files");console.log(error); throw new Error(error);});
 	});
 
 };
