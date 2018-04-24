@@ -71,10 +71,12 @@ promise.then((password) => {
 		data.project_id + ", $$" +
 		"<path info here>" + "$$) returning collection_id";
 	*/
+	const path = require("path");
+	const dsPath = path.join(process.cwd(), args[0]);
 	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
 	db = pgp(cn);
 	const collectionsInsert = 
-		"insert into public.collections (azgs_path) values ($$<path info here>$$) returning collection_id";
+		"insert into public.collections (azgs_path) values ($$" + dsPath + "$$) returning collection_id";
 	//console.log(collectionsInsert);
 	//TODO: Do we want to allow updates to a collection?
 	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
