@@ -27,7 +27,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 
 		//Process each file
 		const promises = files.map((file) => {
-			const type = file.split('-')[0].toUpperCase();
+			const type = file.split('.')[0].split('-')[0].toUpperCase();
 
 			//If type is not recognized, ignore file
 			if (!metadataTypes.includes(type)) {

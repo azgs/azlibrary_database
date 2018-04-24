@@ -24,6 +24,11 @@ exports.upload = (dir, collectionID, db) => {
 
 	return require("./metadata").upload(dir, "documents", collectionID, db)
 	.then((metadataIDs) => {
+		//If metadataIDs is undefined, give it an empty array to keep later code happy
+		metadataIDs = (metadataIDs ? metadataIDs : []);
+
+		console.log("metadataIDs =");console.log(metadataIDs);
+
 		//strip away prefix and filetype. Only interested in name
 		metadataIDs = metadataIDs.map(mID => {
 			mID.file = mID.file.substring(mID.file.indexOf('-')+1, mID.file.lastIndexOf('.'));
