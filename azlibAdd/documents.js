@@ -19,7 +19,7 @@ exports.upload = (dir, collectionID, db) => {
 	//files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
 	files = files.filter(file => {
 		const suffix = file.split('.')[file.split('.').length-1].toUpperCase();
-		return (suffix === "PDF" || suffix === "DOC" || suffix === "DOCX" || suffix === "TXT");
+		return (suffix === "PDF" || suffix === "DOC" || suffix === "DOCX" || suffix === "TXT" || suffix === "RTF");
 	}); 
 
 	return require("./metadata").upload(dir, "documents", collectionID, db)

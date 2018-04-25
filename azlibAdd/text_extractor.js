@@ -13,8 +13,8 @@ exports.extract = (file) => {
 		const pdf = require('pdf-parse');
 		return pdf(dataBuffer);
 	} else if (suffix === "DOC") { 
-		const WE = require("word-extractor");
-		const extractor = new WE();
+		const we = require("word-extractor");
+		const extractor = new we();
 		const extracted = extractor.extract(file);
 		return extracted.then(doc => {
 			return {text: doc.getBody()};
@@ -24,6 +24,14 @@ exports.extract = (file) => {
 		return mammoth.extractRawText({path: file}).then(result => {
         	return {text: result.value}; 
 		});
+	} else if (suffix === "RTF") {
+		const textract = require("textract");
+		const util = require('util');
+		const textractPromise = util.promisify(textract.fromFileWithPath);
+		return textractPromise(file).then(result => {
+			return {text: result};
+		})
+		.catch(error => {console.log("problem processing " + file); console.log(error); throw new Error(error);});
 	} else {
 		return Promise.reject("Unrecognized document file type");
 	}

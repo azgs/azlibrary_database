@@ -18,6 +18,7 @@
     "pdf-parse": "^1.0.8",
     "pg-promise": "^7.5.2",
     "prompt": "^1.0.0",
+    "textract": "^2.2.0",
     "word-extractor": "^0.1.4",
     "xml2js": "^0.4.19"
   }
