@@ -12,7 +12,7 @@ CREATE TABLE notes.misc_notes (
 	collection_id integer NOT NULL REFERENCES collections(collection_id),
 	informal_name text NOT NULL,
 	note_type note_type,
-	azgs_path text NOT NULL UNIQUE,
+	azgs_path text NOT NULL,
 	geom geometry -- if known
 );
 

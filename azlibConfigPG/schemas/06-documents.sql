@@ -18,7 +18,7 @@ CREATE TABLE documents.documents (
 	collection_id integer REFERENCES public.collections(collection_id),
     metadata_id integer REFERENCES documents.metadata(metadata_id),
 	--doc_type doc_type,
-	path text NOT NULL UNIQUE,
+	path text NOT NULL,
 	text_search tsvector
 );
 CREATE INDEX ts_idx ON documents.documents USING gin(text_search);

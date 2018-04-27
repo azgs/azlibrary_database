@@ -17,7 +17,7 @@ CREATE TABLE images.images (
     image_id serial PRIMARY KEY,
     collection_id integer REFERENCES public.collections(collection_id),
     metadata_id integer REFERENCES images.metadata(metadata_id),
-    path text NOT NULL UNIQUE
+    path text NOT NULL
 );
 
 --Raster maps and images, I've decided to handle this separately from the intial configuration.
