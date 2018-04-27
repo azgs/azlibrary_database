@@ -1,9 +1,12 @@
-exports.upload = (dir, collectionID, db) => {
-	console.log("processing legacy geodata");
+exports.upload = (rootDir, intermediateDir, collectionID, db) => {
+	console.log("processing raster geodata");
 
 	//const srid = 4326;
 
-	dir = dir + "/raster";
+	const path = require('path');
+
+	const myDir = "raster";
+	const dir = path.join(rootDir, intermediateDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
@@ -11,7 +14,6 @@ exports.upload = (dir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	const path = require('path');
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	let files = listFiles(dir);
 	console.log("files = "); console.log(files);
@@ -24,7 +26,7 @@ exports.upload = (dir, collectionID, db) => {
 
 
 	//First process metadata, keeping track of filename-ID mapping
-	return require("./metadata").upload(dir, "geodata", collectionID, db)
+	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "geodata", collectionID, db)
 	.then((metadataIDs) => {
 	
 		//strip away prefix and filetype from metadata ID mappings. Only interested in name

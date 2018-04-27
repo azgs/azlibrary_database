@@ -1,7 +1,10 @@
-exports.upload = (dir, collectionID, db) => {
+exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 	console.log("processing legacy geodata");
 
-	dir = dir + "/legacy";
+	const path = require('path');
+
+	const myDir = "legacy";
+	const dir = path.join(rootDir, intermediateDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
@@ -9,7 +12,6 @@ exports.upload = (dir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	const path = require('path');
 	const util = require('util');
 
 	const statPromise = util.promisify(fs.stat);
@@ -19,7 +21,7 @@ exports.upload = (dir, collectionID, db) => {
 		console.log("subElements = "); console.log(subElements);
 
 		//First process metadata, keeping track of filename-ID mapping
-		return require("./metadata").upload(dir, "geodata", collectionID, db)
+		return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "geodata", collectionID, db)
 		.then((metadataIDs) => {
 			console.log("legacy metadataIDs = "); console.log(metadataIDs);
 	
@@ -100,7 +102,7 @@ exports.upload = (dir, collectionID, db) => {
 										collectionID + "," +
 										metadataID + "," + 
 										"null," + //TODO: what to use for name?
-										"'" + dir + "/" + file + "'," +
+										"'" + path.join(intermediateDir, myDir, file) + "'," +
 										"ST_MakeEnvelope(" + extent.minX + "," + extent.minY + "," + extent.maxX + "," + extent.maxY + "," + srid + ")" +
 						")").catch(error => {console.log("problem inserting legacy record:");console.log(error); throw new Error(error);});
 					}).catch(error => {console.log("problem obtaining srid:");console.log(error); throw new Error(error);});

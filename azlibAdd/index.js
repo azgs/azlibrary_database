@@ -72,7 +72,7 @@ promise.then((password) => {
 		"<path info here>" + "$$) returning collection_id";
 	*/
 	const path = require("path");
-	const dsPath = path.join(process.cwd(), args[0]);
+	const dsPath = path.resolve(args[0]);//path.join(process.cwd(), args[0]);
 	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
 	db = pgp(cn);
 	const collectionsInsert = 
@@ -94,7 +94,7 @@ promise.then((password) => {
 
 	const promises = [
 		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
-		require("./metadata").upload(args[0], "metadata", collectionID, db),
+		require("./metadata").upload(args[0], "", "metadata", collectionID, db),
 		require("./notes").upload(args[0], collectionID, db),
 		require("./documents").upload(args[0], collectionID, db),
 		require("./images").upload(args[0], collectionID, db)

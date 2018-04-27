@@ -1,7 +1,10 @@
-exports.upload = (dir, collectionID, db) => {	
+exports.upload = (rootDir, collectionID, db) => {	
 	console.log("processing notes");
 
-	dir = dir + "/notes";
+	const path = require('path');
+
+	const myDir = "notes";
+	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
@@ -9,6 +12,6 @@ exports.upload = (dir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	return require("./metadata").upload(dir, "notes", collectionID, db);
+	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "notes", collectionID, db);
 
 };

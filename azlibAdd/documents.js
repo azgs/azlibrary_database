@@ -1,7 +1,10 @@
-exports.upload = (dir, collectionID, db) => {
+exports.upload = (rootDir, collectionID, db) => {
 	console.log("processing documents");
 
-	dir = dir + "/documents";
+	const path = require('path');
+
+	const myDir = "documents";
+	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
@@ -10,7 +13,6 @@ exports.upload = (dir, collectionID, db) => {
 	}
 
 	//const fs = require('fs');
-	const path = require('path');
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	let files = listFiles(dir);
 	console.log("files = "); console.log(files);
@@ -22,7 +24,7 @@ exports.upload = (dir, collectionID, db) => {
 		return (suffix === "PDF" || suffix === "DOC" || suffix === "DOCX" || suffix === "TXT" || suffix === "RTF");
 	}); 
 
-	return require("./metadata").upload(dir, "documents", collectionID, db)
+	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "documents", collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);
@@ -68,7 +70,7 @@ exports.upload = (dir, collectionID, db) => {
 
 			//Process each file
 			const inserts = files.map((file) => {
-				console.log("processing pdf file " + file);
+				console.log("processing document file " + file);
 
 				//Find metadata id that corresponds to this file
 				let metadataID = metadataIDs.reduce((id, mID) => {
@@ -99,7 +101,7 @@ exports.upload = (dir, collectionID, db) => {
 						"insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
 						collectionID + ", " + 
 						metadataID + ", " +
-						"'" + dir + "/" + file + "', " +
+						"'" + path.join(myDir, file) + "', " +
 						"to_tsvector($$" + data.text + "$$))"); 
 				})
 				.catch(error => {console.log("problem processing " + file); console.log(error); throw new Error(error);});

@@ -1,7 +1,10 @@
-exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) => {
+exports.upload = (rootDir, datasetName, collectionID, db, dbName, user, password) => {
 	console.log("processing geodata");
 
-	dir = dir + "/geodata";
+	const path = require('path');
+
+	const myDir = "geodata";
+	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
@@ -12,18 +15,17 @@ exports.upload = (dir, datasetName, collectionID, db, dbName, user, password) =>
 	let geodataSchema;
 
 	//const fs = require('fs');
-	const path = require('path');
 	const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
 	const dirs = listDirs(dir);
 	console.log("dirs = ");console.log(dirs);
 
 	const promises = dirs.map(thisDir => {
 		if (thisDir.toLowerCase() === "metadata") {
-			return require("./metadata").upload(dir, "geodata", collectionID, db);
+			return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "geodata", collectionID, db);
 		} else if (thisDir.toLowerCase() === "legacy") {
-			return require("./legacy").upload(dir, collectionID, db);
+			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "raster") {
-			return require("./raster").upload(dir, collectionID, db);
+			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else {
 			return require("./gdb").upload(dir, thisDir, collectionID, db, dbName, user, password);
 		}

@@ -1,7 +1,11 @@
-exports.upload = (dir, schemaName, collectionID, db) => {
+exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 	console.log("processing metadata");
 
-	dir = dir + "/metadata";
+	console.log("inter dir = " + intermediateDir);
+	const myDir = "metadata";
+
+	const path = require('path');
+	const dir = path.join(rootDir, intermediateDir, myDir);
 
 	//Verify that directory exists
 	const fs = require('fs');
@@ -20,7 +24,6 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		console.log("metadata types = "); console.log(metadataTypes);
 
 		//const fs = require('fs');
-		const path = require('path');
 		const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 		const files = listFiles(dir);
 		console.log("files = "); console.log(files);
@@ -42,7 +45,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 					console.log("processing xml metadata for " + file);
 
 					//read xml file
-					const xmlPath = process.cwd() + "/" + dir + "/" + file;
+					const xmlPath = path.resolve(dir, file);//process.cwd() + "/" + dir + "/" + file;
 					//let fs = require('fs');
 
 					new Promise((resolve) => {
@@ -76,7 +79,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 								collectionID + ", $$" + 
 								type + "$$, $$" + 
 								JSON.stringify(data) + "$$, $$" +
-								xmlPath + "$$) returning metadata_id";
+								path.join(intermediateDir, myDir, file) + "$$) returning metadata_id";
 							//console.log(metadataInsert);
 							//return db.none(metadataInsert).catch(error => {throw new Error(error);});
 							db.one(metadataInsert).then((data) => {
