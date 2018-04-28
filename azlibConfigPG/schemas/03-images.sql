@@ -20,14 +20,5 @@ CREATE TABLE images.images (
     path text NOT NULL
 );
 
---Raster maps and images, I've decided to handle this separately from the intial configuration.
-CREATE TABLE images.rasters (
-	raster_id serial PRIMARY KEY,
-	image_id integer REFERENCES images.images(image_id),
-	rast raster
-	);
-
---Create a gist index on the rasters
-CREATE INDEX ON images.rasters USING GiST (ST_ConvexHull(rast));
 
 
