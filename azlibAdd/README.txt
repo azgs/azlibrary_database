@@ -50,13 +50,13 @@ The source directory must be in the following layout (note: this is still evolvi
 	|
 	|-- metadata
 	|	|
-	|	|-- 0..n xml files with naming format <type*>-<name>.xml
+	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|
 	|--[notes]
 	|	|
 	|	|-- [metadata]
 	|	|	|
-	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
+	|	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|	|
 	|	|-- <TBD>
 	|	
@@ -64,35 +64,78 @@ The source directory must be in the following layout (note: this is still evolvi
 	|	|
 	|	|-- [metadata]
 	|	|	|
-	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
+	|	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|	|
-	|	|-- <TBD>
+	|	|-- [<name>.txt] (0..N)
+	|	|
+	|	|-- [<name>.pdf] (0..N)
+	|	|
+	|	|-- [<name>.rtf] (0..N)
+	|	|
+	|	|-- [<name>.doc] (0..N)
+	|	|
+	|	|-- [<name>.docx] (0..N)
 	|
 	|-- [images]
 	|	|
 	|	|-- [metadata]
 	|	|	|
-	|	|	|-- 0..n xml files with naming format <type*>-<name>.xml
+	|	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|	|
-	|	|-- <TBD>
+	|	|-- [<name>.tiff or <name>.tif] (0..N)
+	|	|
+	|	|-- [<name>.jpg] (0..N)
+	|	|
+	|	|-- [<name>.png] (0..N)
+	|	|
+	|	|-- [<name>.gif] (0..N)
+	|	|
+	|	|-- [<name>.tiff or <name>.tif] (0..N)
 	|
 	|--geodata
 		|
-		|--[metadata]
+		|--	[metadata]
 		|	|
-		|	|-- 0..n xml files with naming format <type*>-<name>.xml
+		|	|-- [<type*1>-<name*2>.xml] (0..N) 
+		|	
+		|-- [legacy]*3
+		|	|
+		|	|--	[metadata]
+		|	|	|
+		|	|	|-- [<type*1>-<name*2>.xml] (0..N) 
+		|	|
+		|	|-- [<name>.geojson] (1..N)
+		|	|
+		|	|-- [<name>.json] (1..N)
+		|	|
+		|	|-- [<name>.kml] (1..N)
+		|	|
+		|	|-- [<name>.shp] (1..N)
+		|		|
+		|		|-- the various files for a single shapefile (must include one with .shp extention)
 		|
-		|--<schema name> or "legacy"
+		|-- [raster]
+		|	|
+		|	|--	[metadata]
+		|	|	|
+		|	|	|-- [<type*1>-<name*2>.xml] (0..N) 
+		|	|
+		|	|-- [<name>.tiff or <name>.tif] (1..N)
+		|
+		|-- [<schema name>]
 			|
-			|-- if not "legacy" then <name>.gdb
-			|			OR
-			|-- if "legacy" then whatever (shp, etc.)
-				note: if format is recognized, software will attempt to determine a
-				bounding box around the data and store this in the db
+			|--	[metadata]
+			|	|
+			|	|-- [<type*1>-<name*4>.xml] (0..N) 
+			|
+			|-- <name>.gdb (1..N)
 
 
 
-*type = "FGDC" or "ISO19139"
+*1 type = "FGDC" or "ISO19139"
+*2 If metadata is associated with a specific file, <name> should correspond to a that file (sans extension) in the directory.
+*3 Other legacy formats may work. If format is recognized, software will attempt to determine a bounding box around the data and store this in the db		
+*4 If metadata is associated with a specific geodatabase, <name> should correspond to a gdb subdirectory (sans extension) in the directory.
 
 
 
