@@ -10,10 +10,10 @@ CREATE TYPE date_method AS ENUM('U/Pb','C14','U/Th','Ar/Ar','K/Ar','Rb/Sr','K/Ca
 CREATE TABLE notes.misc_notes (
 	misc_note_id serial PRIMARY KEY,
 	collection_id integer NOT NULL REFERENCES collections(collection_id),
-	informal_name text NOT NULL,
+	metadata_id integer,
+	informal_name text,
 	note_type note_type,
-	azgs_path text NOT NULL,
-	geom geometry -- if known
+	path text NOT NULL
 );
 
 --This table holds the location and basic metadata information for notes meeting the AZGS standard
