@@ -93,7 +93,7 @@ promise.then((password) => {
 	uploadID = data.upload_id;
 
 	const promises = [
-		require("./geodata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
+		require("./gisdata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
 		require("./metadata").upload(args[0], "", "metadata", collectionID, db),
 		require("./notes").upload(args[0], collectionID, db),
 		require("./documents").upload(args[0], collectionID, db),

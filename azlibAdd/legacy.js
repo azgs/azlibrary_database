@@ -1,5 +1,5 @@
 exports.upload = (rootDir, intermediateDir, collectionID, db) => {
-	console.log("processing legacy geodata");
+	console.log("processing legacy gisdata");
 
 	const path = require('path');
 
@@ -21,7 +21,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 		console.log("subElements = "); console.log(subElements);
 
 		//First process metadata, keeping track of filename-ID mapping
-		return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "geodata", collectionID, db)
+		return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db)
 		.then((metadataIDs) => {
 			console.log("legacy metadataIDs = "); console.log(metadataIDs);
 	
@@ -98,7 +98,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 						console.log("srid = " + srid);
 
 						//Insert legacy record for this file, creating bbox from extent
-						return db.none("insert into geodata.legacy (collection_id, metadata_id, name, path, geom) values (" +
+						return db.none("insert into gisdata.legacy (collection_id, metadata_id, name, path, geom) values (" +
 										collectionID + "," +
 										metadataID + "," + 
 										"null," + //TODO: what to use for name?

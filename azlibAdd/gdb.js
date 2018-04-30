@@ -96,7 +96,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 
 	}).catch(error => {console.log(error);return Promise.reject(error);})
 	.then(() => {
-		return require("./metadata").upload(dir, "geodata", collectionID, db);
+		return require("./metadata").upload(dir, "gisdata", collectionID, db);
 	});
 
 

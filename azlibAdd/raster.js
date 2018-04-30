@@ -1,5 +1,5 @@
 exports.upload = (rootDir, intermediateDir, collectionID, db) => {
-	console.log("processing raster geodata");
+	console.log("processing raster gisdata");
 
 	//const srid = 4326;
 
@@ -26,7 +26,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 
 
 	//First process metadata, keeping track of filename-ID mapping
-	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "geodata", collectionID, db)
+	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db)
 	.then((metadataIDs) => {
 	
 		//strip away prefix and filetype from metadata ID mappings. Only interested in name
@@ -77,8 +77,8 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 
 				return db.tx(t => { //do insert-update inside a transaction
 
-					//return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a geodata.rasters -f raster')
-					return exec('raster2pgsql -I -C -M "' + dir + '/' + file + '" -a geodata.rasters -f raster -t ' + tileSize)
+					//return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a gisdata.rasters -f raster')
+					return exec('raster2pgsql -I -C -M "' + dir + '/' + file + '" -a gisdata.rasters -f raster -t ' + tileSize)
 					.catch((stderr) => {
 						console.log("Problem importing raster"); console.log(stderr);
 						throw new Error(stderr);
@@ -89,7 +89,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 						//A little cleaning on the sql we got from raster2pgsql so that we can run it in a transaction with the update below
 						const insert = t.multi(stdout.stdout.replace("VACUUM", "--VACUUM").replace("BEGIN;", "").replace("END;","")).catch(err => {console.log("oh no!");console.log(err);});
 
-						const update = t.none("update geodata.rasters set " +
+						const update = t.none("update gisdata.rasters set " +
 							"collection_id = " + collectionID + 
 							", metadata_id = " + metadataID + 
 							", srid = " + srid +
