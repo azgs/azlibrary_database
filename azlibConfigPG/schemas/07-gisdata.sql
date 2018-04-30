@@ -1,6 +1,6 @@
-CREATE SCHEMA geodata;
+CREATE SCHEMA gisdata;
 
-CREATE TABLE geodata.metadata
+CREATE TABLE gisdata.metadata
 (
 	metadata_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id) not null, 
@@ -9,21 +9,21 @@ CREATE TABLE geodata.metadata
 	metadata_file text not null
 );
 
-CREATE TABLE geodata.legacy
+CREATE TABLE gisdata.legacy
 (
 	legacy_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id), 
-    metadata_id integer REFERENCES geodata.metadata(metadata_id),
+    metadata_id integer REFERENCES gisdata.metadata(metadata_id),
 	name text,
 	path text,
 	geom geometry
 );
 
-create table geodata.rasters
+create table gisdata.rasters
 (
 	raster_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id),
-    metadata_id integer REFERENCES geodata.metadata(metadata_id),
+    metadata_id integer REFERENCES gisdata.metadata(metadata_id),
 	raster raster,
 	srid integer, 
 	tile_size text
