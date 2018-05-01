@@ -58,7 +58,7 @@ The source directory must be in the following layout (note: this is still evolvi
 	|	|	|
 	|	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|	|
-	|	|-- <TBD>
+	|	|-- [<name>[.<extension>]]*5 (0..N)
 	|	
 	|-- [documents]
 	|	|
@@ -92,7 +92,7 @@ The source directory must be in the following layout (note: this is still evolvi
 	|	|
 	|	|-- [<name>.tiff or <name>.tif] (0..N)
 	|
-	|--geodata
+	|--gisdata
 		|
 		|--	[metadata]
 		|	|
@@ -122,7 +122,7 @@ The source directory must be in the following layout (note: this is still evolvi
 		|	|
 		|	|-- [<name>.tiff or <name>.tif] (1..N)
 		|
-		|-- [<schema name>]
+		|-- [<schema name>]*6
 			|
 			|--	[metadata]
 			|	|
@@ -136,7 +136,8 @@ The source directory must be in the following layout (note: this is still evolvi
 *2 If metadata is associated with a specific file, <name> should correspond to a that file (sans extension) in the directory.
 *3 Other legacy formats may work. If format is recognized, software will attempt to determine a bounding box around the data and store this in the db		
 *4 If metadata is associated with a specific geodatabase, <name> should correspond to a gdb subdirectory (sans extension) in the directory.
-
+*5 Notes is basically a garbage can for stuff that doesn't fit elsewhere. As such, any type of file could be here. We only store the path in the db.
+*6 This is for geodatabases only. The schema name must be created manually and must already exist in the db prior to running this script.
 
 
 
