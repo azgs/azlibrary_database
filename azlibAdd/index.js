@@ -65,7 +65,7 @@ promise.then((password) => {
 	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
 	db = pgp(cn);
 	const collectionsInsert = 
-		"insert into public.collections (azgs_path) values ($$" + dsPath + "$$) returning collection_id";
+		"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (args.private ? true : false) + ") returning collection_id";
 	//console.log(collectionsInsert);
 	//TODO: Do we want to allow updates to a collection?
 	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
