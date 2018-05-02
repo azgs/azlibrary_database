@@ -12,6 +12,7 @@
   "author": "Douglas Meredith",
   "license": "Apache-2.0",
   "dependencies": {
+    "commander": "^2.15.1",
     "gdal": "^0.9.6",
     "mammoth": "^1.4.5",
     "ogr2ogr": "^1.2.1",

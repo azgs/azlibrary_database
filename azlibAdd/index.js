@@ -3,14 +3,30 @@
 //TODO: There's a lot of common code between this tool and the other two. Look into 
 //refactoring into shared modules.
 
-const args = process.argv.slice(2);
+const args = require('commander');
 
-if (args[0] === "--help") {
-	console.log("Usage: azlibAdd source_directory gdb_schema_name db_name db_user [db_password]");
-	return;
-}
+args
+	.version('0.0.1')
+	.option('-s, --source <source>', 'Source directory of the collection(s). Required')
+	.option('-d, --dbname <dbname>', 'DB name. Required')
+	.option('-u, --username <username>', 'DB username. Required')
+	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
+	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
+	.option('-P, --private', 'Indicates if this is a private collection.')
+	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
+	.parse(process.argv);
 
-const datasetName = args[0].split("/").pop(); //The last element in the path
+/*
+console.log("source = " + args.source);
+console.log("dbname = " + args.dbname);
+console.log("username = " + args.username);
+console.log("password = " + args.password);
+console.log("gdb schema = " + args.gdbschema);
+console.log("private = " + args.private);
+console.log("repeat = " + args.repeat);
+*/
+
+const datasetName = args.source.split("/").pop(); //The last element in the path
 
 const pgp = require("pg-promise")({
 	 //Initialization Options
@@ -22,7 +38,7 @@ let uploadID;
 
 // get password sorted
 let promise = new Promise((resolve) => {
-	if (args.length === 4) {
+	if (!args.password) {
 		const prompt = require('prompt');
 	  	prompt.message = "";
 	  	prompt.delimiter = "";
@@ -35,45 +51,18 @@ let promise = new Promise((resolve) => {
 			resolve(result['postgres password']);
 		});
 	} else {
-		resolve(args[4]);
+		resolve(args.password);
 	}
 });
 
 
 promise.then((password) => {
-/*
-	args[4] = password;
 
-	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
-	db = pgp(cn);
+	args.password = password;
 
-	//TODO: This filename will need to be mandated by the dir structure definition
-	//TODO: In fact, we'll probably want a format validation module here to go through the whole directory
-	const metadata = require(process.cwd() + "/" + args[0] + "/metadata/" + datasetName + ".json");
-		
-	//First, create a new projects record for this project
-	//TODO: public_id is no longer required by collections, so what to do with this insert?
-	//TODO: Might need to check for existing record first
-	const projectsInsert = 
-		"insert into public.projects (project_name, project_desc) values ($$" +
-		metadata.metadata.idinfo.citation.citeinfo.title + "$$, $$" +
-		metadata.metadata.idinfo.descript.abstract + "$$) returning project_id";
-	//console.log(projectsInsert);
-	return db.one(projectsInsert).catch(error => {throw new Error(error);});
-}).then(data => {
-	console.log("project_id = " + data.project_id);
-*/
-
-	//Next, create a new record in the collections table
-	/*
-	const collectionsInsert = 
-		"insert into public.collections (project_id, azgs_path) values (" +
-		data.project_id + ", $$" +
-		"<path info here>" + "$$) returning collection_id";
-	*/
 	const path = require("path");
-	const dsPath = path.resolve(args[0]);//path.join(process.cwd(), args[0]);
-	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
+	const dsPath = path.resolve(args.source);//path.join(process.cwd(), args[0]);
+	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
 	db = pgp(cn);
 	const collectionsInsert = 
 		"insert into public.collections (azgs_path) values ($$" + dsPath + "$$) returning collection_id";
@@ -93,11 +82,11 @@ promise.then((password) => {
 	uploadID = data.upload_id;
 
 	const promises = [
-		require("./gisdata").upload(args[0], datasetName, collectionID, db, args[2], args[3], args[4]),
-		require("./metadata").upload(args[0], "", "metadata", collectionID, db),
-		require("./notes").upload(args[0], collectionID, db),
-		require("./documents").upload(args[0], collectionID, db),
-		require("./images").upload(args[0], collectionID, db)
+		require("./gisdata").upload(args.source, datasetName, collectionID, db, args.dbname, args.username, args.password),
+		require("./metadata").upload(args.source, "", "metadata", collectionID, db),
+		require("./notes").upload(args.source, collectionID, db),
+		require("./documents").upload(args.source, collectionID, db),
+		require("./images").upload(args.source, collectionID, db)
 	];
 	//return Promise.all(promises).catch(error => {throw new Error(error);})
 	promiseUtil = require("./promise_util");
