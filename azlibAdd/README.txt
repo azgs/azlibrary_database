@@ -48,7 +48,7 @@ The source directory must be in the following layout (note: this is still evolvi
 
 <dir name>
 	|
-	|-- metadata
+	|-- [metadata]
 	|	|
 	|	|-- [<type*1>-<name*2>.xml] (0..N)
 	|
@@ -92,7 +92,7 @@ The source directory must be in the following layout (note: this is still evolvi
 	|	|
 	|	|-- [<name>.tiff or <name>.tif] (0..N)
 	|
-	|--gisdata
+	|--[gisdata]
 		|
 		|--	[metadata]
 		|	|
