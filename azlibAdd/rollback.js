@@ -57,7 +57,7 @@ exports.rollback = (collectionID, db) => {
 		console.log("One or more errors occurred during rollback.");
 		console.log(error);
 		console.log("Manual rollback required for collection_id " + collectionID + ".");
-		//return Promise.resolve();
+		return Promise.reject(error);
 	});
 }
 
