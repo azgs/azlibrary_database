@@ -13,7 +13,8 @@ args
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
-	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
+	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
+	.option('-r, --repeat', '!!Not yet implemented!! Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
 
 /*
@@ -117,7 +118,11 @@ promise.then((password) => {
 		pgp.end();
 	}).catch(error => {console.log(error);});
 }).then(() => {
-	return require("./archiver").archive(args.source);
+	if (args.archive) {
+		return require("./archiver").archive(args.source);
+	} else {
+		return Promise.resolve();
+	}
 }).catch(error => {console.log("Unable to create archive of source directory."); console.log(error)});
 
 
