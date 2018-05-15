@@ -116,7 +116,9 @@ promise.then((password) => {
 		console.log("rollback complete");
 		pgp.end();
 	}).catch(error => {console.log(error);});
-});
+}).then(() => {
+	return require("./archiver").archive(args.source);
+}).catch(error => {console.log("Unable to create archive of source directory."); console.log(error)});
 
 
 
