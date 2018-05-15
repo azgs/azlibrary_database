@@ -13,12 +13,14 @@
   "license": "Apache-2.0",
   "dependencies": {
     "commander": "^2.15.1",
+    "fs-extra": "^6.0.1",
     "gdal": "^0.9.6",
     "mammoth": "^1.4.5",
     "ogr2ogr": "^1.2.1",
     "pdf-parse": "^1.0.8",
     "pg-promise": "^7.5.2",
     "prompt": "^1.0.0",
+    "tar-fs": "^1.16.2",
     "textract": "^2.2.0",
     "word-extractor": "^0.1.4",
     "xml2js": "^0.4.19"
