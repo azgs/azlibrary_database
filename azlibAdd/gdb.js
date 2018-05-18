@@ -29,9 +29,18 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 		console.log(path.join(dir, dirs[0]));
 		//const dataset = gdal.open(process.cwd() + "/" + dir + "/" + dirs[0]);
 		const dataset = gdal.open(path.join(dir, dirs[0]));
+		//const crossSectionLayers = dataset.layers.filter(layer => {
+		//	return layer matchs CS*
+		//});
+		const crossSectionLayers = []; //leveraging a second array off the map below
 		const layers = dataset.layers.map((layer, i) => {
+			if (layer.name.startsWith("CS")) {
+				crossSectionLayers.push(layer.name);
+			}
 			return schemaName + '."' + layer.name + '"';
 		});
+		
+		console.log("$$$$$$$$$$$$$$$$$$$$$$crossSectionLayers = ");console.log(crossSectionLayers);
 
 		//Create list of existing tables for comparison to new gdb content
 		return db.any("select table_name from information_schema.tables where table_schema='" +  schemaName + "'")	
@@ -41,6 +50,20 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				return schemaName + '."' + table.table_name + '"';
 			});
 			//console.log("existing tables"); console.log(existingTables);
+
+			//find any new tables brought in with this gdb
+			const newTables = layers.reduce((acc, layer) => {
+				if (!existingTables.includes(layer)) {
+					acc.push(layer);
+				}
+				return acc;
+			}, []);
+			console.log("new tables"); console.log(newTables);
+			
+			if (newTables.length > 0) {
+				//uncomment the following line when the setup gdb contains *all* expected layers
+				//throw new Error("Unrecognized tables detected");
+			}
 
 			const ogr2ogr = require('ogr2ogr');
 
@@ -59,8 +82,9 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				});
 			});
 			return ogrPromise.catch(error => {throw new Error(error);});
-		}).then(() => {
-
+		})
+		//get rid of this then once the setup gdb contains *all* expected tables
+		.then(() => {
 			//find any new tables brought in with this gdb
 			const newTables = layers.reduce((acc, layer) => {
 				if (!existingTables.includes(layer)) {
@@ -69,6 +93,24 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				return acc;
 			}, []);
 			console.log("new tables"); console.log(newTables);
+			
+			/*
+			if (newTables.length === 0) {
+				return Promise.resolve();
+			} else {
+				const newTablePromises = newTables.map(table => {
+					//console.log(table);
+					return db.none('drop table ' + table)
+					.then(() => {
+						console.log("successfully dropped new table " + table)
+					})
+					.catch(error => {throw new Error(error);});
+				});               
+				return Promise.all(newTablePromises).then(() => {
+					throw new Error("Unrecognized tables detected.");
+				}).catch(error => {throw new Error(error);});
+			}
+			*/
 
 			//add collection_id column to each new table
 			const newTablePromises = newTables.map(table => {
@@ -80,6 +122,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				.catch(error => {throw new Error(error);});
 			});               
 			return Promise.all(newTablePromises).catch(error => {throw new Error(error);});
+		
 		}).then (() => {
 			//Set collection_id in each record that has a null
 			//TODO: This approach is a little janky
