@@ -89,6 +89,18 @@ promise.then((password) => {
 
 	return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 }).then(() => {
+	//TODO: Kind of cheesy to have to do this to get path to this folder. Is there a better way?
+	let pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
+
+	//TODO: This cs.sql only applies to ncgmp09. Make this file an input param.
+	const file = pgp.QueryFile(pathToMe + '/' + args[1] + '.sql', {minify: true});
+
+	return db.none(file).catch(error => {
+		console.log("Problem processing cs file: ");console.log(error); 
+		throw new Error(error);
+	});
+	
+}).then(() => {
 	console.log("collection_id successfully added to all tables");
 	pgp.end();
 })
