@@ -12,6 +12,7 @@
         "azlibConfigGDB": "./index.js"
     },
     "dependencies": {
+        "commander": "^2.15.1",
         "gdal": "^0.9.6",
         "global-modules-path": "^2.1.0",
         "ogr2ogr": "^1.2.1",

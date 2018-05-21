@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 
-const args = process.argv.slice(2);
 
-if (args[0] === "--help") {
-	console.log("Usage: azlibConfigGDB source_gdb_directory schema_name db_name db_user [db_password]");
-	return;
-}
+global.args = require('commander');
+
+args
+	.version('0.0.1')
+	.option('-s, --source <source>', 'Source directory of the gdb. Required')
+	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required')
+	.option('-d, --dbname <dbname>', 'DB name. Required')
+	.option('-u, --username <username>', 'DB username. Required')
+	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
+	.parse(process.argv);
 
 const pgp = require("pg-promise")({
 	// Initialization Options
@@ -15,9 +20,9 @@ let db;
 const ogr2ogr = require('ogr2ogr');
 
 const gdal = require("gdal");
-const dataset = gdal.open(args[0]);
+const dataset = gdal.open(args.source);
 const layers = dataset.layers.map((layer, i) => {
-	return args[1] + '."' + layer.name + '"';
+	return args.gdbschema + '."' + layer.name + '"';
 });
 //console.log(layers);
 //console.log(layers.toString());
@@ -38,28 +43,28 @@ let promise = new Promise((resolve) => {
 			resolve(result['postgres password']);
 		});
 	} else {
-		resolve(args[4]);
+		resolve(args.password);
 	}
 });
 
 
 promise.then((password) => {
-	args[4] = password;
-	//console.log("args[4] = " + args[4]);
+	args.password = password;
+	//console.log("args.password = " + argspassword);
 
-	const cn = 'postgres://' + args[3] + ':' + args[4] + '@localhost:5432/' + args[2];
+	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
 	db = pgp(cn);
 
 	//create schema
-	return db.none('create schema ' + args[1]).catch(error => {throw new Error(error);});
+	return db.none('create schema ' + args.gdbschema).catch(error => {throw new Error(error);});
 }).then(() => { 
 	//fill it with tables from a dummy gdb 
 	//TODO: Move the ogr2ogr call to a module that wraps it in a promise
 	const ogrPromise = new Promise((resolve, reject) => {
-		ogr2ogr(args[0])
+		ogr2ogr(args.source)
 		.format('PostgreSQL')
 		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-gt', 'unlimited'])
-		.destination('PG:host=localhost user=' + args[3] + ' password=' + args[4] + ' dbname=' + args[2] + ' schemas=' + args[1])
+		.destination('PG:host=localhost user=' + args.username + ' password=' + args.password + ' dbname=' + args.dbname + ' schemas=' + args.gdbschema)
 		.exec((error, data) => {
 			if (error) {
 				reject(error);
@@ -70,7 +75,7 @@ promise.then((password) => {
 	});
 	return ogrPromise.catch(error => {throw new Error(error);});
 }).then((data) => {
-	return db.none('set search_path to ' + args[1]).catch(error => {throw new Error(error);}); //TODO: not sure this is necessary
+	return db.none('set search_path to ' + args.gdbschema).catch(error => {throw new Error(error);}); //TODO: not sure this is necessary
 }).then(() => {
 	//clear out the data (all we wanted was the tables)
 	return db.none('truncate ' + layers.toString() + ' cascade').catch(error => {throw new Error(error);});
@@ -93,7 +98,7 @@ promise.then((password) => {
 	let pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
 
 	//TODO: This cs.sql only applies to ncgmp09. Make this file an input param.
-	const file = pgp.QueryFile(pathToMe + '/' + args[1] + '.sql', {minify: true});
+	const file = pgp.QueryFile(pathToMe + '/' + args.gdbschema + '.sql', {minify: true});
 
 	return db.none(file).catch(error => {
 		console.log("Problem processing cs file: ");console.log(error); 
