@@ -35,11 +35,12 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 		const crossSectionLayers = []; //leveraging a second array off the map below
 		const layers = dataset.layers.map((layer, i) => {
 			if (layer.name.startsWith("CS")) {
-				crossSectionLayers.push(layer.name);
+				crossSectionLayers.push(schemaName + '."' + layer.name + '"');
+				//crossSectionLayers.push(layer.name);
 			}
 			return schemaName + '."' + layer.name + '"';
 		});
-		
+		//crossSectionLayers.push('ncgmp09."OrientationDataPointsAnno"');
 		console.log("$$$$$$$$$$$$$$$$$$$$$$crossSectionLayers = ");console.log(crossSectionLayers);
 
 		//Create list of existing tables for comparison to new gdb content
@@ -52,17 +53,13 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 			//console.log("existing tables"); console.log(existingTables);
 
 			//find any new tables brought in with this gdb
-			const newTables = layers.reduce((acc, layer) => {
-				if (!existingTables.includes(layer)) {
-					acc.push(layer);
-				}
-				return acc;
-			}, []);
+			const newTables = layers.filter(layer => {
+				return(!existingTables.includes(layer) && !crossSectionLayers.includes(layer));
+			});
 			console.log("new tables"); console.log(newTables);
 			
-			if (newTables.length > 0) {
-				//uncomment the following line when the setup gdb contains *all* expected layers
-				//throw new Error("Unrecognized tables detected");
+			if (!args.unrecOK && newTables.length > 0) {
+				throw new Error("Unrecognized tables detected");
 			}
 
 			const ogr2ogr = require('ogr2ogr');
@@ -82,9 +79,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				});
 			});
 			return ogrPromise.catch(error => {throw new Error(error);});
-		})
-		//get rid of this then once the setup gdb contains *all* expected tables
-		.then(() => {
+		}).then(() => {
 			//find any new tables brought in with this gdb
 			const newTables = layers.reduce((acc, layer) => {
 				if (!existingTables.includes(layer)) {
@@ -124,10 +119,102 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 			return Promise.all(newTablePromises).catch(error => {throw new Error(error);});
 		
 		}).then (() => {
+			//return Promise.resolve();
+			const csPromises = crossSectionLayers.map(layer => {
+				const cs = layer.split('.')[1].substr(1,3);
+				console.log(">>>>>>>>>>>>>>>>>>>>>>>cs = " + cs);
+				return db.one("select cross_section_id from " + schemaName + ".cross_sections where cross_section_prefix = '" + cs + "'")
+				.catch(error => {
+					console.log("Problem with cross section " + cs + ":");console.log(error);
+					throw new Error(error);
+				})				
+				.then(data => {
+					console.log("data = ");console.log(data);
+					return Promise.resolve(data.cross_section_id);
+				}).then(id => {
+					console.log("id = " + id);
+					//copy data
+					const tableName = "cs_" + layer.split('.')[1].slice(4).split('"')[0].toLowerCase();
+					console.log(">>>>>>>>>>>>>>>>>> tableName = " + tableName);
+					return db.one("select table_name from information_schema.tables where table_schema='" +  schemaName + "' and table_name='" + tableName + "'")
+					.catch(error => {
+						console.log("Unrecognized cross section table.")
+						throw new Error("Unrecognized cross section table.");
+					})
+					/*	
+					I dunno, this seems like a pain. So, I'm throwing the error above until somebody says different.		
+					return db.oneorNone("select table_name from information_schema.tables where table_schema='" +  schemaName + "' and table_name='" + tableName + "'")
+					.then(data => {
+						if (data !== null) {
+							return Promise.resolve();
+						} else {
+							return db.none("create table " + tableName + " (like " + layer + " including defaults including constraints including indexes)")
+							.then(() => {
+								return db.none('alter table ' + layer + ' add column collection_id integer references public.collections (collection_id)')
+							})
+						}
+					})
+					*/
+					.then(() => {
+						//let l = layer.split('.')[1]; console.log(l);
+						//const lsp = l.split('"'); console.log(lsp);
+						const s = "select column_name from information_schema.columns where table_schema = '" + schemaName + "' and table_name = '" + layer.split('.')[1].split('"')[1] + "'"
+						console.log(s);
+						return db.any(s)
+						.then(data => {
+							console.log("column name data = ");console.log(data);
+							const sourceColumns = data.map(datum => {
+								return '"' + datum.column_name + '"';
+							});
+							const destColumns = sourceColumns.map(column => {
+								if (column.startsWith('"CS')) {
+									console.log("starts with CS "); console.log(column.slice(4));
+									return '"' + column.slice(4);
+								} else {
+									console.log("does not start with CS");
+									return column;
+								}
+							});
+							//columns.shift();
+							console.log("sourceColumns = ");console.log(sourceColumns);
+							console.log("destColumns = ");console.log(destColumns);
+							const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ") select " + id + ", " + sourceColumns.toString() + " from " + layer;
+							//const q = "insert into " + schemaName + "." + tableName + " select " + id + " as cross_section_id, " + columns.toString() + " from " + layer;
+							console.log("insert = " + q);
+							return db.none(q).catch(error => {console.log("wth");console.log(error);throw new Error(error);});
+						})						
+						.catch(error => {
+							console.log("Problem copying data from cross section table " + layer);
+							console.log(error);
+							throw new Error(error);
+						});
+						/*
+						return db.none("insert into " + schemaName + "." + tableName + " select *, " + id + " as cross_section_id from " + layer)
+						.catch(error => {
+							console.log("Problem copying data from cross section table " + layer);
+							console.log(error);
+							throw new Error(error);
+						});
+						*/
+					})	
+				}).then(id => {
+					return db.none("drop table " + layer)
+					.catch(error => {
+						console.log("Problem dropping cross section table " + layer);console.log(error);
+						throw new Error(error);
+					});
+				});
+			});
+			return Promise.all(csPromises).catch(error => {throw new Error(error);});
+
+		}).then (() => {
 			//Set collection_id in each record that has a null
 			//TODO: This approach is a little janky
 			const cidPromises = layers.map((layer, i) => {
 				//console.log("layer = " + layer);
+				if (layer.split('.')[1].startsWith('"CS')) {
+					return Promise.resolve();
+				}
 				return db.none("update " + layer + 
 					" set collection_id = " + collectionID +
 					" where collection_id is null")

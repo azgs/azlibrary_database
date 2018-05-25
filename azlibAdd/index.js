@@ -3,7 +3,7 @@
 //TODO: There's a lot of common code between this tool and the other two. Look into 
 //refactoring into shared modules.
 
-const args = require('commander');
+global.args = require('commander');
 
 args
 	.version('0.0.1')
@@ -14,6 +14,7 @@ args
 	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
 	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
+	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-r, --repeat', '!!Not yet implemented!! Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
 
