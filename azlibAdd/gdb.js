@@ -15,7 +15,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 		dirs = dirs.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "GDB"); 
 		console.log("dirs = ");console.log(dirs);
 
-		if (dir.length === 0) {
+		if (dirs.length === 0) {
 			return Promise.reject("No gdb directory found");
 		} else if (dirs.length > 1) {
 			return Promise.reject("Only one gdb directory allowed");
@@ -23,24 +23,21 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 
 		//Process gdb directory
 		let existingTables;
+		let newTables;
 		//Create list of layers in new gdb
 		const gdal = require("gdal");
 		//console.log(process.cwd() + "/" + dir + "/" + dirs[0]);
 		console.log(path.join(dir, dirs[0]));
 		//const dataset = gdal.open(process.cwd() + "/" + dir + "/" + dirs[0]);
 		const dataset = gdal.open(path.join(dir, dirs[0]));
-		//const crossSectionLayers = dataset.layers.filter(layer => {
-		//	return layer matchs CS*
-		//});
+		//TODO: Cross sections are specific to ncgmp09 and gems. Unused otherwise. Maybe reencapsulate?
 		const crossSectionLayers = []; //leveraging a second array off the map below
 		const layers = dataset.layers.map((layer, i) => {
 			if (layer.name.startsWith("CS")) {
 				crossSectionLayers.push(schemaName + '."' + layer.name + '"');
-				//crossSectionLayers.push(layer.name);
 			}
 			return schemaName + '."' + layer.name + '"';
 		});
-		//crossSectionLayers.push('ncgmp09."OrientationDataPointsAnno"');
 		console.log("$$$$$$$$$$$$$$$$$$$$$$crossSectionLayers = ");console.log(crossSectionLayers);
 
 		//Create list of existing tables for comparison to new gdb content
@@ -53,7 +50,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 			//console.log("existing tables"); console.log(existingTables);
 
 			//find any new tables brought in with this gdb
-			const newTables = layers.filter(layer => {
+			newTables = layers.filter(layer => {
 				return(!existingTables.includes(layer) && !crossSectionLayers.includes(layer));
 			});
 			console.log("new tables"); console.log(newTables);
@@ -79,34 +76,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				});
 			});
 			return ogrPromise.catch(error => {throw new Error(error);});
-		}).then(() => {
-			//find any new tables brought in with this gdb
-			const newTables = layers.reduce((acc, layer) => {
-				if (!existingTables.includes(layer)) {
-					acc.push(layer);
-				}
-				return acc;
-			}, []);
-			console.log("new tables"); console.log(newTables);
-			
-			/*
-			if (newTables.length === 0) {
-				return Promise.resolve();
-			} else {
-				const newTablePromises = newTables.map(table => {
-					//console.log(table);
-					return db.none('drop table ' + table)
-					.then(() => {
-						console.log("successfully dropped new table " + table)
-					})
-					.catch(error => {throw new Error(error);});
-				});               
-				return Promise.all(newTablePromises).then(() => {
-					throw new Error("Unrecognized tables detected.");
-				}).catch(error => {throw new Error(error);});
-			}
-			*/
-
+		}).then(() => {			
 			//add collection_id column to each new table
 			const newTablePromises = newTables.map(table => {
 				//console.log(table);
@@ -119,8 +89,9 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 			return Promise.all(newTablePromises).catch(error => {throw new Error(error);});
 		
 		}).then (() => {
-			//return Promise.resolve();
+			//handle each cross section table
 			const csPromises = crossSectionLayers.map(layer => {
+				//fetch cross section id based on cross section letter (a, b, c...)
 				const cs = layer.split('.')[1].substr(1,3);
 				console.log(">>>>>>>>>>>>>>>>>>>>>>>cs = " + cs);
 				return db.one("select cross_section_id from " + schemaName + ".cross_sections where cross_section_prefix = '" + cs + "'")
@@ -129,13 +100,13 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 					throw new Error(error);
 				})				
 				.then(data => {
-					console.log("data = ");console.log(data);
-					return Promise.resolve(data.cross_section_id);
-				}).then(id => {
+					const id = data.cross_section_id				
 					console.log("id = " + id);
-					//copy data
+
 					const tableName = "cs_" + layer.split('.')[1].slice(4).split('"')[0].toLowerCase();
 					console.log(">>>>>>>>>>>>>>>>>> tableName = " + tableName);
+					
+					//Verify that we have a cs_ table for this cross section layer				
 					return db.one("select table_name from information_schema.tables where table_schema='" +  schemaName + "' and table_name='" + tableName + "'")
 					.catch(error => {
 						console.log("Unrecognized cross section table.")
@@ -156,8 +127,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 					})
 					*/
 					.then(() => {
-						//let l = layer.split('.')[1]; console.log(l);
-						//const lsp = l.split('"'); console.log(lsp);
+						//get list of columns in source table	
 						const s = "select column_name from information_schema.columns where table_schema = '" + schemaName + "' and table_name = '" + layer.split('.')[1].split('"')[1] + "'"
 						console.log(s);
 						return db.any(s)
@@ -166,6 +136,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 							const sourceColumns = data.map(datum => {
 								return '"' + datum.column_name + '"';
 							});
+							//create list of columns in our destination table
 							const destColumns = sourceColumns.map(column => {
 								if (column.startsWith('"CS')) {
 									console.log("starts with CS "); console.log(column.slice(4));
@@ -175,27 +146,19 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 									return column;
 								}
 							});
-							//columns.shift();
 							console.log("sourceColumns = ");console.log(sourceColumns);
 							console.log("destColumns = ");console.log(destColumns);
+							
+							//copy data from source cross section table into our corresponding cs_ table, adding our cross section id.
 							const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ") select " + id + ", " + sourceColumns.toString() + " from " + layer;
-							//const q = "insert into " + schemaName + "." + tableName + " select " + id + " as cross_section_id, " + columns.toString() + " from " + layer;
 							console.log("insert = " + q);
-							return db.none(q).catch(error => {console.log("wth");console.log(error);throw new Error(error);});
+							return db.none(q).catch(error => {console.log("Problem copying data");console.log(error);throw new Error(error);});
 						})						
 						.catch(error => {
 							console.log("Problem copying data from cross section table " + layer);
 							console.log(error);
 							throw new Error(error);
 						});
-						/*
-						return db.none("insert into " + schemaName + "." + tableName + " select *, " + id + " as cross_section_id from " + layer)
-						.catch(error => {
-							console.log("Problem copying data from cross section table " + layer);
-							console.log(error);
-							throw new Error(error);
-						});
-						*/
 					})	
 				}).then(id => {
 					return db.none("drop table " + layer)
