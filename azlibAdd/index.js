@@ -11,7 +11,7 @@ args
 	.option('-d, --dbname <dbname>', 'DB name. Required')
 	.option('-u, --username <username>', 'DB username. Required')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
-	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
+	//.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
 	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
