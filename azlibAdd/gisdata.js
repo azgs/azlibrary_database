@@ -1,4 +1,4 @@
-exports.upload = (rootDir, datasetName, collectionID, db, dbName, user, password) => {
+exports.upload = (rootDir, datasetName, collectionID, db) => {
 	console.log("processing gisdata");
 
 	const path = require('path');
@@ -26,8 +26,11 @@ exports.upload = (rootDir, datasetName, collectionID, db, dbName, user, password
 			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "raster") {
 			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
-		} else {
-			return require("./gdb").upload(dir, thisDir, collectionID, db, dbName, user, password);
+		} else if (thisDir.toLowerCase() === "ncgmp09") {
+			return require("./ncgmp09").upload(dir, thisDir, collectionID, db);
+		} else { //TODO: Is this the proper action here?
+			console.log("WARNING: Unrecognized gis directory");
+			return Promise.resolve();
 		}
 	});
 

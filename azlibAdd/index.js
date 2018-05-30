@@ -84,7 +84,7 @@ promise.then((password) => {
 	uploadID = data.upload_id;
 
 	const promises = [
-		require("./gisdata").upload(args.source, datasetName, collectionID, db, args.dbname, args.username, args.password),
+		require("./gisdata").upload(args.source, datasetName, collectionID, db),
 		require("./metadata").upload(args.source, "", "metadata", collectionID, db),
 		require("./notes").upload(args.source, collectionID, db),
 		require("./documents").upload(args.source, collectionID, db),

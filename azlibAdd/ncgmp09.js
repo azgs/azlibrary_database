@@ -1,4 +1,4 @@
-exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => {
+exports.upload = (dir, schemaName, collectionID, db) => {
 	console.log("processing gdb");
 
 	//First, verify that schema exists
@@ -66,7 +66,7 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 				ogr2ogr(dir + "/" + dirs[0])
 				.format('PostgreSQL')
 				.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-append'])
-				.destination('PG:host=localhost user=' + user + ' password=' + password + ' dbname=' + dbName + ' schemas=' + schemaName)
+				.destination('PG:host=localhost user=' + args.username + ' password=' + args.password + ' dbname=' + args.dbname + ' schemas=' + schemaName)
 				.exec(function(error, data) {
 					if (error) {
 						reject(error);
@@ -139,10 +139,10 @@ exports.upload = (dir, schemaName, collectionID, db, dbName, user, password) => 
 							//create list of columns in our destination table
 							const destColumns = sourceColumns.map(column => {
 								if (column.startsWith('"CS')) {
-									console.log("starts with CS "); console.log(column.slice(4));
+									//console.log("starts with CS "); console.log(column.slice(4));
 									return '"' + column.slice(4);
 								} else {
-									console.log("does not start with CS");
+									//console.log("does not start with CS");
 									return column;
 								}
 							});
