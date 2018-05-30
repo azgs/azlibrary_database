@@ -6,7 +6,7 @@ global.args = require('commander');
 args
 	.version('0.0.1')
 	.option('-s, --source <source>', 'Source directory of the gdb. Required')
-	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required')
+	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. If a recognized schema name (e.g. ncgmp09, gems), schema will be prepped accordingly. Required')
 	.option('-d, --dbname <dbname>', 'DB name. Required')
 	.option('-u, --username <username>', 'DB username. Required')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
@@ -94,17 +94,20 @@ promise.then((password) => {
 
 	return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 }).then(() => {
-	//TODO: Kind of cheesy to have to do this to get path to this folder. Is there a better way?
-	let pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
+	//TODO: Currently using the same template for ncgmp09 and gems. This is not accurate and will change in the future.
+	if (args.gdbschema.toLowerCase() === "ncgmp09" || args.gdbschema.toLowerCase() === "gems") {
+		//TODO: Kind of cheesy to have to do this to get path to this folder. Is there a better way?
+		let pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
 
-	//TODO: This cs.sql only applies to ncgmp09. Make this file an input param.
-	const file = pgp.QueryFile(pathToMe + '/' + args.gdbschema + '.sql', {minify: true});
+		const file = pgp.QueryFile(pathToMe + '/ncgmp09.sql', {minify: true});
 
-	return db.none(file).catch(error => {
-		console.log("Problem processing cs file: ");console.log(error); 
-		throw new Error(error);
-	});
-	
+		return db.none(file).catch(error => {
+			console.log("Problem processing ncgmp09 template: ");console.log(error); 
+			throw new Error(error);
+		});
+	} else {
+		return Promise.resolve();
+	}
 }).then(() => {
 	console.log("collection_id successfully added to all tables");
 	pgp.end();
