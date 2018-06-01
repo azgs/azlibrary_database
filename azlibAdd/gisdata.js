@@ -26,11 +26,10 @@ exports.upload = (rootDir, datasetName, collectionID, db) => {
 			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "raster") {
 			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
-		} else if (thisDir.toLowerCase() === "ncgmp09") {
-			return require("./ncgmp09").upload(dir, thisDir, collectionID, db);
-		} else { //TODO: Is this the proper action here?
-			console.log("WARNING: Unrecognized gis directory");
-			return Promise.resolve();
+		//} else if (thisDir.toLowerCase() === "ncgmp09") {
+		//	return require("./ncgmp09").upload(dir, thisDir, collectionID, db);
+		} else { //All other dirs are assumed to be flavors of gdb. The gdb handler will sort them out
+			return require("./gdb").upload(dir, thisDir, collectionID, db);
 		}
 	});
 
@@ -44,6 +43,7 @@ exports.upload = (rootDir, datasetName, collectionID, db) => {
 	});
 
 }
+
 
 
 
