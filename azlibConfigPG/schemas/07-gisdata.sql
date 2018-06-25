@@ -30,5 +30,12 @@ create table gisdata.rasters
 	
 );
 
+CREATE TABLE gisdata.raster_types (
+	type_name text PRIMARY KEY
+);
+insert into gisdata.raster_types (type_name) values ('TIF');
+insert into gisdata.raster_types (type_name) values ('TIFF');
+
+
 
 
