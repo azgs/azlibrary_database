@@ -21,7 +21,7 @@ exports.upload = (rootDir, collectionID, db) => {
 	//files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
 	files = files.filter(file => {
 		const suffix = file.split('.')[file.split('.').length-1].toUpperCase();
-		return (suffix === "PDF" || suffix === "DOC" || suffix === "DOCX" || suffix === "TXT" || suffix === "RTF");
+		return global.documentTypes.includes(suffix);
 	}); 
 
 	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "documents", collectionID, db)
