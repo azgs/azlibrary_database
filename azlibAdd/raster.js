@@ -21,7 +21,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 	//only interested in raster file types
 	files = files.filter(file => {
 		const ft = file.split('.')[file.split('.').length-1].toUpperCase();
-		return (ft === "TIFF" || ft === "TIF" /*|| ft === "NC"*/); //TODO: Indications are that netcdf is not supported by raster2pgsql (http://lists.osgeo.org/pipermail/postgis-users/2014-March/038765.html)
+		return global.rasterTypes.includes(ft);
 	});
 
 
