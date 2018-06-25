@@ -39,7 +39,7 @@ let collectionID;
 let uploadID;
 
 // get password sorted
-let promise = new Promise((resolve) => {
+let pwPromise = new Promise((resolve) => {
 	if (!args.password) {
 		const prompt = require('prompt');
 	  	prompt.message = "";
@@ -57,15 +57,18 @@ let promise = new Promise((resolve) => {
 	}
 });
 
+const path = require("path");
+let dsPath = path.resolve(args.source);//path.join(process.cwd(), args[0]);;
 
-promise.then((password) => {
+pwPromise.then((password) => {
 
 	args.password = password;
 
-	const path = require("path");
-	const dsPath = path.resolve(args.source);//path.join(process.cwd(), args[0]);
 	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
 	db = pgp(cn);
+
+	return require("./config").load(db)
+}).then(() => {
 	const collectionsInsert = 
 		"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (args.private ? true : false) + ") returning collection_id";
 	//console.log(collectionsInsert);
