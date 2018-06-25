@@ -23,4 +23,12 @@ CREATE TABLE documents.documents (
 );
 CREATE INDEX ts_idx ON documents.documents USING gin(text_search);
 
+CREATE TABLE documents.types (
+	type_name text PRIMARY KEY
+);
+insert into documents.types (type_name) values ('PDF');
+insert into documents.types (type_name) values ('DOC');
+insert into documents.types (type_name) values ('DOCX');
+insert into documents.types (type_name) values ('TXT');
+insert into documents.types (type_name) values ('RTF');
 
