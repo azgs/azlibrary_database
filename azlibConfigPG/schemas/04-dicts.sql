@@ -108,15 +108,15 @@ CREATE INDEX arizona_places_geom_idx ON dicts.arizona_places USING gist (geom);
 
 
 
-COPY dicts.minerals FROM PROGRAM 'curl "https://macrostrat.org/api/v2/defs/minerals?all&format=csv"' WITH CSV HEADER;
+COPY dicts.minerals  FROM PROGRAM 'curl  "https://macrostrat.org/api/v2/defs/minerals?all&format=csv" | csvtool namedcol mineral_id,mineral,mineral_type,formula,formula_tags,url - ' WITH CSV HEADER;
 
-COPY dicts.lithologies FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/lithologies?all&format=csv"' WITH CSV HEADER;
+COPY dicts.lithologies  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/lithologies?all&format=csv" | csvtool namedcol lith_id,name,type,group,class,color,fill,t_units - ' WITH CSV HEADER;
 
-COPY dicts.intervals FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/intervals?all&format=csv"' WITH CSV HEADER;
+COPY dicts.intervals  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/intervals?all&format=csv" | csvtool namedcol int_id,name,abbrev,t_age,b_age,int_type,timescales,color - ' WITH CSV HEADER;
 
-COPY dicts.lith_attr FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/lithology_attributes?all&format=csv"' WITH CSV HEADER;
+COPY dicts.lith_attr  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/lithology_attributes?all&format=csv" | csvtool namedcol lith_att_id,name,type,t_units - ' WITH CSV HEADER;
 
-COPY dicts.environments FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/environments?all&format=csv"' WITH CSV HEADER;
+COPY dicts.environments  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/environments?all&format=csv" | csvtool namedcol environ_id,name,type,class,color,t_units - ' WITH CSV HEADER;
 
-COPY dicts.grainsize FROM PROGRAM 'curl "https://macrostrat.org/api/V2/defs/grainsizes?all&format=csv"' WITH CSV HEADER;
+COPY dicts.grainsize  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/grainsizes?all&format=csv" | csvtool namedcol grain_id,grain_symbol,grain_name,grain_group,soil_group,min_size,max_size,classification - ' WITH CSV HEADER;
 
