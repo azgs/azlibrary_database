@@ -1,8 +1,8 @@
---Create the projects table. This table is for defining the overarching funding/project that a set of data collections were collected under - e.g, StateMap 2017, NGGDP 2018. All collections must be associated with a project. For older collections belonging to an unknown project, use "unknown legacy project"
-CREATE TABLE projects (
-	project_id serial PRIMARY KEY,
-	project_name text NOT NULL,
-	project_desc text NOT NULL
+--Create the collection_groups table. This table is for defining the overarching funding/project that a set of data collections were collected under - e.g, StateMap 2017, NGGDP 2018. All collections must be associated with a collection_group. For older collections belonging to an unknown project, use "unknown legacy project"
+CREATE TABLE collection_groups (
+	collection_group_id serial PRIMARY KEY,
+	collection_group_name text NOT NULL,
+	collection_group_desc text NOT NULL
 );
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.
@@ -23,7 +23,7 @@ CREATE TABLE publications (
 CREATE TABLE collections (
 	collection_id serial PRIMARY KEY, 
 	private boolean not null default false,
-	project_id integer REFERENCES projects(project_id),
+	collection_group_id integer REFERENCES collection_groups(collection_group_id),
 	publication_id integer UNIQUE REFERENCES publications(publication_id), -- Unique because collection_id is synonymous with publication_id, but not all collections may have publication_id
 	formal_name text UNIQUE,
 	informal_name text,
