@@ -132,7 +132,7 @@ The source directory must be in the following layout (note: this is still evolvi
 
 
 
-*1 type = "FGDC" or "ISO19139"
+*1 type = "FGDC", "ISO19139", or "ISO19115"
 *2 If metadata is associated with a specific file, <name> should correspond to a that file (sans extension) in the directory.
 *3 Other legacy formats may work. If format is recognized, software will attempt to determine a bounding box around the data and store this in the db		
 *4 If metadata is associated with a specific geodatabase, <name> should correspond to a gdb subdirectory (sans extension) in the directory.
