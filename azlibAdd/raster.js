@@ -1,22 +1,25 @@
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
 exports.upload = (rootDir, intermediateDir, collectionID, db) => {
-	console.log("processing raster gisdata");
+	logger.debug("enter");
 
 	//const srid = 4326;
 
-	const path = require('path');
+	//const path = require('path');
 
 	const myDir = "raster";
 	const dir = path.join(rootDir, intermediateDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
-		console.log("No raster directory found");
+		logger.warn("No raster directory found");
 		return Promise.resolve();
 	}
 
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	let files = listFiles(dir);
-	console.log("files = "); console.log(files);
+	logger.silly("files = " + global.pp(files));
 
 	//only interested in raster file types
 	files = files.filter(file => {
@@ -37,7 +40,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 
 		//Process each raster file
 		const promises = files.map((file) => {
-			console.log("processing raster file " + file);
+			logger.silly("processing raster file " + file);
 
 			//Find metadata id that corresponds to this file
 			let metadataID = metadataIDs.reduce((id, mID) => {
@@ -47,9 +50,9 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 					return id;
 				}
 			}, null);
-			console.log("metadataID = " + metadataID);
+			logger.silly("metadataID = " + metadataID);
 			if (metadataID === null) {
-				console.log("WARNING: No metadata file found for raster file " + file);
+				logger.warn("No metadata file found for raster file " + file);
 			}
 
 			const gdal = require("gdal");
@@ -73,14 +76,14 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 			return db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + srs + "')")
 			.then((data) => {
 				const srid = (data === null ? null : data.srid);
-				console.log("srid = " + srid);
+				logger.silly("srid = " + srid);
 
 				return db.tx(t => { //do insert-update inside a transaction
 
 					//return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a gisdata.rasters -f raster')
 					return exec('raster2pgsql -I -C -M "' + dir + '/' + file + '" -a gisdata.rasters -f raster -t ' + tileSize)
 					.catch((stderr) => {
-						console.log("Problem importing raster"); console.log(stderr);
+						logger.error("Problem importing raster"); logger.error(stderr);
 						throw new Error(stderr);
 					})
 					.then((stdout) => {
@@ -94,13 +97,13 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 							", metadata_id = " + metadataID + 
 							", srid = " + srid +
 							", tile_size = '" + tileSize + "'" +
-							" where collection_id is null").catch(error => {console.log(error); throw new Error(error);});
+							" where collection_id is null").catch(error => {logger.error(error); throw new Error(error);});
 						return t.batch([insert, update]);
 					});
-				}).catch(error => {console.log(error);throw new Error(error);}); 
-			}).catch(error => {console.log(error);throw new Error(error);});
+				}).catch(error => {logger.error(error);throw new Error(error);}); 
+			}).catch(error => {logger.error(error);throw new Error(error);});
 
 		});
-		return Promise.all(promises).catch(error => {console.log(error); throw new Error(error);});
+		return Promise.all(promises).catch(error => {logger.error(error); throw new Error(error);});
 	});
 };

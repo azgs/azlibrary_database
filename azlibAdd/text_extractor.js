@@ -1,12 +1,15 @@
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
 exports.extract = (file) => {
-	console.log("text_extractor.extract: extracting text from " + file);
+	logger.debug("enter with file " + file);
 
 	const fs = require('fs');
 	let dataBuffer = fs.readFileSync(file);
 
 	const suffix = file.split('.')[file.split('.').length-1].toUpperCase();
 
-	console.log("text_extractor.extract: suffix = " + suffix);
+	logger.debug("text_extractor.extract: suffix = " + suffix);
 	if (suffix === "TXT") {
 		return Promise.resolve({text:dataBuffer});	
 	} else if (suffix === "PDF") {
@@ -31,7 +34,7 @@ exports.extract = (file) => {
 		return textractPromise(file).then(result => {
 			return {text: result};
 		})
-		.catch(error => {console.log("problem processing " + file); console.log(error); throw new Error(error);});
+		.catch(error => {logger.error("problem processing " + file); logger.error(error); throw new Error(error);});
 	} else {
 		return Promise.reject("Unrecognized document file type");
 	}

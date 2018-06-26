@@ -1,5 +1,8 @@
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
 exports.upload = (dir, schemaName, collectionID, db) => {
-	console.log("processing gdb");
+	logger.debug("enter with schemaName = " + schemaName);
 
 	let layerFilterFunction = () => {return false;};
 	let schemaSpecialProcessingPromise = () => {return Promise.resolve();};
@@ -21,7 +24,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
 		let dirs = listDirs(dir);
 		dirs = dirs.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "GDB"); 
-		console.log("dirs = ");console.log(dirs);
+		logger.silly("dirs = " + global.pp(dirs));
 
 		if (dirs.length === 0) {
 			return Promise.reject("No gdb directory found");
@@ -35,7 +38,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		//Create list of layers in new gdb
 		const gdal = require("gdal");
 		//console.log(process.cwd() + "/" + dir + "/" + dirs[0]);
-		console.log(path.join(dir, dirs[0]));
+		logger.silly(path.join(dir, dirs[0]));
 		//const dataset = gdal.open(process.cwd() + "/" + dir + "/" + dirs[0]);
 		const dataset = gdal.open(path.join(dir, dirs[0]));
 		const layers = dataset.layers.map((layer, i) => {
@@ -45,7 +48,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		const specialLayers = layers.filter(layer => {
 			return layerFilterFunction(layer.split('.')[1].slice(1))
 		});
-		console.log("!!!!!!!!!!!!!!!!specialLayers = ");console.log(specialLayers);
+		logger.silly("!!!!!!!!!!!!!!!!specialLayers = " + global.pp(specialLayers));
 
 		//Create list of existing tables for comparison to new gdb content
 		return db.any("select table_name from information_schema.tables where table_schema='" +  schemaName + "'")	
@@ -60,7 +63,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 			newTables = layers.filter(layer => {
 				return(!existingTables.includes(layer) && !specialLayers.includes(layer));
 			});
-			console.log("new tables"); console.log(newTables);
+			logger.silly("new tables = " + global.pp(newTables));
 			
 			if (!args.unrecOK && newTables.length > 0) {
 				throw new Error("Unrecognized tables detected");
@@ -90,7 +93,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 				//console.log(table);
 				return db.none('alter table ' + table + ' add column collection_id integer references public.collections (collection_id)')
 				.then(() => {
-					console.log("successfully added collection_id to " + table)
+					logger.debug("successfully added collection_id to " + table)
 				})
 				.catch(error => {throw new Error(error);});
 			});               
@@ -109,14 +112,14 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 					" set collection_id = " + collectionID +
 					" where collection_id is null")
 				.then(() => {
-					console.log("successfully updated collection_id for " + layer);
+					logger.debug("successfully updated collection_id for " + layer);
 				})
 				.catch(error => {throw new Error(error);});
 			});
 			return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 		});
 
-	}).catch(error => {console.log(error);return Promise.reject(error);})
+	}).catch(error => {logger.error(error);return Promise.reject(error);})
 	.then(() => {
 		return require("./metadata").upload(dir, "gisdata", collectionID, db);
 	});
@@ -129,23 +132,23 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 			const csPromises = crossSectionLayers.map(layer => {
 				//fetch cross section id based on cross section letter (a, b, c...)
 				const cs = layer.split('.')[1].substr(1,3);
-				console.log(">>>>>>>>>>>>>>>>>>>>>>>cs = " + cs);
+				logger.silly(">>>>>>>>>>>>>>>>>>>>>>>cs = " + cs);
 				return db.one("select cross_section_id from " + schemaName + ".cross_sections where cross_section_prefix = '" + cs + "'")
 				.catch(error => {
-					console.log("Problem with cross section " + cs + ":");console.log(error);
+					logger.error("Problem with cross section " + cs + ":");logger.error(error);
 					throw new Error(error);
 				})				
 				.then(data => {
 					const id = data.cross_section_id				
-					console.log("id = " + id);
+					logger.silly("id = " + id);
 
 					const tableName = "cs_" + layer.split('.')[1].slice(4).split('"')[0].toLowerCase();
-					console.log(">>>>>>>>>>>>>>>>>> tableName = " + tableName);
+					logger.silly(">>>>>>>>>>>>>>>>>> tableName = " + tableName);
 					
 					//Verify that we have a cs_ table for this cross section layer				
 					return db.one("select table_name from information_schema.tables where table_schema='" +  schemaName + "' and table_name='" + tableName + "'")
 					.catch(error => {
-						console.log("Unrecognized cross section table.")
+						logger.error("Unrecognized cross section table.")
 						throw new Error("Unrecognized cross section table.");
 					})
 					/*	
@@ -165,10 +168,10 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 					.then(() => {
 						//get list of columns in source table	
 						const s = "select column_name from information_schema.columns where table_schema = '" + schemaName + "' and table_name = '" + layer.split('.')[1].split('"')[1] + "'"
-						console.log(s);
+						logger.silly(global.pp(s));
 						return db.any(s)
 						.then(data => {
-							console.log("column name data = ");console.log(data);
+							logger.silly("column name data = " + global.pp(data));
 							const sourceColumns = data.map(datum => {
 								return '"' + datum.column_name + '"';
 							});
@@ -182,24 +185,24 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 									return column;
 								}
 							});
-							console.log("sourceColumns = ");console.log(sourceColumns);
-							console.log("destColumns = ");console.log(destColumns);
+							logger.silly("sourceColumns = " + global.pp(sourceColumns));
+							logger.silly("destColumns = " + global.pp(destColumns));
 							
 							//copy data from source cross section table into our corresponding cs_ table, adding our cross section id.
 							const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ") select " + id + ", " + sourceColumns.toString() + " from " + layer;
-							console.log("insert = " + q);
-							return db.none(q).catch(error => {console.log("Problem copying data");console.log(error);throw new Error(error);});
+							logger.silly("insert = " + q);
+							return db.none(q).catch(error => {logger.error("Problem copying data");logger.error(error);throw new Error(error);});
 						})						
 						.catch(error => {
-							console.log("Problem copying data from cross section table " + layer);
-							console.log(error);
+							logger.error("Problem copying data from cross section table " + layer);
+							logger.error(error);
 							throw new Error(error);
 						});
 					})	
 				}).then(id => {
 					return db.none("drop table " + layer)
 					.catch(error => {
-						console.log("Problem dropping cross section table " + layer);console.log(error);
+						logger.error("Problem dropping cross section table " + layer);logger.error(error);
 						throw new Error(error);
 					});
 				});

@@ -1,14 +1,17 @@
-exports.upload = (rootDir, collectionID, db) => {	
-	console.log("processing notes");
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
-	const path = require('path');
+exports.upload = (rootDir, collectionID, db) => {	
+	logger.debug("enter");
+
+	//const path = require('path');
 
 	const myDir = "notes";
 	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
-		console.log("No notes directory found");
+		logger.warn("No notes directory found");
 		return Promise.resolve();
 	}
 
@@ -20,14 +23,14 @@ exports.upload = (rootDir, collectionID, db) => {
 	} catch(err) {
 		return Promise.reject("Problem accessing notes directory: " + err);
 	}
-	console.log("notes files = "); console.log(files);
+	logger.silly("notes files = " + global.pp(files));
 
 	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "notes", collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);
 
-		console.log("notes metadataIDs =");console.log(metadataIDs);
+		logger.silly("notes metadataIDs = " + global.pp(metadataIDs));
 
 		//strip away prefix and filetype. Only interested in name
 		metadataIDs = metadataIDs.map(mID => {
@@ -39,7 +42,7 @@ exports.upload = (rootDir, collectionID, db) => {
 
 			//Process each file
 			const inserts = files.map((file) => {
-				console.log("processing note file " + file);
+				logger.debug("processing note file " + file);
 
 				//Find metadata id that corresponds to this file
 				let metadataID = metadataIDs.reduce((id, mID) => {
@@ -55,9 +58,9 @@ exports.upload = (rootDir, collectionID, db) => {
 					collectionID + ", " + 
 					metadataID + ", " +
 					"'" + path.join(myDir, file) + "')")
-				.catch(error => {console.log("problem creating db record for " + file); console.log(error); throw new Error(error);}); 
+				.catch(error => {logger.error("problem creating db record for " + file); logger.error(error); throw new Error(error);}); 
 			});
-			return t.batch(inserts).catch(error => {console.log(error);throw new Error(error);});
+			return t.batch(inserts).catch(error => {logger.error(error);throw new Error(error);});
 		});
 	});
 };

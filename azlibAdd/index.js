@@ -15,6 +15,7 @@ args
 	.option('-P, --private', 'Indicates if this is a private collection.')
 	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
+	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', '!!Not yet implemented!! Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
 
@@ -27,8 +28,10 @@ console.log("gdb schema = " + args.gdbschema);
 console.log("private = " + args.private);
 console.log("repeat = " + args.repeat);
 */
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
-const datasetName = args.source.split("/").pop(); //The last element in the path
+global.datasetName = args.source.split("/").pop(); //The last element in the path
 
 const pgp = require("pg-promise")({
 	 //Initialization Options
@@ -57,7 +60,7 @@ let pwPromise = new Promise((resolve) => {
 	}
 });
 
-const path = require("path");
+//const path = require("path");
 let dsPath = path.resolve(args.source);//path.join(process.cwd(), args[0]);;
 
 pwPromise.then((password) => {
@@ -76,7 +79,7 @@ pwPromise.then((password) => {
 	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
 }).then(data => {
 	collectionID = data.collection_id;
-	console.log("collection id = " + collectionID);
+	logger.debug("collection id = " + collectionID);
 
 	const uploadsInsert = 
 		"insert into public.uploads (collection_id, created_at) values ($$" +
@@ -87,7 +90,7 @@ pwPromise.then((password) => {
 	uploadID = data.upload_id;
 
 	const promises = [
-		require("./gisdata").upload(args.source, datasetName, collectionID, db),
+		require("./gisdata").upload(args.source, global.datasetName, collectionID, db),
 		require("./metadata").upload(args.source, "", "metadata", collectionID, db),
 		require("./notes").upload(args.source, collectionID, db),
 		require("./documents").upload(args.source, collectionID, db),
@@ -109,25 +112,26 @@ pwPromise.then((password) => {
 	return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
 	.catch(error => {throw new Error(error);});
 }).then(() => {
-	console.log("successfully completed upload for collection_id " + collectionID);
+	logger.info("successfully completed upload for collection_id " + collectionID);
 	pgp.end();
 })
 .catch(error => {
-	console.log("Error during upload of collection_id " + collectionID);
-	console.log(error); 
-	console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	logger.error("Error during upload of collection_id " + collectionID + ": " + error); 
+	logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	const rollback = require("./rollback");
 	rollback.rollback(collectionID, db).then(() => {
-		console.log("rollback complete");
+		logger.info("rollback complete");
 		pgp.end();
-	}).catch(error => {console.log(error);});
+	}).catch(error => {logger.error(error);});
 }).then(() => {
 	if (args.archive) {
 		return require("./archiver").archive(args.source);
 	} else {
 		return Promise.resolve();
 	}
-}).catch(error => {console.log("Unable to create archive of source directory."); console.log(error)});
+}).catch(error => {
+	logger.error("Unable to create archive of source directory. " + global.pp(error));
+});
 
 
 

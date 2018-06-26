@@ -1,14 +1,17 @@
-exports.upload = (rootDir, datasetName, collectionID, db) => {
-	console.log("processing gisdata");
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
-	const path = require('path');
+exports.upload = (rootDir, datasetName, collectionID, db) => {
+	logger.debug("enter");
+
+	//const path = require('path');
 
 	const myDir = "gisdata";
 	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
-		console.log("No gisdata directory found");
+		logger.warn("No gisdata directory found");
 		return Promise.resolve();
 	}
 
@@ -17,7 +20,7 @@ exports.upload = (rootDir, datasetName, collectionID, db) => {
 	//const fs = require('fs');
 	const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
 	const dirs = listDirs(dir);
-	console.log("dirs = ");console.log(dirs);
+	logger.silly("dirs = " + global.pp(dirs));
 
 	const promises = dirs.map(thisDir => {
 		if (thisDir.toLowerCase() === "metadata") {

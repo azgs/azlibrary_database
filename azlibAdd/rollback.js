@@ -7,9 +7,17 @@ presumably this collection will get uploaded eventually, once the problem is cor
 the tables would get used.
 TODO: Consider putting rollback logic in each schema handler. Or at least, in the gdb handler.
 */
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
 exports.rollback = (collectionID, db) => {
-	console.log("rolling back upload for collection_id " + collectionID);
+	logger.debug("enter, collection_id = " + collectionID);
+
+
+	if (!collectionID) {
+		logger.info("Nothing to rollback; collectionID is undefined.");
+		return Promise.resolve();
+	}
 
 	return db.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id' and table_schema <> 'public'")	
 	.then(tables => {
@@ -25,8 +33,8 @@ exports.rollback = (collectionID, db) => {
 			return acc;
 		}, []);	
 			
-		console.log("dataTables");console.log(dataTables);
-		console.log("metadataTables");console.log(metadataTables);
+		logger.debug("dataTables = " + global.pp(dataTables));
+		logger.debug("metadataTables = " + global.pp(metadataTables));
 
 		const dataPromises = dataTables.map(table => {
 			//console.log(table);
@@ -54,9 +62,11 @@ exports.rollback = (collectionID, db) => {
 			}
 		});
 	}).catch(error => {
-		console.log("One or more errors occurred during rollback.");
-		console.log(error);
-		console.log("Manual rollback required for collection_id " + collectionID + ".");
+		//console.log("One or more errors occurred during rollback.");
+		//console.log(error);
+		//console.log("Manual rollback required for collection_id " + collectionID + ".");
+		logger.error("One or more errors occurred during rollback. Manual rollback required for collection_id " + collectionID + ".");
+		logger.error(global.pp(error));		
 		return Promise.reject(error);
 	});
 }

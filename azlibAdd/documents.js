@@ -1,21 +1,24 @@
-exports.upload = (rootDir, collectionID, db) => {
-	console.log("processing documents");
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
-	const path = require('path');
+exports.upload = (rootDir, collectionID, db) => {
+	logger.debug("enter");
+
+	//const path = require('path');
 
 	const myDir = "documents";
 	const dir = path.join(rootDir, myDir);
 
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
-		console.log("No documents directory found");
+		logger.warn("No documents directory found");
 		return Promise.resolve();
 	}
 
 	//const fs = require('fs');
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	let files = listFiles(dir);
-	console.log("files = "); console.log(files);
+	logger.silly("files = " + global.pp(files));
 
 	//only interested in pdfs for now
 	//files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
@@ -29,7 +32,7 @@ exports.upload = (rootDir, collectionID, db) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);
 
-		console.log("metadataIDs =");console.log(metadataIDs);
+		logger.silly("metadataIDs = " + global.pp(metadataIDs));
 
 		//strip away prefix and filetype. Only interested in name
 		metadataIDs = metadataIDs.map(mID => {
@@ -70,7 +73,7 @@ exports.upload = (rootDir, collectionID, db) => {
 
 			//Process each file
 			const inserts = files.map((file) => {
-				console.log("processing document file " + file);
+				logger.debug("processing document file " + file);
 
 				//Find metadata id that corresponds to this file
 				let metadataID = metadataIDs.reduce((id, mID) => {
@@ -104,10 +107,14 @@ exports.upload = (rootDir, collectionID, db) => {
 						"'" + path.join(myDir, file) + "', " +
 						"to_tsvector($$" + data.text + "$$))"); 
 				})
-				.catch(error => {console.log("problem processing " + file); console.log(error); throw new Error(error);});
+				.catch(error => {
+					logger.error("problem processing " + file);
+		 			logger.error(error); 
+					throw new Error(error);
+				});
 
 			});
-			return t.batch(inserts).catch(error => {console.log(error);throw new Error(error);});
+			return t.batch(inserts).catch(error => {logger.error(error);throw new Error(error);});
 		});
 
 	});

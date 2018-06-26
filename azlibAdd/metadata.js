@@ -1,7 +1,10 @@
-exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
-	console.log("processing metadata");
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
 
-	console.log("inter dir = " + intermediateDir);
+exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
+	logger.debug("enter");
+
+	logger.debug("inter dir = " + intermediateDir);
 	const myDir = "metadata";
 
 	const path = require('path');
@@ -10,7 +13,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 	//Verify that directory exists
 	const fs = require('fs');
 	if (!fs.existsSync(dir)) {
-		console.log("No metadata directory found");
+		logger.warn("No metadata directory found");
 		return Promise.resolve();
 	}
 
@@ -19,7 +22,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 	//const fs = require('fs');
 	const listFiles = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory());
 	const files = listFiles(dir);
-	console.log("files = "); console.log(files);
+	logger.silly("files = " + global.pp(files));
 
 	//Process each file
 	const promises = files.map((file) => {
@@ -27,33 +30,33 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 
 		//If type is not recognized, ignore file
 		if (!global.metadataTypes.includes(type)) {
-			console.log("Invalid metadata type: " + type);
+			logger.warn("Invalid metadata type: " + type);
 			return Promise.resolve();
 		}
 		//console.log("type = " + type);
 
-		console.log("file = " + file);
+		logger.silly("file = " + file);
 		if (file.split('.')[file.split('.').length-1].toUpperCase() === "XML") {
 			return new Promise((resolve, reject) => { 
-				console.log("processing xml metadata for " + file);
+				logger.silly("processing xml metadata for " + file);
 
 				//read xml file
 				const xmlPath = path.resolve(dir, file);//process.cwd() + "/" + dir + "/" + file;
 				//let fs = require('fs');
 
 				new Promise((resolve) => {
-					console.log("reading xml file");
+					logger.silly("reading xml file");
 					fs.readFile(xmlPath, 'utf-8', function (error, data){
 						if(error) {
-							console.log(error);
+							logger.warn(error);
 							resolve(null);
 						}
 						resolve(data);    
 					}); 
 				}).then((data) => {      
-					console.log("processing xml content");
+					logger.silly("processing xml content");
 					if (data === null) {
-						console.log("no xml data");
+						logger.warn("no xml data");
 						resolve();
 					}
 
@@ -81,19 +84,19 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 							resolve(data.metadata_id);
 						}).catch(error => {reject(error);});
 					}).catch(error => {
-						console.log("Malformed XML");
-						console.log(error);
+						logger.error("Malformed XML:");
+						logger.error(error);
 						//TODO: rethrow?
 					});
-				}).catch(error => {console.log(error);});
+				}).catch(error => {logger.error(error);});
 
-			}).catch(error => {console.log("Problem processing metadata file " + file);console.log(error);throw new Error(error);});
+			}).catch(error => {logger.error("Problem processing metadata file " + file);logger.error(error);throw new Error(error);});
 		} else { //not an xml file
 			return Promise.resolve();
 		}
 	});
 	return Promise.all(promises)
-	.catch(error => {console.log("Problem processing metadata for " + schemaName);console.log(error); throw new Error(error)}).then(() => Promise.resolve(idReturn));
+	.catch(error => {logger.error("Problem processing metadata for " + schemaName);logger.error(error); throw new Error(error)}).then(() => Promise.resolve(idReturn));
 }
 
 

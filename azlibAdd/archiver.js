@@ -1,5 +1,8 @@
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
 exports.archive = (dir) => {
-	console.log("archiving");
+	logger.debug("enter");
 
 	return new Promise((resolve, reject) => {
 		try {
@@ -22,8 +25,8 @@ exports.archive = (dir) => {
 				rmrafP(dir).then(() => {
 					resolve();
 				}).catch(err => {
-					console.log("Problem removing directory");
-					console.log(err);
+					logger.error("Problem removing directory");
+					logger.error(err);
 					throw new Error(err);
 				});
 			});
