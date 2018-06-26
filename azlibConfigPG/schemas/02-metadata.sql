@@ -6,6 +6,7 @@ create table metadata.types
 );
 insert into metadata.types (type_name) values ('FGDC');
 insert into metadata.types (type_name) values ('ISO19139');
+insert into metadata.types (type_name) values ('ISO19115');
 
 CREATE TABLE metadata.metadata
 (
