@@ -166,8 +166,9 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 					})
 					*/
 					.then(() => {
-						//get list of columns in source table	
-						const s = "select column_name from information_schema.columns where table_schema = '" + schemaName + "' and table_name = '" + layer.split('.')[1].split('"')[1] + "'"
+						//get list of columns in source table
+						//(Have to explicitly ignore ogc_fid. This column occasionally gets added by ogr2ogr for unknown reasons.)	
+						const s = "select column_name from information_schema.columns where table_schema = '" + schemaName + "' and table_name = '" + layer.split('.')[1].split('"')[1] + "' and column_name <> 'ogc_fid'";
 						logger.silly(global.pp(s));
 						return db.any(s)
 						.then(data => {
