@@ -33,12 +33,21 @@ Usage:
 ------
 
 Run the tool as follows:
-	azlibAdd source_directory gdb_schema_name db_name db_user [db_password]
+  Usage: azlibAdd [options]
 
-If db_password is not specified, you will be prompted for it.
+  Options:
 
-Usage guidance is also available from the command line by typing:
-	azlibAdd --help
+    -V, --version              output the version number
+    -s, --source <source>      Source directory of the collection(s). Required
+    -d, --dbname <dbname>      DB name. Required
+    -u, --username <username>  DB username. Required
+    -p, --password <password>  DB password (will be prompted if not included)
+    -P, --private              Indicates if this is a private collection.
+    -a, --archive              Indicates whether to archive the source directory into a tar.gz.
+    -U, --unrecOK              Indicates whether to allow unrecognized files in gdb schemas.
+    -l, --loglevel <loglevel>  Indicates logging level (error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    -r, --repeat               Indicates that the source directory contains multiple collections source directories.
+    -h, --help                 output usage information
 
 
 Source directory format:
