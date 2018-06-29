@@ -16,7 +16,7 @@ global.args
 	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
-	.option('-r, --repeat', '!!Not yet implemented!! Indicates that the source directory contains multiple collections source directories.') 
+	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
 
 /*
