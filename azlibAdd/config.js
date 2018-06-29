@@ -1,6 +1,7 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
+/*
 global.pp = (object) => {
 	logger.debug("typeof Object = " + typeof object);
 	if (Array.isArray(object)) {
@@ -9,6 +10,7 @@ global.pp = (object) => {
 		return object;
 	}
 };
+*/
 
 exports.load = (db) => {
 	//console.log("loading config from db");
