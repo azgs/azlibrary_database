@@ -5,7 +5,7 @@
 
 global.args = require('commander');
 
-args
+global.args
 	.version('0.0.1')
 	.option('-s, --source <source>', 'Source directory of the collection(s). Required')
 	.option('-d, --dbname <dbname>', 'DB name. Required')
@@ -28,22 +28,19 @@ console.log("gdb schema = " + args.gdbschema);
 console.log("private = " + args.private);
 console.log("repeat = " + args.repeat);
 */
-const path = require("path");
-const logger = require("./logger")(path.basename(__filename));
 
-global.datasetName = args.source.split("/").pop(); //The last element in the path
-
-const pgp = require("pg-promise")({
-	 //Initialization Options
-});
-let db;
-
-let collectionID;
-let uploadID;
+global.pp = (object) => {
+	logger.debug("typeof Object = " + typeof object);
+	if (Array.isArray(object)) {
+		return JSON.stringify(object, null, 4);
+	} else {
+		return object;
+	}
+};
 
 // get password sorted
 let pwPromise = new Promise((resolve) => {
-	if (!args.password) {
+	if (!global.args.password) {
 		const prompt = require('prompt');
 	  	prompt.message = "";
 	  	prompt.delimiter = "";
@@ -56,83 +53,149 @@ let pwPromise = new Promise((resolve) => {
 			resolve(result['postgres password']);
 		});
 	} else {
-		resolve(args.password);
+		resolve(global.args.password);
 	}
 });
 
-//const path = require("path");
-let dsPath = path.resolve(args.source);//path.join(process.cwd(), args[0]);;
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
+const pgp = require("pg-promise")({
+	 //Initialization Options
+});
+let db;
+
+
 
 pwPromise.then((password) => {
 
-	args.password = password;
+	global.args.password = password;
 
-	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
+	const cn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.dbname;
 	db = pgp(cn);
 
 	return require("./config").load(db)
 }).then(() => {
-	const collectionsInsert = 
-		"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (args.private ? true : false) + ") returning collection_id";
-	//console.log(collectionsInsert);
-	//TODO: Do we want to allow updates to a collection?
-	return db.one(collectionsInsert).catch(error => {throw new Error(error);});
-}).then(data => {
-	collectionID = data.collection_id;
-	logger.debug("collection id = " + collectionID);
-
-	const uploadsInsert = 
-		"insert into public.uploads (collection_id, created_at) values ($$" +
-		collectionID + "$$, current_timestamp) returning upload_id";
-	//console.log(uploadsInsert);
-	return db.one(uploadsInsert).catch(error => {throw new Error(error);});
-}).then(data => {
-	uploadID = data.upload_id;
-
-	const promises = [
-		require("./gisdata").upload(args.source, global.datasetName, collectionID, db),
-		require("./metadata").upload(args.source, "", "metadata", collectionID, db),
-		require("./notes").upload(args.source, collectionID, db),
-		require("./documents").upload(args.source, collectionID, db),
-		require("./images").upload(args.source, collectionID, db)
-	];
-	//return Promise.all(promises).catch(error => {throw new Error(error);})
-	promiseUtil = require("./promise_util");
-	return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
-		if (results.filter(result => result.status === "rejected").length === 0) {
-			return Promise.resolve();
-		} else {
-			return Promise.reject(results);
+	if (global.args.repeat) {
+		//logger.error("Repeat option not yet implemented");
+		const fs = require('fs');
+		if (!fs.existsSync(global.args.source)) {
+			logger.warn(global.args.source + " directory found");
+			//return Promise.resolve();
+			throw new Error(global.args.source + " directory found");
 		}
-	});
-}).then(() => {
-	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
-}).then(() => {
 
-	return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
-	.catch(error => {throw new Error(error);});
-}).then(() => {
-	logger.info("successfully completed upload for collection_id " + collectionID);
-	pgp.end();
-})
-.catch(error => {
-	logger.error("Error during upload of collection_id " + collectionID + ": " + error); 
-	logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	const rollback = require("./rollback");
-	rollback.rollback(collectionID, db).then(() => {
-		logger.info("rollback complete");
-		pgp.end();
-	}).catch(error => {logger.error(error);});
-}).then(() => {
-	if (args.archive) {
-		return require("./archiver").archive(args.source);
+		let collections = [];
+		try {
+			collections = fs.readdirSync(global.args.source).filter(f => fs.statSync(path.join(global.args.source, f)).isDirectory());
+		} catch(err) {
+			return Promise.reject("Problem accessing collections directories: " + err);
+		}
+		logger.silly("notes collections = " + global.pp(collections));
+		
+		collections.reduce((promiseChain, collection) => {
+			logger.silly("reduce iteration, collection = " + collection);
+			return promiseChain.then(() => {
+				logger.silly("promiseChain.then");
+				return processCollection(path.join(global.args.source, collection));
+			});
+		}, Promise.resolve())
+		.then(() => {logger.debug("----------------------all done-----------------------");pgp.end();});
+		
 	} else {
-		return Promise.resolve();
+		return processCollection(global.args.source);
 	}
-}).catch(error => {
-	logger.error("Unable to create archive of source directory. " + global.pp(error));
 });
 
+function processCollectionFactory(source) {
+	return processCollection(source);
+}
+
+//const processCollection = (source) => {
+function processCollection(source)  {
+	return new Promise((resolve, reject) => {
+		logger.debug("processing collection " + source);
+
+		global.datasetName = source.split("/").pop(); //The last element in the path
+
+		let collectionID;
+		let uploadID;
+
+		//const path = require("path");
+		let dsPath = path.resolve(source);//path.join(process.cwd(), args[0]);;
+		logger.silly("after dsPath");
+
+		const collectionsInsert = 
+			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ") returning collection_id";
+		//console.log(collectionsInsert);
+		//TODO: Do we want to allow updates to a collection?
+		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
+		.then(data => {
+			collectionID = data.collection_id;
+			logger.debug("collection id = " + collectionID);
+
+			const uploadsInsert = 
+				"insert into public.uploads (collection_id, created_at) values ($$" +
+				collectionID + "$$, current_timestamp) returning upload_id";
+			//console.log(uploadsInsert);
+			return db.one(uploadsInsert).catch(error => {throw new Error(error);});
+		}).then(data => {
+			uploadID = data.upload_id;
+
+			const promises = [
+				require("./gisdata").upload(source, global.datasetName, collectionID, db),
+				require("./metadata").upload(source, "", "metadata", collectionID, db),
+				require("./notes").upload(source, collectionID, db),
+				require("./documents").upload(source, collectionID, db),
+				require("./images").upload(source, collectionID, db)
+			];
+			//return Promise.all(promises).catch(error => {throw new Error(error);})
+			promiseUtil = require("./promise_util");
+			return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+				if (results.filter(result => result.status === "rejected").length === 0) {
+					return Promise.resolve();
+				} else {
+					return Promise.reject(results);
+				}
+			});
+		}).then(() => {
+			return db.none("vacuum analyze").catch(error => {throw new Error(error);});
+		}).then(() => {
+
+			return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
+			.catch(error => {throw new Error(error);});
+		}).then(() => {
+			logger.info("successfully completed upload for collection_id " + collectionID);
+			global.datasetName = undefined; 
+			//pgp.end();
+			resolve();
+		})
+		.catch(error => {
+			logger.error("Error during upload of collection_id " + collectionID + ": " + error); 
+			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			const rollback = require("./rollback");
+			rollback.rollback(collectionID, db).then(() => {
+				logger.info("rollback complete");
+				global.datasetName = undefined; 
+				//pgp.end();
+				logger.silly("resolving");				
+				resolve();
+			}).catch(error => {logger.error(error);});
+		}).then(() => {
+			if (global.args.archive) {
+				logger.silly("squishin stuff");
+				return require("./archiver").archive(source);
+			} else {
+				logger.silly("returning blank resolve");
+				resolve();
+			}
+		}).catch(error => {
+			logger.error("Unable to create archive of source directory. " + global.pp(error));
+			throw new Error(error);
+		});
+
+	});
+}
 
 
 
