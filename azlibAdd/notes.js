@@ -15,16 +15,6 @@ exports.upload = (rootDir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	//return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "notes", collectionID, db);
-
-	let files = [];
-	try {
-		files = fs.readdirSync(dir).filter(f => !fs.statSync(path.join(dir, f)).isDirectory());
-	} catch(err) {
-		return Promise.reject("Problem accessing notes directory: " + err);
-	}
-	logger.silly("notes files = " + global.pp(files));
-
 	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "notes", collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
@@ -37,6 +27,14 @@ exports.upload = (rootDir, collectionID, db) => {
 			mID.file = mID.file.substring(mID.file.indexOf('-')+1, mID.file.lastIndexOf('.'));
 			return mID;
 		});
+
+		let files = [];
+		try {
+			files = fs.readdirSync(path.join(dir, "misc")).filter(f => !fs.statSync(path.join(dir, "misc", f)).isDirectory());
+		} catch(err) {
+			return Promise.reject("Problem accessing notes directory: " + err);
+		}
+		logger.silly("notes/misc files = " + global.pp(files));
 
 		return db.tx(t => { //do insert inside a transaction
 
@@ -57,7 +55,7 @@ exports.upload = (rootDir, collectionID, db) => {
 					"insert into notes.misc_notes (collection_id, metadata_id, path) values (" +
 					collectionID + ", " + 
 					metadataID + ", " +
-					"'" + path.join(myDir, file) + "')")
+					"'" + path.join(myDir, "misc", file) + "')")
 				.catch(error => {logger.error("problem creating db record for " + file); logger.error(error); throw new Error(error);}); 
 			});
 			return t.batch(inserts).catch(error => {logger.error(error);throw new Error(error);});
