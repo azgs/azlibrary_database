@@ -14,7 +14,8 @@ CREATE TABLE metadata.metadata
 	collection_id integer REFERENCES public.collections(collection_id) not null, 
 	type text references metadata.types(type_name) not null,
 	json_data jsonb not null,
-	metadata_file text not null
+	metadata_file text not null,
+	geom geometry
 );
 
 
