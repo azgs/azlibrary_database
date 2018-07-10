@@ -31,11 +31,7 @@ console.log("repeat = " + args.repeat);
 
 global.pp = (object) => {
 	logger.debug("typeof Object = " + typeof object);
-	if (Array.isArray(object)) {
-		return JSON.stringify(object, null, 4);
-	} else {
-		return object;
-	}
+	return require('util').inspect(object, {depth:null});
 };
 
 // get password sorted
@@ -91,7 +87,7 @@ pwPromise.then((password) => {
 		} catch(err) {
 			return Promise.reject("Problem accessing collections directories: " + err);
 		}
-		logger.silly("notes collections = " + global.pp(collections));
+		logger.silly("collections = " + global.pp(collections));
 		
 		collections.reduce((promiseChain, collection) => {
 			logger.silly("reduce iteration, collection = " + collection);
@@ -100,12 +96,18 @@ pwPromise.then((password) => {
 				return processCollection(path.join(global.args.source, collection));
 			});
 		}, Promise.resolve())
-		.then(() => {logger.debug("----------------------all done-----------------------");pgp.end();});
+		.then(() => {logger.debug("----------------------all done-----------------------");/*pgp.end();*/return Promise.resolve();});
 		
 	} else {
 		return processCollection(global.args.source);
 	}
-});
+});/*
+.catch(() => {
+	pgp.end();
+})
+.then(() => {
+	pgp.end();
+});*/
 
 function processCollectionFactory(source) {
 	return processCollection(source);
@@ -129,8 +131,10 @@ function processCollection(source)  {
 			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ") returning collection_id";
 		//console.log(collectionsInsert);
 		//TODO: Do we want to allow updates to a collection?
+		logger.silly("before collectionsInsert");
 		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
 		.then(data => {
+			logger.silly("collectionsInsert success");
 			collectionID = data.collection_id;
 			logger.debug("collection id = " + collectionID);
 
@@ -140,11 +144,14 @@ function processCollection(source)  {
 			//console.log(uploadsInsert);
 			return db.one(uploadsInsert).catch(error => {throw new Error(error);});
 		}).then(data => {
+			return require("./metadata").upload(source, "", "metadata", collectionID, db)
+			.then(() => {return Promise.resolve(data)});
+		}).then(data => {
 			uploadID = data.upload_id;
 
 			const promises = [
 				require("./gisdata").upload(source, global.datasetName, collectionID, db),
-				require("./metadata").upload(source, "", "metadata", collectionID, db),
+				//require("./metadata").upload(source, "", "metadata", collectionID, db),
 				require("./notes").upload(source, collectionID, db),
 				require("./documents").upload(source, collectionID, db),
 				require("./images").upload(source, collectionID, db)
@@ -169,9 +176,19 @@ function processCollection(source)  {
 			global.datasetName = undefined; 
 			//pgp.end();
 			resolve();
-		})
-		.catch(error => {
-			logger.error("Error during upload of collection_id " + collectionID + ": " + error); 
+		}).then(() => {
+			if (global.args.archive) {
+				logger.silly("squishin stuff");
+				return require("./archiver").archive(source).catch(error => {
+					logger.error("Unable to create archive of source directory. " + global.pp(error));
+					throw new Error(error);
+				});
+			} else {
+				logger.silly("returning blank resolve");
+				resolve();
+			}
+		}).catch(error => {
+			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
 			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			const rollback = require("./rollback");
 			rollback.rollback(collectionID, db).then(() => {
@@ -181,19 +198,8 @@ function processCollection(source)  {
 				logger.silly("resolving");				
 				resolve();
 			}).catch(error => {logger.error(error);});
-		}).then(() => {
-			if (global.args.archive) {
-				logger.silly("squishin stuff");
-				return require("./archiver").archive(source);
-			} else {
-				logger.silly("returning blank resolve");
-				resolve();
-			}
-		}).catch(error => {
-			logger.error("Unable to create archive of source directory. " + global.pp(error));
-			throw new Error(error);
 		});
-
+	
 	});
 }
 
