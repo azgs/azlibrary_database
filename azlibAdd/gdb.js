@@ -119,7 +119,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 			return Promise.all(cidPromises).catch(error => {throw new Error(error);});
 		});
 
-	}).catch(error => {logger.error(error);return Promise.reject(error);})
+	}).catch(error => {logger.error("Problem processing gdb: " + global.pp(error));return Promise.reject(error);})
 	.then(() => {
 		return require("./metadata").upload(dir, "gisdata", collectionID, db);
 	});
@@ -148,8 +148,8 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 					//Verify that we have a cs_ table for this cross section layer				
 					return db.one("select table_name from information_schema.tables where table_schema='" +  schemaName + "' and table_name='" + tableName + "'")
 					.catch(error => {
-						logger.error("Unrecognized cross section table.")
-						throw new Error("Unrecognized cross section table.");
+						logger.error("Unrecognized cross section table: " + tableName)
+						throw new Error("Unrecognized cross section table: " + tableName);
 					})
 					/*	
 					I dunno, this seems like a pain. So, I'm throwing the error above until somebody says different.		
@@ -208,7 +208,16 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 					});
 				});
 			});
-			return Promise.all(csPromises).catch(error => {throw new Error(error);});
+			//return Promise.all(csPromises).catch(error => {throw new Error(error);});
+			promiseUtil = require("./promise_util");
+			return Promise.all(csPromises.map(promiseUtil.reflect)).then(results => {
+				if (results.filter(result => result.status === "rejected").length === 0) {
+					return Promise.resolve();
+				} else {
+					return Promise.reject(results);
+				}
+			});
+
 }
 
 
