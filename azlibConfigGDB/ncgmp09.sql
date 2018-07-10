@@ -1,3 +1,5 @@
+set search_path = ncgmp09,public;
+
 create table ncgmp09.cross_sections (
 	cross_section_id serial PRIMARY KEY,
 	cross_section_prefix text
@@ -30,8 +32,8 @@ insert into ncgmp09.cross_sections (cross_section_prefix) values ('CSX');
 insert into ncgmp09.cross_sections (cross_section_prefix) values ('CSY');
 insert into ncgmp09.cross_sections (cross_section_prefix) values ('CSZ');
 
-create table ncgmp09.cs_MapUnitPolys (
-	cs_MapUnitPolys_id serial PRIMARY KEY,
+create table ncgmp09.cs_mapunitpolys (
+	cs_mapunitpolys_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
 	"OBJECTID" integer NOT NULL,
 	"MapUnitPolys_ID" character varying(50),
@@ -47,8 +49,40 @@ create table ncgmp09.cs_MapUnitPolys (
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
-create table ncgmp09.cs_ContactsAndFaults (
-	cs_ContactsAndFaults_id serial PRIMARY KEY,
+create table ncgmp09.cs_mapunitpolysanno (
+	cs_mapunitpolysanno_id serial PRIMARY KEY,
+	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
+	"FeatureID" integer,
+	"ZOrder" integer,
+	"AnnotationClassID" integer,
+	"Element" bytea,
+	"SymbolID" integer,
+	"Status" smallint DEFAULT 0,
+	"TextString" character varying(255),
+	"FontName" character varying(255),
+	"FontSize" double precision,
+	"Bold" smallint,
+	"Italic" smallint,
+	"Underline" smallint,
+	"VerticalAlignment" smallint,
+	"HorizontalAlignment" smallint,
+	"XOffset" double precision,
+	"YOffset" double precision,
+	"Angle" double precision,
+	"FontLeading" double precision,
+	"WordSpacing" double precision,
+	"CharacterWidth" double precision,
+	"CharacterSpacing" double precision,
+	"FlipAngle" double precision,
+	"Override" integer,
+	"SHAPE_Length" double precision,
+	"SHAPE_Area" double precision,
+	geom geometry(MultiPolygon,26911),
+	collection_id integer REFERENCES public.collections (collection_id)
+);
+
+create table ncgmp09.cs_contactsandfaults (
+	cs_contactsandfaults_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
 	"OBJECTID" integer NOT NULL,
 	"ContactsAndFaults_ID" character varying(50),
@@ -69,8 +103,8 @@ create table ncgmp09.cs_ContactsAndFaults (
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
-create table ncgmp09.cs_OrientationPoints (
-	cs_OrientationPoints_id serial PRIMARY KEY,
+create table ncgmp09.cs_orientationpoints (
+	cs_orientationpoints_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
 	"OBJECTID" integer NOT NULL,
 	"OrientationPoints_ID" character varying(50),
