@@ -22,10 +22,15 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 
 	return readdirPromise(dir).then(subElements => {
 		logger.silly("subElements = " + global.pp(subElements));
+		
+		subElements = subElements.filter(sE => ".DS_Store" !== sE);
+		logger.silly("filtered subElements = " + global.pp(subElements));		
 
 		//First process metadata, keeping track of filename-ID mapping
 		return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db)
 		.then((metadataIDs) => {
+			//If metadataIDs is undefined, give it an empty array to keep later code happy
+			metadataIDs = (metadataIDs ? metadataIDs : []);
 			logger.silly("legacy metadataIDs = " + global.pp(metadataIDs));
 	
 			//strip away prefix and filetype from metadata ID mappings. Only interested in name
@@ -80,6 +85,25 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 						logger.warn("No metadata file found for legacy file " + file);
 					}
 
+//TODO: Make all this mo betta. Maybe store extent in global from metadata.js to avoid trip to db.
+//Also, do not process .DS_Store files
+					return fetchExtent(collectionID, dir, file, db)
+					.then((extent) => {
+						logger.silly(file + " extent after srid tweaking = " + global.pp(extent));
+
+						//Insert legacy record for this file, creating bbox from extent
+						return db.none("insert into gisdata.legacy (collection_id, metadata_id, name, path, geom) values (" +
+										collectionID + "," +
+										metadataID + "," + 
+										"null," + //TODO: what to use for name?
+										"'" + path.join(intermediateDir, myDir, file) + "'," +
+										"ST_MakeEnvelope(" + extent.minX + "," + extent.minY + "," + extent.maxX + "," + extent.maxY + "," + extent.srid + ")" +
+						")").catch(error => {logger.error("problem inserting legacy record:");logger.error(error); throw new Error(error);});
+					}).catch((error) => {
+						logger.error("Problem creating legacy record for collection " + collectionID + ", file " + file);
+						logger.error(error);
+					});
+					/*
 					let srs;
 					let extent;
 					//Use gdal to get extent and srs (from first layer)
@@ -109,6 +133,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 										"ST_MakeEnvelope(" + extent.minX + "," + extent.minY + "," + extent.maxX + "," + extent.maxY + "," + srid + ")" +
 						")").catch(error => {logger.error("problem inserting legacy record:");logger.error(error); throw new Error(error);});
 					}).catch(error => {logger.error("problem obtaining srid:");logger.error(error); throw new Error(error);});
+					*/
 				}).catch(error => {logger.error("problem getting stats for element " + element);logger.error(error); throw new Error(error);});;
 			});
 			return Promise.all(promises).catch(error => {logger.error("Problem processing legacy files");logger.error(error); throw new Error(error);});
@@ -117,4 +142,43 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 };
 
 
+function fetchExtent(collectionID, dir, file, db) {
+	logger.silly("enter fetchExtent");
+	return new Promise((resolve, reject) => {
+		let extent;
+		//Use gdal to get extent and srs (from first layer)
+		try {
+			logger.silly("running gdal");
+			const gdal = require("gdal");
+			const dataset = gdal.open(dir + "/" + file);
+			const layer = dataset.layers.get(0);
+			extent = layer.getExtent();
+			extent.srid = (layer.srs ? layer.srs.toProj4() : 'null');
+
+			//convert srid string into actual srid			
+			db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + extent.srid + "')")
+			.then((data) => {
+				extent.srid = (data === null ? null : data.srid);
+				logger.silly("getExtentPromise, extent.srid = " + extent.srid);
+				resolve(extent);
+			})
+			.catch((error) => {
+				logger.warn("Cannot find srid for " + extent.srid + ". " + error);
+				reject(error);
+			});
+
+		//gdal failed, so use extent from top-level metadata
+		} catch (err) {
+			logger.warn("Problem with gdal for " + file + ": " + global.pp(err));
+			db.one('select ST_XMin(geom) as "minX", ST_YMin(geom) as "minY", ST_XMax(geom) as "maxX", ST_YMax(geom) as "maxY", ST_SRID(geom) as srid from metadata.metadata where collection_id = ' + collectionID)
+			.then((data) => {
+				resolve(data);
+			})
+			.catch((error) => {
+				logger.warn("Problem getting metadata extent: " + global.pp(error));
+				reject("Can't find extent for collection");
+			});
+		}
+	});
+}
 
