@@ -5,7 +5,7 @@ global.args = require('commander');
 
 args
 	.version('0.0.1')
-	.option('-s, --source <source>', 'Source directory of the gdb. Required')
+	//.option('-s, --source <source>', 'Source directory of the gdb. Required')
 	.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. If a recognized schema name (e.g. ncgmp09, gems), schema will be prepped accordingly. Required')
 	.option('-d, --dbname <dbname>', 'DB name. Required')
 	.option('-u, --username <username>', 'DB username. Required')
@@ -17,10 +17,17 @@ const pgp = require("pg-promise")({
 });
 let db;
 
+const path = require("path");
+
+//TODO: Kind of cheesy to have to do this to get path to this folder. Is there a better way?
+const pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
+
+const sourceGDB = path.join(pathToMe, "ncgmp09", "ncgmp09.gdb"); //TODO: Using ncgmp09 gdb for everything for now. Should be ok I think.
+
 const ogr2ogr = require('ogr2ogr');
 
 const gdal = require("gdal");
-const dataset = gdal.open(args.source);
+const dataset = gdal.open(sourceGDB);
 const layers = dataset.layers.map((layer, i) => {
 	return args.gdbschema + '."' + layer.name + '"';
 });
@@ -61,7 +68,7 @@ promise.then((password) => {
 	//fill it with tables from a dummy gdb 
 	//TODO: Move the ogr2ogr call to a module that wraps it in a promise
 	const ogrPromise = new Promise((resolve, reject) => {
-		ogr2ogr(args.source)
+		ogr2ogr(sourceGDB) 
 		.format('PostgreSQL')
 		.options(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-gt', 'unlimited'])
 		.destination('PG:host=localhost user=' + args.username + ' password=' + args.password + ' dbname=' + args.dbname + ' schemas=' + args.gdbschema)
@@ -96,10 +103,8 @@ promise.then((password) => {
 }).then(() => {
 	//TODO: Currently using the same template for ncgmp09 and gems. This is not accurate and will change in the future.
 	if (args.gdbschema.toLowerCase() === "ncgmp09" || args.gdbschema.toLowerCase() === "gems") {
-		//TODO: Kind of cheesy to have to do this to get path to this folder. Is there a better way?
-		let pathToMe = require("global-modules-path").getPath("azlibConfigGDB");
 
-		const file = pgp.QueryFile(pathToMe + '/ncgmp09.sql', {minify: true});
+		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true});
 
 		return db.none(file).catch(error => {
 			console.log("Problem processing ncgmp09 template: ");console.log(error); 

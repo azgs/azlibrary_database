@@ -33,12 +33,18 @@ Usage:
 ------
 
 Run the tool as follows:
-	azlibConfigGDB source_gdb_directory schema_name db_name db_user [db_password]
+  Usage: azlibConfigGDB [options]
 
-If db_password is not specified, you will be prompted for it.
+  Options:
 
-Usage guidance is also available from the command line by typing:
-	azlibConfigGDB --help
+    -V, --version                 output the version number
+    -g, --gdbschema <gdb-schema>  Geodatabase schema in DB. If a recognized schema name (e.g. ncgmp09, gems), schema will be prepped accordingly. Required
+    -d, --dbname <dbname>         DB name. Required
+    -u, --username <username>     DB username. Required
+    -p, --password <password>     DB password (will be prompted if not included)
+    -h, --help                    output usage information
+
+
 
 
 
