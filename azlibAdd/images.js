@@ -17,7 +17,7 @@ exports.upload = (rootDir, collectionID, db) => {
 
 	let files = [];
 	try {
-		files = fs.readdirSync(dir).filter(f => !fs.statSync(path.join(dir, f)).isDirectory());
+		files = fs.readdirSync(dir).filter(f => !fs.statSync(path.join(dir, f)).isDirectory() && ! /^\..*/.test(f));
 	} catch(err) {
 		return Promise.reject("Problem accessing images directory: " + err);
 	}
