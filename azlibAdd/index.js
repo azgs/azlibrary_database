@@ -81,25 +81,35 @@ pwPromise.then((password) => {
 			throw new Error(global.args.source + " directory found");
 		}
 
-		let collections = [];
+		let collectionPaths = [];
 		try {
-			collections = fs.readdirSync(global.args.source).filter(f => fs.statSync(path.join(global.args.source, f)).isDirectory());
+			collectionPaths = fs.readdirSync(global.args.source).filter(f => fs.statSync(path.join(global.args.source, f)).isDirectory());
 		} catch(err) {
 			return Promise.reject("Problem accessing collections directories: " + err);
 		}
-		logger.silly("collections = " + global.pp(collections));
+		logger.silly("collectionPaths = " + global.pp(collectionPaths));
+
+		const collections = collectionPaths.map((cP) => {
+			return {path: cP, result: null, processingNotes: null};
+		});
 		
 		collections.reduce((promiseChain, collection) => {
-			logger.silly("reduce iteration, collection = " + collection);
+			logger.silly("reduce iteration, collection = " + collection.path);
 			return promiseChain.then(() => {
 				logger.silly("promiseChain.then");
-				return processCollection(path.join(global.args.source, collection));
+				return processCollection(collection);
 			});
 		}, Promise.resolve())
-		.then(() => {logger.debug("----------------------all done-----------------------");/*pgp.end();*/return Promise.resolve();});
-		
+		.then(() => {
+			logger.debug("----------------------all done-----------------------");
+			/*pgp.end();*/
+			logger.info(global.pp(collections));
+			return Promise.resolve();
+		});
+			
 	} else {
-		return processCollection(global.args.source);
+		const collection = { path:'', result:null, processingNotes:null};
+		return processCollection(collection);
 	}
 });/*
 .catch(() => {
@@ -109,12 +119,15 @@ pwPromise.then((password) => {
 	pgp.end();
 });*/
 
+//TODO:Hmmm... why did I put this here and not use it?
 function processCollectionFactory(source) {
 	return processCollection(source);
 }
 
 //const processCollection = (source) => {
-function processCollection(source)  {
+function processCollection(collection)  {
+	const source = path.join(global.args.source, collection.path);
+
 	return new Promise((resolve, reject) => {
 		logger.debug("processing collection " + source);
 
@@ -177,6 +190,7 @@ function processCollection(source)  {
 			//pgp.end();
 			resolve();
 		}).then(() => {
+			collection.result = "success"; //TODO: this should reflect archiving as well
 			if (global.args.archive) {
 				logger.silly("squishin stuff");
 				return require("./archiver").archive(source).catch(error => {
@@ -188,6 +202,8 @@ function processCollection(source)  {
 				resolve();
 			}
 		}).catch(error => {
+			collection.result = "failure";
+			collection.processingNotes = global.pp(error);
 			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
 			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 			const rollback = require("./rollback");
@@ -197,7 +213,10 @@ function processCollection(source)  {
 				//pgp.end();
 				logger.silly("resolving");				
 				resolve();
-			}).catch(error => {logger.error(error);});
+			}).catch(error => {
+				logger.error(error);
+				collection.processingNotes += "\nrollback failed. Manual rollback required";
+			});
 		});
 	
 	});
