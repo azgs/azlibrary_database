@@ -15,23 +15,17 @@ exports.extract = (file) => {
 	} else if (suffix === "PDF") {
 		const pdf = require('pdf-parse');
 		return pdf(dataBuffer);
-	} else if (suffix === "DOC") { 
-		const we = require("word-extractor");
-		const extractor = new we();
-		const extracted = extractor.extract(file);
-		return extracted.then(doc => {
-			return {text: doc.getBody()};
-		});
 	} else if (suffix === "DOCX") {
 		const mammoth = require("mammoth");
 		return mammoth.extractRawText({path: file}).then(result => {
         	return {text: result.value}; 
 		});
-	} else if (suffix === "RTF") {
+	} else if (suffix === "RTF" || suffix === "DOC" || suffix === "HTML" || suffix === "HTM") {
 		const textract = require("textract");
 		const util = require('util');
 		const textractPromise = util.promisify(textract.fromFileWithPath);
 		return textractPromise(file).then(result => {
+			logger.silly("text result = " + global.pp(result));
 			return {text: result};
 		})
 		.catch(error => {logger.error("problem processing " + file); logger.error(error); throw new Error(error);});
