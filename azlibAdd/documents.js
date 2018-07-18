@@ -20,8 +20,7 @@ exports.upload = (rootDir, collectionID, db) => {
 	let files = listFiles(dir);
 	logger.silly("files = " + global.pp(files));
 
-	//only interested in pdfs for now
-	//files = files.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "PDF"); 
+	//filter out unrecognized filetypes
 	files = files.filter(file => {
 		const suffix = file.split('.')[file.split('.').length-1].toUpperCase();
 		return global.documentTypes.includes(suffix);
@@ -40,35 +39,6 @@ exports.upload = (rootDir, collectionID, db) => {
 			return mID;
 		});
 
-		/*
-		//Process each file
-		const promises = files.map((file) => {
-			console.log("processing pdf file " + file);
-
-			//Find metadata id that corresponds to this file
-			let metadataID = metadataIDs.reduce((id, mID) => {
-				if (mID.file === file.substring(0, file.lastIndexOf('.'))) {
-					return mID.metadataID;
-				} else {
-					return id;
-				}
-			}, null);
-
-			const pdf = require('pdf-parse');
-			let dataBuffer = fs.readFileSync(dir + "/" + file);
-			return pdf(dataBuffer).then(data => {
-				//console.log(data.text); 
-				return db.none(
-					"insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
-					collectionID + ", " + 
-					metadataID + ", " +
-					"'" + dir + "/" + file + "', " +
-					"to_tsvector($$" + data.text + "$$))"); 
-			});
-		});
-		return Promise.all(promises);
-		*/
-
 		return db.tx(t => { //do insert inside a transaction
 
 			//Process each file
@@ -84,19 +54,6 @@ exports.upload = (rootDir, collectionID, db) => {
 					}
 				}, null);
 
-				/*
-				const pdf = require('pdf-parse');
-				let dataBuffer = fs.readFileSync(dir + "/" + file);
-				return pdf(dataBuffer).then(data => {
-					//console.log(data.text); 
-					return t.none(
-						"insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
-						collectionID + ", " + 
-						metadataID + ", " +
-						"'" + dir + "/" + file + "', " +
-						"to_tsvector($$" + data.text + "$$))"); 
-				});
-				*/
 				const textExtractor = require('./text_extractor');
 				return textExtractor.extract(dir + "/" + file).then(data => {
 					//console.log(data.text); 
