@@ -46,7 +46,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 				//let fs = require('fs');
 
 				new Promise((resolve) => {
-					logger.silly("reading xml file");
+					logger.silly("reading xml file " + file);
 					fs.readFile(xmlPath, 'utf-8', function (error, data){
 						if(error) {
 							logger.warn(error);
@@ -55,7 +55,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 						resolve(data);    
 					}); 
 				}).then((data) => {      
-					logger.silly("processing xml content");
+					logger.silly("processing xml content for " + file);
 					if (data === null) {
 						logger.warn("no xml data");
 						resolve();
@@ -71,7 +71,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 						});
 					}).then((data) => {
 						//console.log("xml data = " + data);
-						logger.silly("json from metadata = " + global.pp(data));	
+						logger.silly("json from metadata in " + file + " = " + global.pp(data));	
 						let metadataInsert; 
 						//If not top level metadata file					
 						if (intermediateDir) {
@@ -84,10 +84,22 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 						} else {
 							//TODO: I don't like that these are hardcoded. Maybe put in metadata.types?
 							if ("ISO19115" === type.toUpperCase() || "ISO19139" === type.toUpperCase()) {
-								const minX = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:westBoundLongitude'][0]['gco:Decimal'][0];
-								const maxX = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:eastBoundLongitude'][0]['gco:Decimal'][0];
-								const minY = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:southBoundLatitude'][0]['gco:Decimal'][0];
-								const maxY = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:northBoundLatitude'][0]['gco:Decimal'][0];
+
+								//xml files should map and use the gmd prefix. But sometimes they don't. 
+								//This should allow us to handle either case.
+								const prefix = "";
+								try {
+									prefix = data['gmd:MD_Metadata']['$'['xmlns:gmd']] ? data['gmd:MD_Metadata']['$'['xmlns:gmd']] + ":" : "";
+								} catch (error) {logger.warn("gmd prefix not properly defined in xml file " + file);}
+
+								//const minX = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:westBoundLongitude'][0]['gco:Decimal'][0];
+								//const maxX = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:eastBoundLongitude'][0]['gco:Decimal'][0];
+								//const minY = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:southBoundLatitude'][0]['gco:Decimal'][0];
+								//const maxY = data['gmd:MD_Metadata']['gmd:identificationInfo'][0]['gmd:MD_DataIdentification'][0]['gmd:extent'][0]['gmd:EX_Extent'][0]['gmd:geographicElement'][0]['gmd:EX_GeographicBoundingBox'][0]['gmd:northBoundLatitude'][0]['gco:Decimal'][0];
+								const minX = data[prefix + 'MD_Metadata'][prefix + 'identificationInfo'][0][prefix + 'MD_DataIdentification'][0][prefix + 'extent'][0][prefix + 'EX_Extent'][0][prefix + 'geographicElement'][0][prefix + 'EX_GeographicBoundingBox'][0][prefix + 'westBoundLongitude'][0]['gco:Decimal'][0];
+								const maxX = data[prefix + 'MD_Metadata'][prefix + 'identificationInfo'][0][prefix + 'MD_DataIdentification'][0][prefix + 'extent'][0][prefix + 'EX_Extent'][0][prefix + 'geographicElement'][0][prefix + 'EX_GeographicBoundingBox'][0][prefix + 'eastBoundLongitude'][0]['gco:Decimal'][0];
+								const minY = data[prefix + 'MD_Metadata'][prefix + 'identificationInfo'][0][prefix + 'MD_DataIdentification'][0][prefix + 'extent'][0][prefix + 'EX_Extent'][0][prefix + 'geographicElement'][0][prefix + 'EX_GeographicBoundingBox'][0][prefix + 'southBoundLatitude'][0]['gco:Decimal'][0];
+								const maxY = data[prefix + 'MD_Metadata'][prefix + 'identificationInfo'][0][prefix + 'MD_DataIdentification'][0][prefix + 'extent'][0][prefix + 'EX_Extent'][0][prefix + 'geographicElement'][0][prefix + 'EX_GeographicBoundingBox'][0][prefix + 'northBoundLatitude'][0]['gco:Decimal'][0];
 								logger.silly("bbox = " + minX + ", " + minY + ", " + maxX + ", " + maxY);
 								metadataInsert = 
 									"insert into " + schemaName + ".metadata (collection_id, type, json_data, metadata_file, geom) values (" +
@@ -96,15 +108,17 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 									JSON.stringify(data) + "$$, $$" +
 									path.join(intermediateDir, myDir, file) + "$$, " +
 									"ST_MakeEnvelope(" + minX + "," + minY + "," + maxX + "," + maxY + ",4326)) returning metadata_id";
+							} else {
+								logger.error("Unrecognize top-level xml format. Can't create insert statement.");
 							}
 						}
-						logger.silly(metadataInsert);
+						logger.silly("insert for " + file + " = " + metadataInsert);
 						
 						db.one(metadataInsert).then((data) => {
 							//console.log(file.substring(file.indexOf('-')+1, file.lastIndexOf('.')));
 							idReturn.push({file: file, metadataID: data.metadata_id});
 							resolve(data.metadata_id);
-						}).catch(error => {reject(error);});
+						}).catch(error => {logger.error("Problem inserting metadata record: " + global.pp(error));reject(error);});
 					}).catch(error => {
 						logger.error("Malformed XML:");
 						logger.error(error);
