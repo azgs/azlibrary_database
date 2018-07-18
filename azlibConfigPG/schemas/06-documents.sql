@@ -31,4 +31,6 @@ insert into documents.types (type_name) values ('DOC');
 insert into documents.types (type_name) values ('DOCX');
 insert into documents.types (type_name) values ('TXT');
 insert into documents.types (type_name) values ('RTF');
+insert into documents.types (type_name) values ('HTM');
+insert into documents.types (type_name) values ('HTML');
 
