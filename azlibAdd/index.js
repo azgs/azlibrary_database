@@ -158,7 +158,7 @@ function processCollection(collection)  {
 			return db.one(uploadsInsert).catch(error => {throw new Error(error);});
 		}).then(data => {
 			return require("./metadata").upload(source, "", "metadata", collectionID, db)
-			.then(() => {return Promise.resolve(data)});
+			.then(() => {return Promise.resolve(data)}).catch((error) => {logger.error("Unable to process top-level metadata: " + error); return Promise.reject(error);});
 		}).then(data => {
 			uploadID = data.upload_id;
 
