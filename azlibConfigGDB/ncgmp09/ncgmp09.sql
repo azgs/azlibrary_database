@@ -35,7 +35,7 @@ insert into ncgmp09.cross_sections (cross_section_prefix) values ('CSZ');
 create table ncgmp09.cs_mapunitpolys (
 	cs_mapunitpolys_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
-	"OBJECTID" integer NOT NULL,
+	"OBJECTID" integer,-- NOT NULL,
 	"MapUnitPolys_ID" character varying(50),
 	"MapUnit" character varying(10),
 	"IdentityConfidence" character varying(50),
@@ -45,7 +45,7 @@ create table ncgmp09.cs_mapunitpolys (
 	"DataSourceID" character varying(50),
 	"Shape_Length" double precision,
 	"Shape_Area" double precision,
-	geom geometry(MultiPolygon,26912),
+	geom geometry(MultiPolygon,4326),
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
@@ -77,14 +77,14 @@ create table ncgmp09.cs_mapunitpolysanno (
 	"Override" integer,
 	"SHAPE_Length" double precision,
 	"SHAPE_Area" double precision,
-	geom geometry(MultiPolygon,26911),
+	geom geometry(MultiPolygon,4326),
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
 create table ncgmp09.cs_contactsandfaults (
 	cs_contactsandfaults_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
-	"OBJECTID" integer NOT NULL,
+	"OBJECTID" integer,-- NOT NULL,
 	"ContactsAndFaults_ID" character varying(50),
 	"Type" character varying(254),
 	"IsConcealed" character varying(1),
@@ -99,14 +99,14 @@ create table ncgmp09.cs_contactsandfaults (
 	"RuleID" integer,
 	"Override" bytea,
 	"Shape_Length" double precision,
-	geom geometry(MultiLineString,26912),
+	geom geometry(MultiLineString,4326),
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
 create table ncgmp09.cs_orientationpoints (
 	cs_orientationpoints_id serial PRIMARY KEY,
 	cross_section_id integer references ncgmp09.cross_sections(cross_section_id),
-	"OBJECTID" integer NOT NULL,
+	"OBJECTID" integer,-- NOT NULL,
 	"OrientationPoints_ID" character varying(50),
 	"Type" character varying(254),
 	"StationID" character varying(50),
@@ -124,7 +124,7 @@ create table ncgmp09.cs_orientationpoints (
 	"Notes" character varying,
 	"SymbolRotation" double precision,
 	"PTTYPE" character varying(255),
-	geom geometry(Point,26912),
+	geom geometry(Point,4326),
 	collection_id integer REFERENCES public.collections (collection_id)
 );
 
