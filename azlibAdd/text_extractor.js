@@ -12,15 +12,17 @@ exports.extract = (file) => {
 	logger.debug("text_extractor.extract: suffix = " + suffix);
 	if (suffix === "TXT") {
 		return Promise.resolve({text:dataBuffer});	
+	/*
 	} else if (suffix === "PDF") {
 		const pdf = require('pdf-parse');
 		return pdf(dataBuffer);
+	*/
 	} else if (suffix === "DOCX") {
 		const mammoth = require("mammoth");
 		return mammoth.extractRawText({path: file}).then(result => {
         	return {text: result.value}; 
 		});
-	} else if (suffix === "RTF" || suffix === "DOC" || suffix === "HTML" || suffix === "HTM") {
+	} else if (suffix === "RTF" || suffix === "DOC" || suffix === "HTML" || suffix === "HTM" || suffix === "PDF") {
 		const textract = require("textract");
 		const util = require('util');
 		const textractPromise = util.promisify(textract.fromFileWithPath);
