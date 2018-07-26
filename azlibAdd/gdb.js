@@ -21,9 +21,10 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		dir = dir + "/" + schemaName;
 		const fs = require('fs');
 		const path = require('path');
-		const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory());
+		const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory() || /\.zip$/i.test(f));
 		let dirs = listDirs(dir);
-		dirs = dirs.filter(file => file.split('.')[file.split('.').length-1].toUpperCase() === "GDB"); 
+		logger.silly("dirs before filter = " + global.pp(dirs));
+		dirs = dirs.filter(file => /\.gdb$/i.test(file) ||/\.gdb\.zip$/i.test(file)); 
 		logger.silly("dirs = " + global.pp(dirs));
 
 		if (dirs.length === 0) {
@@ -86,7 +87,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 					}
 				});
 			});
-			return ogrPromise.catch(error => {throw new Error(error);});
+			return ogrPromise.catch(error => {logger.error(error);throw new Error(error);});
 		}).then(() => {			
 			//add collection_id column to each new table
 			const newTablePromises = newTables.map(table => {
@@ -173,9 +174,18 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 						return db.any(s)
 						.then(data => {
 							logger.silly("column name data = " + global.pp(data));
+							/*
 							const sourceColumns = data.map(datum => {
 								return '"' + datum.column_name + '"';
 							});
+							*/
+							const sourceColumns = data.reduce((acc, datum) => {
+								if ("geom" !== datum.column_name) {
+									return acc.concat('"' + datum.column_name + '"');
+								}
+								return acc;
+							}, []);
+							logger.silly("sourceColumns = " + sourceColumns);
 							//create list of columns in our destination table
 							const destColumns = sourceColumns.map(column => {
 								if (column.startsWith('"CS')) {
@@ -190,7 +200,8 @@ const ncgmp09SpecialProcessingPromise = (crossSectionLayers, db, schemaName) => 
 							logger.silly("destColumns = " + global.pp(destColumns));
 							
 							//copy data from source cross section table into our corresponding cs_ table, adding our cross section id.
-							const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ") select " + id + ", " + sourceColumns.toString() + " from " + layer;
+							//const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ") select " + id + ", " + sourceColumns.toString() + " from " + layer;
+							const q = "insert into " + schemaName + "." + tableName + "(cross_section_id, " + destColumns.toString() + ", geom) select " + id + ", " + sourceColumns.toString() + ", ST_Transform(geom, 4326) as geom from " + layer;
 							logger.silly("insert = " + q);
 							return db.none(q).catch(error => {logger.error("Problem copying data");logger.error(error);throw new Error(error);});
 						})						
