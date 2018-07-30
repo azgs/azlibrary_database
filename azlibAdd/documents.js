@@ -62,6 +62,7 @@ exports.upload = (rootDir, collectionID, db) => {
 					throw new Error(error);
 				})
 				.then(data => {
+					logger.silly("data.text = " + data.text);
 					data.text = data.text.replace("$$", "$"); //I can think of no valid reason for there to be "$$" in these strings, but cases have shown up. 
 					const insert = "insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
 						collectionID + ", " + 
@@ -75,13 +76,13 @@ exports.upload = (rootDir, collectionID, db) => {
 			 			logger.error(error); 
 						throw new Error(error);
 					});
-				});/*
+				})
 				.catch(error => {
-					logger.error("problem inserting record for " + file);
+					logger.error("problem creating insert for " + file);
 		 			logger.error(error); 
 					throw new Error(error);
 				});
-				*/
+				
 
 			});
 			return t.batch(inserts).catch(error => {logger.error(error);throw new Error(error);});
