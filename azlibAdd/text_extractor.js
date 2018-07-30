@@ -26,7 +26,7 @@ exports.extract = (file) => {
 		const textract = require("textract");
 		const util = require('util');
 		const textractPromise = util.promisify(textract.fromFileWithPath);
-		return textractPromise(file).then(result => {
+		return textractPromise(file, {exec: {maxBuffer : 1000000}}).then(result => {
 			logger.silly("text result = " + global.pp(result));
 			return {text: result};
 		})
