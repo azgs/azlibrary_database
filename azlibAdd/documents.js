@@ -55,20 +55,33 @@ exports.upload = (rootDir, collectionID, db) => {
 				}, null);
 
 				const textExtractor = require('./text_extractor');
-				return textExtractor.extract(dir + "/" + file).then(data => {
-					//console.log(data.text); 
-					return t.none(
-						"insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
+				return textExtractor.extract(dir + "/" + file)
+				.catch(error => {
+					logger.error("problem extracting text from " + file);
+		 			logger.error(error); 
+					throw new Error(error);
+				})
+				.then(data => {
+					data.text = data.text.replace("$$", "$"); //I can think of no valid reason for there to be "$$" in these strings, but cases have shown up. 
+					const insert = "insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
 						collectionID + ", " + 
 						metadataID + ", " +
 						"'" + path.join(myDir, file) + "', " +
-						"to_tsvector($$" + data.text + "$$))"); 
-				})
+						"to_tsvector($$" + data.text + "$$))";
+					logger.silly("insert = " + insert);
+					return t.none(insert)
+					.catch(error => {
+						logger.error("problem inserting record for " + file);
+			 			logger.error(error); 
+						throw new Error(error);
+					});
+				});/*
 				.catch(error => {
-					logger.error("problem processing " + file);
+					logger.error("problem inserting record for " + file);
 		 			logger.error(error); 
 					throw new Error(error);
 				});
+				*/
 
 			});
 			return t.batch(inserts).catch(error => {logger.error(error);throw new Error(error);});
