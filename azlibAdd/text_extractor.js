@@ -11,7 +11,7 @@ exports.extract = (file) => {
 
 	logger.debug("text_extractor.extract: suffix = " + suffix);
 	if (suffix === "TXT") {
-		return Promise.resolve({text:dataBuffer});	
+		return Promise.resolve({text:dataBuffer.toString()});	
 	/*
 	} else if (suffix === "PDF") {
 		const pdf = require('pdf-parse');
