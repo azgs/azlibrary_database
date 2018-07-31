@@ -31,7 +31,7 @@ console.log("repeat = " + args.repeat);
 
 global.pp = (object) => {
 	logger.debug("typeof Object = " + typeof object);
-	return require('util').inspect(object, {depth:null});
+	return require('util').inspect(object, {depth:null, maxArrayLength: null});
 };
 
 // get password sorted
