@@ -63,7 +63,7 @@ exports.upload = (rootDir, collectionID, db) => {
 				})
 				.then(data => {
 					logger.silly("data.text = " + data.text);
-					data.text = data.text.replace("$$", "$"); //I can think of no valid reason for there to be "$$" in these strings, but cases have shown up. 
+					data.text = data.text.replace(/\$+/g, "$"); //I can think of no valid reason for there to be "$$" in these strings, but cases have shown up. 
 					const insert = "insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
 						collectionID + ", " + 
 						metadataID + ", " +
