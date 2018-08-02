@@ -32,6 +32,8 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db)
 	.then((metadataIDs) => {
 	
+		metadataIDs = metadataIDs ? metadataIDs : []; //TODO: modify metadata.js to always return an array
+
 		//strip away prefix and filetype from metadata ID mappings. Only interested in name
 		metadataIDs = metadataIDs.map(mID => {
 			mID.file = mID.file.substring(mID.file.indexOf('-')+1, mID.file.lastIndexOf('.'));
