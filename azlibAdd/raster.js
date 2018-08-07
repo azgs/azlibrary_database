@@ -105,7 +105,14 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 							return Promise.reject(stderr);
 						})
 						.then((stdout) => {
-							return Promise.resolve(stdout);
+							//TODO: It would be nice to intercept the inserts coming from raster2pgsql 
+							//using the split package and regex them to include collection_id, but I 
+							//feel like I've spent too much time on this already for now.
+							return db.none("update gisdata.rasters set collection_id = " + collectionID + " where collection_id is null")
+							.catch(error => {
+								logger.error("Problem updating collection_ids in rasters: " + global.pp(error));
+								return Promise.reject(error);
+							});
 						});
 					});
 				})	
