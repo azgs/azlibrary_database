@@ -76,36 +76,50 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 			const exec = util.promisify(require('child_process').exec);
 		
 			return db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + srs + "')")
+			.catch(error => {
+				logger.error("Problem getting srid: " + global.pp(error));
+				return Promise.reject(error);
+			})			
 			.then((data) => {
 				const srid = (data === null ? null : data.srid);
 				logger.silly("srid = " + srid);
 
-				return db.tx(t => { //do insert-update inside a transaction
 
-					//return exec('raster2pgsql -s ' + srid + ' -I -C -M "' + dir + '/' + 'nasa_test_raster.tiff" -a gisdata.rasters -f raster')
-					return exec('raster2pgsql -I -C -M "' + dir + '/' + file + '" -a gisdata.rasters -f raster -t ' + tileSize)
-					.catch((stderr) => {
-						logger.error("Problem importing raster"); logger.error(stderr);
-						throw new Error(stderr);
-					})
-					.then((stdout) => {
-						//console.log(stdout);
-					
-						//A little cleaning on the sql we got from raster2pgsql so that we can run it in a transaction with the update below
-						const insert = t.multi(stdout.stdout.replace("VACUUM", "--VACUUM").replace("BEGIN;", "").replace("END;","")).catch(err => {console.log("oh no!");console.log(err);});
-
-						const update = t.none("update gisdata.rasters set " +
-							"collection_id = " + collectionID + 
-							", metadata_id = " + metadataID + 
-							", srid = " + srid +
-							", tile_size = '" + tileSize + "'" +
-							" where collection_id is null").catch(error => {logger.error(error); throw new Error(error);});
-						return t.batch([insert, update]);
+				const tmp = require("tmp-promise");
+				const { spawn } = require('child_process');
+				const p = spawn('raster2pgsql', [ '-I', '-C', '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
+				return tmp.file({keep:false})
+				.catch(error => {
+					logger.error("Problem creating tmp file: " + global.pp(error));
+					return Promise.reject(error);
+				})
+				.then(outFile => {  
+					logger.silly("path = " + outFile.path);
+					const outStream = fs.createWriteStream(outFile.path);
+				  	p.stdout.pipe(outStream)
+					.on("close", () => {
+						logger.silly("stream end");
+						return exec("psql postgres://" + args.username + ":" + args.password + "@localhost:5432/" + args.dbname + " -f " + outFile.path)
+						.catch((stderr) => {
+							logger.error("Problem importing raster from tmp file"); logger.error(stderr);
+							return Promise.reject(stderr);
+						})
+						.then((stdout) => {
+							return Promise.resolve(stdout);
+						});
 					});
-				}).catch(error => {logger.error(error);throw new Error(error);}); 
-			}).catch(error => {logger.error(error);throw new Error(error);});
+				})	
+
+		
+			}).catch(error => {
+				logger.error("Problem processing raster " + file + ": " + global.pp(error));
+				return Promise.reject(error);
+			});
 
 		});
-		return Promise.all(promises).catch(error => {logger.error(error); throw new Error(error);});
+		return Promise.all(promises).catch(error => {
+			logger.error("Failed to process all rasters: " + global.pp(error)); 
+			return Promise.reject(error);
+		});
 	});
 };
