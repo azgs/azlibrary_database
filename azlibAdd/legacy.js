@@ -94,12 +94,13 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 							logger.silly(file + " extent after srid tweaking = " + global.pp(extent));
 
 							//Insert legacy record for this file, creating bbox from extent
-							return db.none("insert into gisdata.legacy (collection_id, metadata_id, name, path, geom) values (" +
+							return db.none("insert into gisdata.legacy (collection_id, metadata_id, name, path, geom, bbox_from_meta) values (" +
 											collectionID + "," +
 											metadataID + "," + 
 											"null," + //TODO: what to use for name?
 											"'" + path.join(intermediateDir, myDir, file) + "'," +
-											"ST_MakeEnvelope(" + extent.minX + "," + extent.minY + "," + extent.maxX + "," + extent.maxY + "," + extent.srid + ")" +
+											"ST_MakeEnvelope(" + extent.extent.minX + "," + extent.extent.minY + "," + extent.extent.maxX + "," + extent.extent.maxY + "," + extent.extent.srid + ")," +
+											extent.fromMeta + 
 							")").catch(error => {logger.error("problem inserting legacy record:");logger.error(error); return Promise.reject(error);});
 						}).catch((error) => {
 							logger.error("Problem creating legacy record for collection " + collectionID + ", file " + file);
@@ -136,7 +137,7 @@ function fetchExtent(collectionID, dir, file, db) {
 			.then((data) => {
 				extent.srid = (data === null ? null : data.srid);
 				logger.silly("getExtentPromise, extent.srid = " + extent.srid);
-				resolve(extent);
+				resolve({extent: extent, fromMeta:false});
 			})
 			.catch((error) => {
 				logger.warn("Cannot find srid for " + extent.srid + ". " + error);
@@ -148,7 +149,7 @@ function fetchExtent(collectionID, dir, file, db) {
 			logger.warn("Problem with gdal for " + file + ": " + global.pp(err));
 			db.one('select ST_XMin(geom) as "minX", ST_YMin(geom) as "minY", ST_XMax(geom) as "maxX", ST_YMax(geom) as "maxY", ST_SRID(geom) as srid from metadata.metadata where collection_id = ' + collectionID)
 			.then((data) => {
-				resolve(data);
+				resolve({extent:data, fromMeta:true});
 			})
 			.catch((error) => {
 				logger.warn("Problem getting metadata extent: " + global.pp(error));
