@@ -16,7 +16,8 @@ CREATE TABLE gisdata.legacy
     metadata_id integer REFERENCES gisdata.metadata(metadata_id),
 	name text,
 	path text,
-	geom geometry
+	geom geometry,
+	bbox_from_meta boolean
 );
 
 create table gisdata.rasters
