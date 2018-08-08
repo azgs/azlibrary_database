@@ -20,6 +20,7 @@
     "pdf-parse": "^1.0.8",
     "pg-promise": "^7.5.2",
     "prompt": "^1.0.0",
+    "stream-to-promise": "^2.2.0",
     "tar-fs": "^1.16.2",
     "textract": "^2.2.0",
     "tmp-promise": "^1.0.5",
