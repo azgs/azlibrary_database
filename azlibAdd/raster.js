@@ -87,7 +87,8 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 
 				const tmp = require("tmp-promise");
 				const { spawn } = require('child_process');
-				const p = spawn('raster2pgsql', [ '-I', '-C', '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
+				//const p = spawn('raster2pgsql', [ '-I', '-C', '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
+				const p = spawn('raster2pgsql', [ '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
 				return tmp.file({keep:false})
 				.catch(error => {
 					logger.error("Problem creating tmp file: " + global.pp(error));
@@ -98,7 +99,6 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 					const outStream = fs.createWriteStream(outFile.path);
 					const streamToPromise = require("stream-to-promise");
 				  	return streamToPromise(p.stdout.pipe(outStream)).then(() => {
-					//.on("close", () => {
 						logger.silly("stream end");
 						return exec("psql postgres://" + args.username + ":" + args.password + "@localhost:5432/" + args.dbname + " -f " + outFile.path)
 						.catch((stderr) => {
