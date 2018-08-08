@@ -96,8 +96,9 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 				.then(outFile => {  
 					logger.silly("path = " + outFile.path);
 					const outStream = fs.createWriteStream(outFile.path);
-				  	p.stdout.pipe(outStream)
-					.on("close", () => {
+					const streamToPromise = require("stream-to-promise");
+				  	return streamToPromise(p.stdout.pipe(outStream)).then(() => {
+					//.on("close", () => {
 						logger.silly("stream end");
 						return exec("psql postgres://" + args.username + ":" + args.password + "@localhost:5432/" + args.dbname + " -f " + outFile.path)
 						.catch((stderr) => {
