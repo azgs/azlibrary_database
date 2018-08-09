@@ -128,6 +128,8 @@ function processCollectionFactory(source) {
 function processCollection(collection)  {
 	const source = path.join(global.args.source, collection.path);
 
+	const rollback = require("./rollback");
+
 	return new Promise((resolve, reject) => {
 		logger.debug("processing collection " + source);
 
@@ -141,16 +143,31 @@ function processCollection(collection)  {
 		logger.silly("after dsPath");
 
 		const collectionsInsert = 
-			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ") returning collection_id";
-		//console.log(collectionsInsert);
-		//TODO: Do we want to allow updates to a collection?
-		logger.silly("before collectionsInsert");
+			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ")" + 
+			" on conflict (azgs_path) do update set private = " + (global.args.private ? true : false) +			
+			" returning collection_id, (xmax = 0) AS inserted";
+		logger.silly("collectionsInsert = " + collectionsInsert);
+
 		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
 		.then(data => {
 			logger.silly("collectionsInsert success");
 			collectionID = data.collection_id;
 			logger.debug("collection id = " + collectionID);
+			logger.silly("inserted = " + data.inserted);
 
+			//If insert was performed, resolve. Otherwise, an update was performed. 
+			//In this case, call rollback to clear data in prepartion for reloading.
+			return Promise.resolve().then(() => {
+				if (data.inserted) {
+					logger.silly("insert is true, resolving");
+					return resolve();
+				} else {
+					logger.silly("insert is false, rolling back");
+					return rollback.rollback(collectionID, db);
+				}
+			});
+		}).then(() => {
+			logger.silly("Preparing to insert upload record");
 			const uploadsInsert = 
 				"insert into public.uploads (collection_id, created_at) values ($$" +
 				collectionID + "$$, current_timestamp) returning upload_id";
@@ -205,8 +222,6 @@ function processCollection(collection)  {
 			collection.result = "failure";
 			collection.processingNotes = global.pp(error);
 			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
-			logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-			const rollback = require("./rollback");
 			rollback.rollback(collectionID, db).then(() => {
 				logger.info("rollback complete");
 				global.datasetName = undefined; 

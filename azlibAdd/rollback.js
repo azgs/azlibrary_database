@@ -11,6 +11,7 @@ const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
 exports.rollback = (collectionID, db) => {
+	logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	logger.debug("enter, collection_id = " + collectionID);
 
 
@@ -52,6 +53,7 @@ exports.rollback = (collectionID, db) => {
 			if (results.filter(result => result.status === "rejected").length === 0) {
 				return Promise.all(metadataPromises.map(promiseUtil.reflect)).then(results => {
 					if (results.filter(result => result.status === "rejected").length === 0) {
+					logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rollback complete!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 						return Promise.resolve(results);
 					} else {
 						return Promise.reject(results);
