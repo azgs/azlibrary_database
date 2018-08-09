@@ -94,29 +94,40 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 					logger.error("Problem creating tmp file: " + global.pp(error));
 					return Promise.reject(error);
 				})
-				.then(outFile => {  
-					logger.silly("path = " + outFile.path);
-					const outStream = fs.createWriteStream(outFile.path);
-					const streamToPromise = require("stream-to-promise");
-				  	return streamToPromise(p.stdout.pipe(outStream)).then(() => {
-						logger.silly("stream end");
+				.then(outFile => {
+					return new Promise((resolve, reject) => {  
+						logger.silly("path = " + outFile.path);
+						const outStream = fs.createWriteStream(outFile.path);
+						const split = require("split");
+					  	p.stdout.pipe(split())
+						.on('data', line => {
+							let t=0;   
+							line = line.replace(/\(/g, match => {
+								t++;
+								return (t === 1) ? 
+									'("collection_id",' : 
+									(t === 2) ?
+										'(' + collectionID + ',' :
+										match;
+							});
+							outStream.write(line + "\n");
+						})
+						.on('end', () => {
+							logger.silly("stream end");
+							resolve();
+						})
+						.on('error', () => {
+							reject();
+						}).resume();
+					}).then(() => {
 						return exec("psql postgres://" + args.username + ":" + args.password + "@localhost:5432/" + args.dbname + " -f " + outFile.path)
 						.catch((stderr) => {
 							logger.error("Problem importing raster from tmp file"); logger.error(stderr);
 							return Promise.reject(stderr);
-						})
-						.then((stdout) => {
-							//TODO: It would be nice to intercept the inserts coming from raster2pgsql 
-							//using the split package and regex them to include collection_id, but I 
-							//feel like I've spent too much time on this already for now.
-							return db.none("update gisdata.rasters set collection_id = " + collectionID + " where collection_id is null")
-							.catch(error => {
-								logger.error("Problem updating collection_ids in rasters: " + global.pp(error));
-								return Promise.reject(error);
-							});
 						});
 					});
-				})	
+
+				});	
 
 		
 			}).catch(error => {
