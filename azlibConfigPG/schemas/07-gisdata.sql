@@ -9,9 +9,16 @@ CREATE TABLE gisdata.metadata
 	metadata_file text not null
 );
 
-CREATE TABLE gisdata.legacy
+CREATE TABLE gisdata.legacy (
+    legacy_id serial PRIMARY KEY,
+    collection_id integer REFERENCES public.collections(collection_id),
+    metadata_id integer REFERENCES gisdata.metadata(metadata_id),
+    path text NOT NULL
+);
+
+CREATE TABLE gisdata.layers
 (
-	legacy_id serial PRIMARY KEY,
+	layer_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id), 
     metadata_id integer REFERENCES gisdata.metadata(metadata_id),
 	name text,
