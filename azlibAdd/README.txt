@@ -107,19 +107,19 @@ The source directory must be in the following layout (note: this is still evolvi
 		|	|
 		|	|-- [<type*1>-<name*2>.xml] (0..N) 
 		|	
-		|-- [legacy]*3
+		|-- [layers]*3
 		|	|
 		|	|--	[metadata]
 		|	|	|
 		|	|	|-- [<type*1>-<name*2>.xml] (0..N) 
 		|	|
-		|	|-- [<name>.geojson] (1..N)
+		|	|-- [<name>.geojson] (0..N)
 		|	|
-		|	|-- [<name>.json] (1..N)
+		|	|-- [<name>.json] (0..N)
 		|	|
-		|	|-- [<name>.kml] (1..N)
+		|	|-- [<name>.kml] (0..N)
 		|	|
-		|	|-- [<name>.shp] (1..N)
+		|	|-- [<name>.shp] (0..N)
 		|		|
 		|		|-- the various files for a single shapefile (must include one with .shp extention)
 		|
@@ -129,15 +129,23 @@ The source directory must be in the following layout (note: this is still evolvi
 		|	|	|
 		|	|	|-- [<type*1>-<name*2>.xml] (0..N) 
 		|	|
-		|	|-- [<name>.tiff or <name>.tif] (1..N)
+		|	|-- [<name>.tiff or <name>.tif] (0..N)
 		|
+		|-- [legacy]*7
+		|	|
+		|	|--	[metadata]
+		|	|	|
+		|	|	|-- [<type*1>-<name*2>.xml] (0..N) 
+		|	|
+		|	|-- [<name>.<extension>] (0..N)
+		|	
 		|-- [<schema name>]*6
 			|
 			|--	[metadata]
 			|	|
 			|	|-- [<type*1>-<name*4>.xml] (0..N) 
 			|
-			|-- <name>.gdb (1..N)
+			|-- <name>.gdb (0..N)
 
 
 
@@ -147,7 +155,6 @@ The source directory must be in the following layout (note: this is still evolvi
 *4 If metadata is associated with a specific geodatabase, <name> should correspond to a gdb subdirectory (sans extension) in the directory.
 *5 Notes is basically a garbage can for stuff that doesn't fit elsewhere. As such, any type of file could be here. We only store the path in the db.
 *6 This is for geodatabases only. The schema name must be created manually and must already exist in the db prior to running this script.
-
-
+*7 This is a catch-all directory for any other weird gis files. 
 
 

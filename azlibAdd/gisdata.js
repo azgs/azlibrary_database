@@ -27,6 +27,8 @@ exports.upload = (rootDir, datasetName, collectionID, db) => {
 			return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db);
 		} else if (thisDir.toLowerCase() === "legacy") {
 			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
+		} else if (thisDir.toLowerCase() === "layers") {
+			return require("./layers").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "raster") {
 			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		//} else if (thisDir.toLowerCase() === "ncgmp09") {
