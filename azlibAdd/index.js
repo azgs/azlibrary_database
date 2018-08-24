@@ -160,7 +160,7 @@ function processCollection(collection)  {
 			return Promise.resolve().then(() => {
 				if (data.inserted) {
 					logger.silly("insert is true, resolving");
-					return resolve();
+					return Promise.resolve();
 				} else {
 					logger.silly("insert is false, rolling back");
 					return rollback.rollback(collectionID, db);
