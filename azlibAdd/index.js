@@ -3,6 +3,8 @@
 //TODO: There's a lot of common code between this tool and the other two. Look into 
 //refactoring into shared modules.
 
+const path = require("path");
+
 global.args = require('commander');
 
 global.args
@@ -13,11 +15,13 @@ global.args
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	//.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
-	.option('-a, --archive', 'Indicates whether to archive the source directory into a tar.gz.')
+	.option('-a, --archive [archive_directory]', 'Indicates whether to archive the source directory into a tar.gz. If archive is present but archive_directory is not, defaults to source directory.')
+	.option('-f, --failure_directory <failure_directory>', 'Directory to move failed uploads to. Default is to leave in source directory.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
+if (global.args.archive === true) global.args.archive = path.dirname(global.args.source);
 
 /*
 console.log("source = " + args.source);
@@ -33,6 +37,15 @@ global.pp = (object) => {
 	logger.debug("typeof Object = " + typeof object);
 	return require('util').inspect(object, {depth:null, maxArrayLength: null});
 };
+
+const logger = require("./logger")(path.basename(__filename));
+
+logger.debug(global.pp(global.args));
+logger.debug(global.pp("source = " + global.args.source));
+logger.debug(global.pp("archive = " + global.args.archive));
+logger.debug(global.pp("archive_directory = " + global.args.archive_directory));
+logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
+
 
 // get password sorted
 let pwPromise = new Promise((resolve) => {
@@ -52,9 +65,6 @@ let pwPromise = new Promise((resolve) => {
 		resolve(global.args.password);
 	}
 });
-
-const path = require("path");
-const logger = require("./logger")(path.basename(__filename));
 
 const pgp = require("pg-promise")({
 	 //Initialization Options
@@ -90,7 +100,7 @@ pwPromise.then((password) => {
 		logger.silly("collectionPaths = " + global.pp(collectionPaths));
 
 		const collections = collectionPaths.map((cP) => {
-			return {path: cP, result: null, processingNotes: null};
+			return {path: cP, result: null, processingNotes: []};
 		});
 		
 		collections.reduce((promiseChain, collection) => {
@@ -108,7 +118,7 @@ pwPromise.then((password) => {
 		});
 			
 	} else {
-		const collection = { path:'', result:null, processingNotes:null};
+		const collection = { path:'', result:null, processingNotes:[]};
 		return processCollection(collection);
 	}
 });/*
@@ -139,8 +149,13 @@ function processCollection(collection)  {
 		let uploadID;
 
 		//const path = require("path");
-		let dsPath = path.resolve(source);//path.join(process.cwd(), args[0]);;
-		logger.silly("after dsPath");
+		let dsPath;
+		if (global.args.archive) {
+			dsPath = path.resolve(global.args.archive, collection.path);
+		} else {
+			dsPath = path.resolve(source);
+		}
+		logger.silly("dsPath = " + dsPath);
 
 		const collectionsInsert = 
 			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ")" + 
@@ -210,7 +225,7 @@ function processCollection(collection)  {
 			collection.result = "success"; //TODO: this should reflect archiving as well
 			if (global.args.archive) {
 				logger.silly("squishin stuff");
-				return require("./archiver").archive(source).catch(error => {
+				return require("./archiver").archive(source, global.args.archive).catch(error => {
 					logger.error("Unable to create archive of source directory. " + global.pp(error));
 					throw new Error(error);
 				});
@@ -220,18 +235,27 @@ function processCollection(collection)  {
 			}
 		}).catch(error => {
 			collection.result = "failure";
-			collection.processingNotes = global.pp(error);
+			//collection.processingNotes = global.pp(error);
+			collection.processingNotes.push(error);
 			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
-			rollback.rollback(collectionID, db).then(() => {
-				logger.info("rollback complete");
+			rollback.rollback(collectionID, db)
+			.catch(error => {
+				logger.error(error);
+				collection.processingNotes.push("\nrollback failed. Manual rollback required");
+			}).then(() => {
+				//create error file?
+				//move dir to failure dir
+				return require("./failure").process(collection, source).catch((error) => {
+					logger.error("Unable to move collection to failure directory: " + global.pp(error));
+					return Promise.resolve(); //TODO: more serious action here?				
+				});
+			}).then(() => {
 				global.datasetName = undefined; 
 				//pgp.end();
 				logger.silly("resolving");				
 				resolve();
-			}).catch(error => {
-				logger.error(error);
-				collection.processingNotes += "\nrollback failed. Manual rollback required";
 			});
+
 		});
 	
 	});
