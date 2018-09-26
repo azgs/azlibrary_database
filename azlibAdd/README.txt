@@ -33,21 +33,22 @@ Usage:
 ------
 
 Run the tool as follows:
-  Usage: azlibAdd [options]
+Usage: azlibAdd [options]
 
   Options:
 
-    -V, --version              output the version number
-    -s, --source <source>      Source directory of the collection(s). Required
-    -d, --dbname <dbname>      DB name. Required
-    -u, --username <username>  DB username. Required
-    -p, --password <password>  DB password (will be prompted if not included)
-    -P, --private              Indicates if this is a private collection.
-    -a, --archive              Indicates whether to archive the source directory into a tar.gz.
-    -U, --unrecOK              Indicates whether to allow unrecognized files in gdb schemas.
-    -l, --loglevel <loglevel>  Indicates logging level (error, warn, info, verbose, debug, silly). Default is info. (default: info)
-    -r, --repeat               Indicates that the source directory contains multiple collections source directories.
-    -h, --help                 output usage information
+    -V, --version                                output the version number
+    -s, --source <source>                        Source directory of the collection(s). Required
+    -d, --dbname <dbname>                        DB name. Required
+    -u, --username <username>                    DB username. Required
+    -p, --password <password>                    DB password (will be prompted if not included)
+    -P, --private                                Indicates if this is a private collection.
+    -a, --archive [archive_directory]            Indicates whether to archive the source directory into a tar.gz. If archive is present but archive_directory is not, defaults to source directory.
+    -f, --failure_directory <failure_directory>  Directory to move failed uploads to. Default is to leave in source directory.
+    -U, --unrecOK                                Indicates whether to allow unrecognized files in gdb schemas.
+    -l, --loglevel <loglevel>                    Indicates logging level (error, warn, info, verbose, debug, silly). Default is info. (default: info)
+    -r, --repeat                                 Indicates that the source directory contains multiple collections source directories.
+    -h, --help                                   output usage information
 
 
 Source directory format:
