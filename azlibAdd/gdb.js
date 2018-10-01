@@ -57,11 +57,13 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 			logger.silly("layers = " + global.pp(layers));
 
 			//verify that required layers are present
-			requiredLayers.forEach(r => {
-				if (!layers.includes(r)) {
-					return Promise.reject("GDB is missing required layers");
+			const missingRequiredLayers = requiredLayers.reduce((acc, r) => {
+				if (!layers.includes(r)) { 
+					acc.push(r);
 				}
-			});
+				return acc;
+			}, []);
+			if (missingRequiredLayers.length > 0) return Promise.reject("GDB is missing required layers: " + missingRequiredLayers);
 
 			//create list of layers with schema name
 			const qualifiedLayers = layers.map((layer) => {
