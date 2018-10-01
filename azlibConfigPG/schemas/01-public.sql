@@ -28,7 +28,8 @@ CREATE TABLE collections (
 	formal_name text UNIQUE,
 	informal_name text,
 	azgs_path text NOT NULL UNIQUE,
-	azlib_path text,
+	azgs_old_url text,
+	ua_library text,
 	usgs_path text,
 	doi text
 );
