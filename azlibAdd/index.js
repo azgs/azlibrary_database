@@ -235,7 +235,6 @@ function processCollection(collection)  {
 			}
 		}).catch(error => {
 			collection.result = "failure";
-			//collection.processingNotes = global.pp(error);
 			collection.processingNotes.push(error);
 			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
 			rollback.rollback(collectionID, db)
