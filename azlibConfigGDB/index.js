@@ -74,7 +74,7 @@ promise.then((password) => {
 		});
 	}
 }).then(() => {
-	console.log("collection_id successfully added to all tables");
+	console.log("Schema created");
 	pgp.end();
 })
 .catch(error => { 
