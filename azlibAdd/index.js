@@ -174,10 +174,10 @@ function processCollection(collection)  {
 			//In this case, call rollback to clear data in prepartion for reloading.
 			return Promise.resolve().then(() => {
 				if (data.inserted) {
-					logger.silly("insert is true, resolving");
+					logger.info("New collections record created");
 					return Promise.resolve();
 				} else {
-					logger.silly("insert is false, rolling back");
+					logger.silly("Collection already exists. Issuing rollback in preparation for update.");
 					return rollback.rollback(collectionID, db);
 				}
 			});
