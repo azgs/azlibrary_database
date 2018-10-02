@@ -14,7 +14,7 @@
   "dependencies": {
     "commander": "^2.15.1",
     "fs-extra": "^6.0.1",
-    "gdal": "^0.9.6",
+    "gdal": "^0.9.8",
     "mammoth": "^1.4.5",
     "ogr2ogr": "git+ssh://git@github.com/NoisyFlowers/ogr2ogr.git#gdb-zip",
     "pdf-parse": "^1.0.8",
