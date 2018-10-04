@@ -53,8 +53,9 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 				const xml2js = util.promisify(require('xml2js').parseString);
 				return xml2js(data).catch(error => {logger.warn("Problem parsing xml in " + file + ": " + error); return Promise.reject(error);})
 			}).then((data) => {
-				logger.silly("json from metadata in " + file + " = " + global.pp(data));	
-				let metadataInsert; 
+				logger.silly("json from metadata in " + file + " = " + global.pp(data));
+
+				let metadataInsert, collectionsUpdate; 
 
 				//If not top level metadata file					
 				if (intermediateDir) {
@@ -68,6 +69,35 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 					//TODO: I don't like that these are hardcoded. Maybe put in metadata.types?
 					if ("ISO19115" === type.toUpperCase() || "ISO19139" === type.toUpperCase()) {
 
+						//We need to update collections with the proper formal_name. Get that statement ready.
+						/*			
+						This was a cool way to do it, using postgres' json query ability, but not 
+						necessary, since we already have the object in memory. 			
+						collectionsUpdate = ` 						
+							update collections set formal_name =  (
+								select 
+									json_data->
+										'gmd:MD_Metadata'->
+											'gmd:identificationInfo'->0->
+												'gmd:MD_DataIdentification'->0->
+													'gmd:citation'->0->
+														'gmd:CI_Citation'->0->
+															'gmd:title'->0->
+																'gco:CharacterString'->>0
+								from metadata.metadata where collection_id = ${collectionID}
+							)
+							where collection_id = ${collectionID}					
+						`;
+						*/
+
+						const title = data['gmd:MD_Metadata']
+										['gmd:identificationInfo'][0]
+										['gmd:MD_DataIdentification'][0]
+										['gmd:citation'][0]['gmd:CI_Citation'][0]
+										['gmd:title'][0]['gco:CharacterString'][0];
+						logger.silly("title = " + title);
+						collectionsUpdate = "update collections set formal_name = $$" + title + "$$ where collection_id = " + collectionID;
+						
 						//xml files should map and use the gmd prefix. But sometimes they don't. 
 						//This should allow us to handle either case.
 						let prefix = "";
@@ -96,10 +126,25 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 				}
 				logger.silly("insert for " + file + " = " + metadataInsert);
 
-				return db.one(metadataInsert).then((data) => {
+				return db.one(metadataInsert)
+				.catch(error => {
+					logger.error("Problem inserting metadata record: " + global.pp(error));
+					return Promise.reject(error);
+				})
+				.then((data) => {
 					idReturn.push({file: file, metadataID: data.metadata_id});
-					return Promise.resolve(data.metadata_id);
-				}).catch(error => {logger.error("Problem inserting metadata record: " + global.pp(error));return Promise.reject(error);});
+					//Update formal_name in collections from the json metadata
+					if (collectionsUpdate) {
+						logger.silly("Top level metadata, so updating collections");
+						return db.none(collectionsUpdate).catch(error => {
+							logger.error("Problem updating formal_name in collections: " + global.pp(error));
+							return Promise.reject(error);
+						});
+					} else { //not a top level metadata file; don't update collections
+						logger.silly("Not top level metadata, so not updating collections");
+						return Promise.resolve();
+					}
+				})
 			});
 
 		} else { //not an xml file
