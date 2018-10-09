@@ -2,11 +2,120 @@ CREATE SCHEMA metadata;
 
 create table metadata.types
 (
-	type_name text primary key
+	type_name text primary key,
+	title_query_path text,
+	minx_query_path text,
+	maxx_query_path text,
+	miny_query_path text,
+	maxy_query_path text
 );
 insert into metadata.types (type_name) values ('FGDC');
-insert into metadata.types (type_name) values ('ISO19139');
-insert into metadata.types (type_name) values ('ISO19115');
+insert into metadata.types (
+	type_name, 
+	title_query_path, 
+	minx_query_path, 
+	maxx_query_path, 
+	miny_query_path, 
+	maxy_query_path
+) values (
+	'ISO19139',
+	$$'gmd:MD_Metadata'->
+		'gmd:identificationInfo'->0->
+			'gmd:MD_DataIdentification'->0->
+				'gmd:citation'->0->
+					'gmd:CI_Citation'->0->
+						'gmd:title'->0->
+							'gco:CharacterString'->>0$$,
+	$$'gmd:MD_Metadata'->
+		'gmd:identificationInfo'->0->
+			'gmd:MD_DataIdentification'->0->
+				'gmd:extent'->0->
+					'gmd:EX_Extent'->0->
+						'gmd:geographicElement'->0->
+							'gmd:EX_GeographicBoundingBox'->0->
+								'gmd:westBoundLongitude'->0->
+									'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:eastBoundLongitude'->0->
+								'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:southBoundLatitude'->0->
+								'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:northBoundLatitude'->0->
+								'gco:Decimal'->>0$$
+);
+insert into metadata.types (
+	type_name, 
+	title_query_path, 
+	minx_query_path, 
+	maxx_query_path, 
+	miny_query_path, 
+	maxy_query_path
+) values (
+	'ISO19115', 
+	$$'gmd:MD_Metadata'->
+		'gmd:identificationInfo'->0->
+			'gmd:MD_DataIdentification'->0->
+				'gmd:citation'->0->
+					'gmd:CI_Citation'->0->
+						'gmd:title'->0->
+							'gco:CharacterString'->>0$$,
+	$$'gmd:MD_Metadata'->
+		'gmd:identificationInfo'->0->
+			'gmd:MD_DataIdentification'->0->
+				'gmd:extent'->0->
+					'gmd:EX_Extent'->0->
+						'gmd:geographicElement'->0->
+							'gmd:EX_GeographicBoundingBox'->0->
+								'gmd:westBoundLongitude'->0->
+									'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:eastBoundLongitude'->0->
+								'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:southBoundLatitude'->0->
+								'gco:Decimal'->>0$$,
+	$$'gmd:MD_Metadata'->
+	'gmd:identificationInfo'->0->
+		'gmd:MD_DataIdentification'->0->
+			'gmd:extent'->0->
+				'gmd:EX_Extent'->0->
+					'gmd:geographicElement'->0->
+						'gmd:EX_GeographicBoundingBox'->0->
+							'gmd:northBoundLatitude'->0->
+								'gco:Decimal'->>0$$
+);
 
 CREATE TABLE metadata.metadata
 (
