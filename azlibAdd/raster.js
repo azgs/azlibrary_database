@@ -81,14 +81,14 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 				return Promise.reject(error);
 			})			
 			.then((data) => {
-				const srid = (data === null ? null : data.srid);
+				const srid = (data === null ? 0 : data.srid);
 				logger.silly("srid = " + srid);
 
 
 				const tmp = require("tmp-promise");
 				const { spawn } = require('child_process');
 				//const p = spawn('raster2pgsql', [ '-I', '-C', '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
-				const p = spawn('raster2pgsql', [ '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize]);		
+				const p = spawn('raster2pgsql', [ '-M', path.join(dir, file), '-a', 'gisdata.rasters', '-f', 'raster', '-t', tileSize, '-s', srid]);		
 				return tmp.file({keep:false})
 				.catch(error => {
 					logger.error("Problem creating tmp file: " + global.pp(error));
