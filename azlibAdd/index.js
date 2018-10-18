@@ -3,6 +3,10 @@
 //TODO: There's a lot of common code between this tool and the other two. Look into 
 //refactoring into shared modules.
 
+//TODO: There a chunk of code in here for testing metadata queries that should go away at some 
+//point. In the meantime, its execution is controlled by testMetadataQueries
+const testMetadataQueries = false;
+
 const path = require("path");
 
 global.args = require('commander');
@@ -178,7 +182,56 @@ function processCollection(collection)  {
 					return Promise.resolve();
 				} else {
 					logger.silly("Collection already exists. Issuing rollback in preparation for update.");
-					return rollback.rollback(collectionID, db);
+					//return rollback.rollback(collectionID, db);
+
+
+					if (!testMetadataQueries) {
+						return rollback.rollback(collectionID, db);
+					} else {
+						console.log("##########################################################################");
+						const metadataType = global.metadataTypes.filter(t => t.name === 'ISO19139')[0];
+						let q = "select " + metadataType.seriesPath + " as series from metadata.metadata where collection_id = " + collectionID;
+						logger.debug(q);					
+						return db.any(q)
+						.catch(error => {logger.error("problem getting series: " + error);})
+						.then((data) => {
+							logger.debug("series = " + global.pp(data));
+							q = "select " + metadataType.authorsPath + " as author from metadata.metadata where collection_id = " + collectionID
+							logger.debug(q);					
+							return db.any(q)
+						})
+						.catch(error => {logger.error("problem getting authors: " + error);})
+						.then((data) => {
+							logger.debug("authors = " + global.pp(data));
+							const yearsPaths = metadataType.yearPath.split("###");
+							logger.debug("yearsPaths = " + global.pp(yearsPaths));
+							q = `select year from (
+									select ${yearsPaths[0]} as year from metadata.metadata where collection_id = ${collectionID}
+									union all 
+									select ${yearsPaths[1]} as year from metadata.metadata where collection_id = ${collectionID}
+								) as a
+								where year is not null`
+							logger.debug(q);					
+							return db.any(q);		
+						})
+						.catch(error => {logger.error("problem getting year: " + error);})
+						.then((data) => {
+							logger.debug("year = " + global.pp(data));
+							q = "select " + metadataType.keywordsPath + " as keyword from metadata.metadata where collection_id = " + collectionID
+							logger.debug(q);					
+							return db.any(q);		
+						})
+						.catch(error => {logger.error("problem getting keywords: " + error);})
+						.then((data) => {
+							logger.debug("keywords = " + global.pp(data));
+							console.log("##########################################################################");
+							return rollback.rollback(collectionID, db);
+						});
+					}
+
+
+
+
 				}
 			});
 		}).then(() => {
