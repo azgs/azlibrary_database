@@ -138,6 +138,9 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 
 function jsonQueryPathToArrayPath(jsonQPath) {
 	if (jsonQPath) {
+		if (jsonQPath.startsWith("json_data->")) {
+			jsonQPath = jsonQPath.slice(11);
+		}
 		const regex =/(.+?)(->{1,2}|$)/gm;
 		return jsonQPath.replace(regex, (a, b) => {
 			return '[' + b.trim() + ']';
