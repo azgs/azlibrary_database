@@ -7,7 +7,11 @@ create table metadata.types
 	minx_query_path text,
 	maxx_query_path text,
 	miny_query_path text,
-	maxy_query_path text
+	maxy_query_path text,
+	series_query_path text,
+	authors_query_path text,
+	year_query_path text,
+	keywords_query_path text
 );
 insert into metadata.types (type_name) values ('FGDC');
 insert into metadata.types (
@@ -16,52 +20,112 @@ insert into metadata.types (
 	minx_query_path, 
 	maxx_query_path, 
 	miny_query_path, 
-	maxy_query_path
+	maxy_query_path,
+	series_query_path,
+	authors_query_path,
+	year_query_path,
+	keywords_query_path
+
 ) values (
 	'ISO19139',
-	$$'gmd:MD_Metadata'->
-		'gmd:identificationInfo'->0->
-			'gmd:MD_DataIdentification'->0->
-				'gmd:citation'->0->
-					'gmd:CI_Citation'->0->
-						'gmd:title'->0->
-							'gco:CharacterString'->>0$$,
-	$$'gmd:MD_Metadata'->
-		'gmd:identificationInfo'->0->
-			'gmd:MD_DataIdentification'->0->
-				'gmd:extent'->0->
-					'gmd:EX_Extent'->0->
-						'gmd:geographicElement'->0->
-							'gmd:EX_GeographicBoundingBox'->0->
-								'gmd:westBoundLongitude'->0->
-									'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:eastBoundLongitude'->0->
-								'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:southBoundLatitude'->0->
-								'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:northBoundLatitude'->0->
-								'gco:Decimal'->>0$$
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:citation'->0->
+						'gmd:CI_Citation'->0->
+							'gmd:title'->0->
+								'gco:CharacterString'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:westBoundLongitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:eastBoundLongitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:southBoundLatitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:northBoundLatitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:identifier"}'
+	) 
+	#>> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString",0}'$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:citedResponsibleParty"}'
+	) 
+	#>> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString",0}'$$,
+
+	$$extract(year from (jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
+	) 
+	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:DateTime",0}')::date)###
+	extract(year from (jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
+	) 
+	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:Date",0}')::date)$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			jsonb_array_elements(
+				json_data #> 
+				'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+			) 
+			#> '{"gmd:MD_DataIdentification", 0, "gmd:descriptiveKeywords"}'
+		) 
+		#> '{"gmd:MD_Keywords",0, "gmd:keyword"}'
+	) #>> '{"gco:CharacterString",0}'$$
 );
 insert into metadata.types (
 	type_name, 
@@ -69,52 +133,111 @@ insert into metadata.types (
 	minx_query_path, 
 	maxx_query_path, 
 	miny_query_path, 
-	maxy_query_path
+	maxy_query_path,
+	series_query_path,
+	authors_query_path,
+	year_query_path,
+	keywords_query_path
 ) values (
 	'ISO19115', 
-	$$'gmd:MD_Metadata'->
-		'gmd:identificationInfo'->0->
-			'gmd:MD_DataIdentification'->0->
-				'gmd:citation'->0->
-					'gmd:CI_Citation'->0->
-						'gmd:title'->0->
-							'gco:CharacterString'->>0$$,
-	$$'gmd:MD_Metadata'->
-		'gmd:identificationInfo'->0->
-			'gmd:MD_DataIdentification'->0->
-				'gmd:extent'->0->
-					'gmd:EX_Extent'->0->
-						'gmd:geographicElement'->0->
-							'gmd:EX_GeographicBoundingBox'->0->
-								'gmd:westBoundLongitude'->0->
-									'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:eastBoundLongitude'->0->
-								'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:southBoundLatitude'->0->
-								'gco:Decimal'->>0$$,
-	$$'gmd:MD_Metadata'->
-	'gmd:identificationInfo'->0->
-		'gmd:MD_DataIdentification'->0->
-			'gmd:extent'->0->
-				'gmd:EX_Extent'->0->
-					'gmd:geographicElement'->0->
-						'gmd:EX_GeographicBoundingBox'->0->
-							'gmd:northBoundLatitude'->0->
-								'gco:Decimal'->>0$$
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:citation'->0->
+						'gmd:CI_Citation'->0->
+							'gmd:title'->0->
+								'gco:CharacterString'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:westBoundLongitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:eastBoundLongitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:southBoundLatitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$json_data->
+		'gmd:MD_Metadata'->
+			'gmd:identificationInfo'->0->
+				'gmd:MD_DataIdentification'->0->
+					'gmd:extent'->0->
+						'gmd:EX_Extent'->0->
+							'gmd:geographicElement'->0->
+								'gmd:EX_GeographicBoundingBox'->0->
+									'gmd:northBoundLatitude'->0->
+										'gco:Decimal'->>0$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:identifier"}'
+	) 
+	#>> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString",0}'$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:citedResponsibleParty"}'
+	) 
+	#>> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString",0}'$$,
+
+	$$extract(year from (jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
+	) 
+	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:DateTime",0}')::date)###
+	extract(year from (jsonb_array_elements(
+		jsonb_array_elements(
+			json_data #> 
+			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+		) 
+		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
+	) 
+	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:Date",0}')::date)$$,
+
+	$$jsonb_array_elements(
+		jsonb_array_elements(
+			jsonb_array_elements(
+				json_data #> 
+				'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
+			) 
+			#> '{"gmd:MD_DataIdentification", 0, "gmd:descriptiveKeywords"}'
+		) 
+		#> '{"gmd:MD_Keywords",0, "gmd:keyword"}'
+	) #>> '{"gco:CharacterString",0}'$$
 );
 
 CREATE TABLE metadata.metadata
