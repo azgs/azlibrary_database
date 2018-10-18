@@ -33,12 +33,17 @@ exports.load = (db) => {
 					xMinPath: datum.minx_query_path,
 					xMaxPath: datum.maxx_query_path,
 					yMinPath: datum.miny_query_path,
-					yMaxPath: datum.maxy_query_path
+					yMaxPath: datum.maxy_query_path,
+					seriesPath: datum.series_query_path,
+					authorsPath: datum.authors_query_path,
+					yearPath: datum.year_query_path,
+					keywordsPath: datum.keywords_query_path
 				}
 			});
 			
 			logger.debug("Metadata types = " + global.pp(global.metadataTypes));
 			logger.debug("ISO path = " + metadataTypes[1].formalNamePath);
+			logger.silly("Keywords path = " + metadataTypes[1].keywordsPath);
 		})
 	];
 
