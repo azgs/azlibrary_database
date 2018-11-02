@@ -1,0 +1,161 @@
+collection id = 26
+processing geodata
+No geodata directory found
+processing metadata
+inter dir = 
+processing notes
+No notes directory found
+processing documents
+files = 
+[ 'ofr99-8_fig3-8_q2_trench_log2.pdf' ]
+processing metadata
+inter dir = documents
+processing images
+No images directory found
+metadata types = 
+[ 'FGDC', 'ISO19139' ]
+files = 
+[ 'iso19139.xml' ]
+file = iso19139.xml
+processing xml metadata for iso19139.xml
+reading xml file
+processing xml content
+metadata types = 
+[ 'FGDC', 'ISO19139' ]
+files = 
+[ 'iso19139-ofr99-8_fig3-8_q2_trench_log2.xml' ]
+file = iso19139-ofr99-8_fig3-8_q2_trench_log2.xml
+processing xml metadata for iso19139-ofr99-8_fig3-8_q2_trench_log2.xml
+reading xml file
+processing xml content
+metadataIDs =
+[ { file: 'iso19139-ofr99-8_fig3-8_q2_trench_log2.xml',
+    metadataID: 6 } ]
+processing document file ofr99-8_fig3-8_q2_trench_log2.pdf
+text_extractor.extract: extracting text from /home/developer/test/nid208/documents/ofr99-8_fig3-8_q2_trench_log2.pdf
+text_extractor.extract: suffix = PDF
+problem processing ofr99-8_fig3-8_q2_trench_log2.pdf
+{ error: duplicate key value violates unique constraint "documents_path_key"
+    at Connection.parseE (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/node_modules/pg/lib/connection.js:545:11)
+    at Connection.parseMessage (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/node_modules/pg/lib/connection.js:370:19)
+    at Socket.<anonymous> (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/node_modules/pg/lib/connection.js:113:22)
+    at emitOne (events.js:116:13)
+    at Socket.emit (events.js:211:7)
+    at addChunk (_stream_readable.js:263:12)
+    at readableAddChunk (_stream_readable.js:250:11)
+    at Socket.Readable.push (_stream_readable.js:208:10)
+    at TCP.onread (net.js:594:20)
+  name: 'error',
+  length: 247,
+  severity: 'ERROR',
+  code: '23505',
+  detail: 'Key (path)=(documents/ofr99-8_fig3-8_q2_trench_log2.pdf) already exists.',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'documents',
+  table: 'documents',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'documents_path_key',
+  file: 'nbtinsert.c',
+  line: '433',
+  routine: '_bt_check_unique' }
+BatchError {
+    stat: { total: 1, succeeded: 0, failed: 1, duration: 246 }
+    errors: [
+        0: Error: error: duplicate key value violates unique constraint "documents_path_key"
+            at textExtractor.extract.then.catch.error (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/documents.js:107:91)
+            at <anonymous>
+            at process._tickCallback (internal/process/next_tick.js:188:7)
+    ]
+}
+Error during upload of collection_id 26
+[ { data: undefined, status: 'resolved' },
+  { data: [ [Object] ], status: 'resolved' },
+  { data: undefined, status: 'resolved' },
+  { error: Error: BatchError {
+    stat: { total: 1, succeeded: 0, failed: 1, duration: 246 }
+    errors: [
+        0: Error: error: duplicate key value violates unique constraint "documents_path_key"
+            at textExtractor.extract.then.catch.error (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/documents.js:107:91)
+            at <anonymous>
+            at process._tickCallback (internal/process/next_tick.js:188:7)
+    ]
+}
+    at t.batch.catch.error (/home/developer/git_repository/neodigenite_repository/development/azlibAdd/documents.js:110:69)
+    at <anonymous>
+    at process._tickCallback (internal/process/next_tick.js:188:7),
+    status: 'rejected' },
+  { data: undefined, status: 'resolved' } ]
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+rolling back upload for collection_id 26
+dataTables
+[ anonymous { table_schema: 'images', table_name: 'images' },
+  anonymous { table_schema: 'notes', table_name: 'misc_notes' },
+  anonymous { table_schema: 'notes', table_name: 'standard_notes' },
+  anonymous { table_schema: 'documents', table_name: 'documents' },
+  anonymous { table_schema: 'geodata', table_name: 'legacy' },
+  anonymous { table_schema: 'geodata', table_name: 'rasters' },
+  anonymous { table_schema: 'test_gdb', table_name: 'MapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'OtherPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'ContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'GeologicLines' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CartographicLines' },
+  anonymous { table_schema: 'test_gdb', table_name: 'Stations' },
+  anonymous { table_schema: 'test_gdb', table_name: 'IsoValueLines' },
+  anonymous { table_schema: 'test_gdb', table_name: 'DataSourcePolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'GenericSamples' },
+  anonymous { table_schema: 'test_gdb', table_name: 'MapUnitPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'OrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'GeochronPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'GenericPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'T_1_DirtyAreas' },
+  anonymous { table_schema: 'test_gdb', table_name: 'T_1_PointErrors' },
+  anonymous { table_schema: 'test_gdb', table_name: 'T_1_LineErrors' },
+  anonymous { table_schema: 'test_gdb', table_name: 'T_1_PolyErrors' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CMUMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CMULines' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CMUPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSAMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSAContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSAOrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSBMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSBContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSBOrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSCMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSCContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSCOrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSDMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSDContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSDOrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSEMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSEContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSEOrientationPoints' },
+  anonymous { table_schema: 'test_gdb', table_name: 'Notes' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSFMapUnitPolys' },
+  anonymous { table_schema: 'test_gdb', table_name: 'SysInfo' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSFContactsAndFaults' },
+  anonymous { table_schema: 'test_gdb', table_name: 'CSFOrientationPoints' },
+  anonymous {
+    table_schema: 'test_gdb',
+    table_name: 'DescriptionOfMapUnits' },
+  anonymous { table_schema: 'test_gdb', table_name: 'DataSources' },
+  anonymous { table_schema: 'test_gdb', table_name: 'Glossary' },
+  anonymous { table_schema: 'test_gdb', table_name: 'StandardLithology' },
+  anonymous { table_schema: 'test_gdb', table_name: 'ExtendedAttributes' },
+  anonymous { table_schema: 'test_gdb', table_name: 'GeologicEvents' },
+  anonymous { table_schema: 'test_gdb', table_name: 'MapUnitPolysAnno' },
+  anonymous {
+    table_schema: 'test_gdb',
+    table_name: 'OrientationDataPointsAnno' },
+  anonymous { table_schema: 'test_gdb', table_name: 'RelatedDocuments' } ]
+metadataTables
+[ anonymous { table_schema: 'metadata', table_name: 'metadata' },
+  anonymous { table_schema: 'images', table_name: 'metadata' },
+  anonymous { table_schema: 'notes', table_name: 'metadata' },
+  anonymous { table_schema: 'documents', table_name: 'metadata' },
+  anonymous { table_schema: 'geodata', table_name: 'metadata' } ]
+rollback complete
