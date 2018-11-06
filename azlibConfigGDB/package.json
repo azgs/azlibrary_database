@@ -13,9 +13,7 @@
     },
     "dependencies": {
         "commander": "^2.15.1",
-        "gdal": "^0.9.6",
         "global-modules-path": "^2.1.0",
-        "ogr2ogr": "^1.2.1",
         "pg-promise": "^7.4.1",
         "prompt": "^1.0.0"
     }
