@@ -25,7 +25,7 @@ CREATE TABLE collections (
 	private boolean not null default false,
 	collection_group_id integer REFERENCES collection_groups(collection_group_id),
 	publication_id integer UNIQUE REFERENCES publications(publication_id), -- Unique because collection_id is synonymous with publication_id, but not all collections may have publication_id
-	formal_name text UNIQUE,
+	formal_name text,
 	informal_name text,
 	azgs_path text NOT NULL UNIQUE,
 	azgs_old_url text,
