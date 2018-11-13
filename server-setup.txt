@@ -1,0 +1,81 @@
+#(turn off auto desktop locking)
+sudo apt-get install gnome-tweaks 
+#(turn on dock and min/max buttons for windows)
+
+#fetch azlibrary directory
+sudo sftp developer@10.208.11.159
+cd /
+lcd /
+get -r azlibrary
+
+#postgres and related
+sudo apt install postgresql #(gets latest in apt repo, currently 10.something)
+sudo apt-get install postgresql-10-postgis-2.4
+sudo apt-get install postgis #(necessary to get raster2pgsql, no idea why)
+sudo apt-get install postgresql-10-pgrouting
+sudo apt-get install pgadmin3
+sudo -u postgres createuser -s -d -P azlibrary
+#(fire up pgadmin and set up server connection)
+
+#a separate gdal installation is required for ogr2ogr
+sudo add-apt-repository ppa:ubuntugis/ppa
+sudo apt-get update
+sudo apt-get install gdal-bin
+
+#antiword is for document parsing
+sudo apt-get install antiword
+
+#csvtool is for dicts processing in db setup
+sudo apt-get install csvtool
+
+
+#for node (I think this is everything)
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash  #(installs nvm)
+nvm --version  #(to verify install, might have to reload bashrc: . ~/.bashrc)
+nvm install node #(latest node, for others specify version)
+nvm use node #(ditto)
+#(add this to the bottom of .bashrc:  export NODE_PATH="/usr/local/lib/node_modules" (so that require will look in global dir))
+
+#set up git and clone repo
+#(do this: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/)
+#(do this: https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
+mkdir repos
+cd repos
+git clone git@github.com:azgs/azlibrary_database.git
+
+#install apps
+cd /repos/azlibrary_database/azlibConfigPG
+npm install
+npm install -g
+npm link
+cd ../azlibConfigGDB
+npm install
+npm install -g
+npm link
+cd ../azlibAdd
+npm install
+npm install -g
+npm link
+cd ../azlibFetch
+npm install
+npm install -g
+npm link
+
+#To set up az library queue for full import
+sudo chgrp -R azlibraryadmin /azlibrary
+sudo chgrp -R sftpusers /azlibrary/queue
+sudo chgrp -R sftpusers /azlibrary/prepublishing
+sudo chmod -R 775 /azlibrary
+mv /azlibrary/failures/* /azlibrary/queue
+mv /azlibrary/archive/* azlibrary/queue
+cd /azlibrary/queue
+#To extract a bunch of tarballs into separate directories named from tarball root name:
+for f in *.tar.gz; do r=${f%.*.*}; mkdir $r; tar -xvf $f -C "$r"; done
+rm *.gz
+sudo chgrp -R azlibraryadmin *
+sudo chmod -R 775 *
+
+#Create db and import collections
+azlibConfigPG azlibrary azlibrary <dbpassword>
+azlibConfigGDB -g ncgmp09 -d azlibrary -u azlibrary -p <dbpassword>
+azlibAdd -s /azlibrary/queue -r -a /azlibrary/archive -f /azlibrary/failures -d azlibrary -u azlibrary -p <dbpassword> -U -l info > queue.log
