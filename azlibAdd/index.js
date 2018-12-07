@@ -179,10 +179,6 @@ function processCollection(collection)  {
 		.then(data => {
 			logger.silly("collectionsInsert success");
 
-			if (source.endsWith("651")) {
-				throw new Error("651 error");
-			}
-
 			collectionID = data.collection_id;
 			logger.debug("collection id = " + collectionID);
 			logger.silly("inserted = " + data.inserted);
