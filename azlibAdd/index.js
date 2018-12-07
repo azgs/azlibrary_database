@@ -112,18 +112,26 @@ pwPromise.then((password) => {
 			return promiseChain.then(() => {
 				logger.silly("promiseChain.then");
 				return processCollection(collection);
+			}).catch(error => {
+				//When processing multiple collections, we always return success to the command line. 
+				//Errors are in the collections array we just printed to the log, and in each collection folder.
+				return Promise.resolve();
 			});
 		}, Promise.resolve())
 		.then(() => {
 			logger.debug("----------------------all done-----------------------");
 			/*pgp.end();*/
 			logger.info(global.pp(collections));
-			return Promise.resolve();
+			return Promise.resolve(); 
 		});
 			
 	} else {
 		const collection = { path:'', result:null, processingNotes:[]};
-		return processCollection(collection);
+		//return processCollection(collection);
+		processCollection(collection).catch(eror => {
+			//When processing a single collection, we want to return any failure to the command line.
+			logger.error("returning failure");
+			process.exit(1);});
 	}
 });/*
 .catch(() => {
@@ -170,6 +178,11 @@ function processCollection(collection)  {
 		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
 		.then(data => {
 			logger.silly("collectionsInsert success");
+
+			if (source.endsWith("651")) {
+				throw new Error("651 error");
+			}
+
 			collectionID = data.collection_id;
 			logger.debug("collection id = " + collectionID);
 			logger.silly("inserted = " + data.inserted);
@@ -228,10 +241,6 @@ function processCollection(collection)  {
 							return rollback.rollback(collectionID, db);
 						});
 					}
-
-
-
-
 				}
 			});
 		}).then(() => {
@@ -305,7 +314,7 @@ function processCollection(collection)  {
 				global.datasetName = undefined; 
 				//pgp.end();
 				logger.silly("resolving");				
-				resolve();
+				reject(error);//resolve();
 			});
 
 		});
