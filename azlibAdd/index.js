@@ -149,6 +149,7 @@ function processCollectionFactory(source) {
 //const processCollection = (source) => {
 function processCollection(collection)  {
 	const source = path.join(global.args.source, collection.path);
+	logger.silly("source = " + source);
 
 	const rollback = require("./rollback");
 
@@ -163,7 +164,7 @@ function processCollection(collection)  {
 		//const path = require("path");
 		let dsPath;
 		if (global.args.archive) {
-			dsPath = path.resolve(global.args.archive, collection.path);
+			dsPath = path.resolve(global.args.archive, path.basename(source));
 		} else {
 			dsPath = path.resolve(source);
 		}
