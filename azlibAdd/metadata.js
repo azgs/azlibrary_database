@@ -24,7 +24,8 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 
 	const files = fs.readdirSync(dir).filter(f => !fs.statSync(path.join(dir, f)).isDirectory());
 	//filter out files that don't end in "xml", and files that don't meet naming requirement
- 	const validFiles = files.filter( f => f.split('.')[f.split('.').length-1].toUpperCase() === "XML" &&
+ 	const validFiles = files.filter( f => (f.split('.')[f.split('.').length-1].toUpperCase() === "XML" ||
+											f.split('.')[f.split('.').length-1].toUpperCase() === "JSON") &&
 											global.metadataTypes.map(mType => {return mType.name}).includes(f.split('.')[0].split('-')[0].toUpperCase()));
 	logger.silly("files = " + global.pp(files));
 	logger.silly("validFiles = " + global.pp(validFiles));
@@ -51,6 +52,12 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 		.catch(error => {logger.warn("no xml data in " + file + ": " + error);return Promise.reject(error);})
 		.then((data) => {      
 			logger.silly("processing xml content for " + file);
+			
+			logger.silly(path.extname(file).toUpperCase());
+			if (".JSON" === path.extname(file).toUpperCase()) {
+				logger.silly("json file");
+				return JSON.parse(data);
+			}
 
 			const xml2js = util.promisify(require('xml2js').parseString);
 			return xml2js(data).catch(error => {logger.warn("Problem parsing xml in " + file + ": " + error); return Promise.reject(error);})
@@ -75,6 +82,7 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 					const metadataType = global.metadataTypes.filter(t => t.name === fileMetadataType)[0];
 
 					try {
+						logger.silly("title path = " + jsonQueryPathToArrayPath(metadataType.formalNamePath));
 						const title = eval("data" + jsonQueryPathToArrayPath(metadataType.formalNamePath));
 						logger.silly("title = " + title);
 
@@ -138,8 +146,12 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 
 function jsonQueryPathToArrayPath(jsonQPath) {
 	if (jsonQPath) {
+		//slice off json_data prefix if present
 		if (jsonQPath.startsWith("json_data->")) {
 			jsonQPath = jsonQPath.slice(11);
+		}
+		if (jsonQPath.startsWith(">")) { //TODO: consolidate with previous
+			jsonQPath = jsonQPath.slice(1);
 		}
 		const regex =/(.+?)(->{1,2}|$)/gm;
 		return jsonQPath.replace(regex, (a, b) => {
