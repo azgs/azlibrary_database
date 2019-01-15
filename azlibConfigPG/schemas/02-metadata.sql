@@ -30,14 +30,28 @@ insert into metadata.types (
 ) values ( --TODO: These fields are just for development
 	'AZGS',
 	$$json_data->>'title'$$,
-	$$json_data->>'minx'$$,
-	$$json_data->>'maxx'$$,
-	$$json_data->>'miny'$$,
-	$$json_data->>'maxy'$$,
+	--$$json_data->>'minx'$$,
+	--$$json_data->>'maxx'$$,
+	--$$json_data->>'miny'$$,
+	--$$json_data->>'maxy'$$,
+	$$json_data->'bounding_box'->>'west'$$,
+	$$json_data->'bounding_box'->>'east'$$,
+	$$json_data->'bounding_box'->>'south'$$,
+	$$json_data->'bounding_box'->>'north'$$,
 	$$json_data#>'{"series"}'$$,
-	$$json_data#>'{"author"}'$$,
+	--$$json_data#>'{"authors"}'$$,
+	$$jsonb_array_elements(
+			json_data #> 
+			'{"authors"}'					
+		) 
+		#>> '{"person"}'$$,
 	$$json_data->>'year'$$,
-	$$json_data#>'{"keyword"}'$$
+	--$$json_data#>'{"keywords"}'$$
+	$$jsonb_array_elements(
+			json_data #> 
+			'{"keywords"}'					
+		) 
+		#>> '{"name"}'$$
 );
 
 insert into metadata.types (
@@ -295,7 +309,8 @@ declare
 
 begin
 	--Get the query path for this metadata type
-	select title_query_path into json_path from metadata.types where type_name = new.type;
+	--select title_query_path into json_path from metadata.types where type_name = new.type;
+	select title_query_path into json_path from metadata.types where type_name = 'AZGS';
 
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
@@ -326,7 +341,8 @@ declare
 begin
 
 	--Get the query path for this metadata type
-	select authors_query_path into json_path from metadata.types where type_name = new.type;
+	--select authors_query_path into json_path from metadata.types where type_name = new.type;
+	select authors_query_path into json_path from metadata.types where type_name = 'AZGS';
 
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
@@ -343,8 +359,8 @@ begin
 			SELECT 
 				string_agg(author, ';') as authors
 			FROM (
-				select jsonb_array_elements_text($jq$ || json_path || $jq$ 
-				)  as author from tabletemp
+				select $jq$ || json_path || $jq$ 
+				  as author from tabletemp
 			) as a
 		) k$jq$;
 	execute author_query into author_result;
@@ -368,7 +384,8 @@ declare
 begin
 
 	--Get the query path for this metadata type
-	select keywords_query_path into json_path from metadata.types where type_name = new.type;
+	--select keywords_query_path into json_path from metadata.types where type_name = new.type;
+	select keywords_query_path into json_path from metadata.types where type_name = 'AZGS';
 
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
@@ -385,8 +402,8 @@ begin
 			SELECT 
 				string_agg(keyword, ';') as keywords
 			FROM (
-				select jsonb_array_elements_text($jq$ || json_path || $jq$ 
-				)  as keyword from tabletemp
+				select $jq$ || json_path || $jq$ 
+				  as keyword from tabletemp
 			) as a
 		) k$jq$;
 	execute keyword_query into keyword_result;
@@ -410,7 +427,8 @@ declare
 begin
 
 	--Get the query path for this metadata type
-	select series_query_path into json_path from metadata.types where type_name = new.type;
+	--select series_query_path into json_path from metadata.types where type_name = new.type;
+	select series_query_path into json_path from metadata.types where type_name = 'AZGS';
 
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
@@ -421,6 +439,10 @@ begin
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
 	series_query := $jq$  
+		select $jq$ || json_path || $jq$ 
+		  as serial from tabletemp
+	$jq$;
+/*
 		SELECT  
 			k.series
 		FROM (
@@ -428,9 +450,10 @@ begin
 				string_agg(serial, ';') as series
 			FROM (
 				select jsonb_array_elements_text($jq$ || json_path || $jq$ 
-				)  as serial from tabletemp
 			) as a
-		) k$jq$;
+		) k
+	$jq$;
+*/
 	execute series_query into series_result;
 
 	--Get the thing we're after
