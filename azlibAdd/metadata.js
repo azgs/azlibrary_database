@@ -42,6 +42,8 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 	const promises = validFiles.map((file) => {
 		logger.silly("file = " + file);
 
+		const fileMetadataType = file.split('.')[0].split('-')[0].toUpperCase();
+
 		//read xml file
 		const xmlPath = path.resolve(dir, file);//process.cwd() + "/" + dir + "/" + file;
 
@@ -51,18 +53,41 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 		return readFilePromise(xmlPath, 'utf-8')
 		.catch(error => {logger.warn("no xml data in " + file + ": " + error);return Promise.reject(error);})
 		.then((data) => {      
-			logger.silly("processing xml content for " + file);
-			
+			logger.silly("processing metadata content for " + file);
+			logger.silly("data = " + global.pp(data));
 			logger.silly(path.extname(file).toUpperCase());
 			if (".JSON" === path.extname(file).toUpperCase()) {
 				logger.silly("json file");
 				return JSON.parse(data);
+			} else if (".XML" === path.extname(file).toUpperCase()) {
+				logger.silly("xml file");
+				const xml = require("./xmlConverter");
+				return xml.convert(data, fileMetadataType);
+			} else {
+				//Unknown filetype. Return empty object.
+				return {};
 			}
 
-			const xml2js = util.promisify(require('xml2js').parseString);
-			return xml2js(data).catch(error => {logger.warn("Problem parsing xml in " + file + ": " + error); return Promise.reject(error);})
+			//return xml2js(data).catch(error => {logger.warn("Problem parsing xml in " + file + ": " + error); return Promise.reject(error);})
+		}).catch(error => {
+			logger.warn("Problem parsing xml in " + file + ": " + error); 
+			//return Promise.reject(error);
 		}).then((data) => {
-			logger.silly("json from metadata in " + file + " = " + global.pp(data));
+			logger.silly("json from " + file + " = " + global.pp(data));
+
+			//Can only set these in AZGS metadata, but it's possible we have something else here.
+			//Just eat the error.
+			try {
+				data.identifiers.collection_id = collectionID;
+				if (global.args.archive) {
+					data.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
+				} else {
+					data.identifiers.directory = path.resolve(global.args.source);
+				}
+				logger.silly("json with collection info = " + global.pp(data));
+			} catch (error) {
+				logger.silly("Unable to set collection info");
+			}
 
 			let metadataInsert, collectionsUpdate; 
 
@@ -76,10 +101,13 @@ exports.upload = (rootDir, intermediateDir, schemaName, collectionID, db) => {
 					JSON.stringify(data) + "$$, $$" +
 					path.join(intermediateDir, myDir, file) + "$$) returning metadata_id";
 			} else {
-				const fileMetadataType = file.split('.')[0].split('-')[0].toUpperCase();
+				//const fileMetadataType = file.split('.')[0].split('-')[0].toUpperCase();
 				if (global.metadataTypes.filter(t => t.formalNamePath).map(t => t.name)
 					.includes(fileMetadataType)) {
-					const metadataType = global.metadataTypes.filter(t => t.name === fileMetadataType)[0];
+					//const metadataType = global.metadataTypes.filter(t => t.name === fileMetadataType)[0];
+					//At thist point, we know the metadata has been converted to AZGS format.
+					//TODO: Arguably, we don't need to go to the db table here anymore. Could hardcode.					
+					const metadataType = global.metadataTypes.filter(t => t.name === "AZGS")[0];
 
 					try {
 						logger.silly("title path = " + jsonQueryPathToArrayPath(metadataType.formalNamePath));
