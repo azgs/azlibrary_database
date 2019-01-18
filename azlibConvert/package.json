@@ -1,0 +1,18 @@
+{
+  "name": "azlibconvert",
+  "version": "0.0.1",
+  "description": "Create azgs.json metadata from ISO xml in azgs collections",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Douglas Meredith",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "fs-extra": "^7.0.1",
+    "recursive-readdir": "^2.2.2",
+    "winston": "^3.1.0",
+    "xml2js": "^0.4.19"
+  }
+}
