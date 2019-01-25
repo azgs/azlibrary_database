@@ -26,7 +26,7 @@ exports.upload = (rootDir, collectionID, db) => {
 		return global.documentTypes.includes(suffix);
 	}); 
 
-	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "documents", collectionID, db)
+	return require("./metadata").upload(dir, path.relative(rootDir, dir), collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);

@@ -24,7 +24,7 @@ exports.upload = (rootDir, datasetName, collectionID, db) => {
 
 	const promises = dirs.map(thisDir => {
 		if (thisDir.toLowerCase() === "metadata") {
-			return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "gisdata", collectionID, db);
+			return require("./metadata").upload(dir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "legacy") {
 			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
 		} else if (thisDir.toLowerCase() === "layers") {

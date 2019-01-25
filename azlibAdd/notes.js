@@ -15,7 +15,7 @@ exports.upload = (rootDir, collectionID, db) => {
 		return Promise.resolve();
 	}
 
-	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "notes", collectionID, db)
+	return require("./metadata").upload(dir, path.relative(rootDir, dir), collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);

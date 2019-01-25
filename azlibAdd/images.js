@@ -23,7 +23,7 @@ exports.upload = (rootDir, collectionID, db) => {
 	}
 	logger.debug("files = " + global.pp(files));
 
-	return require("./metadata").upload(rootDir, path.relative(rootDir, dir), "images", collectionID, db)
+	return require("./metadata").upload(dir, path.relative(rootDir, dir), collectionID, db)
 	.then((metadataIDs) => {
 		//If metadataIDs is undefined, give it an empty array to keep later code happy
 		metadataIDs = (metadataIDs ? metadataIDs : []);
