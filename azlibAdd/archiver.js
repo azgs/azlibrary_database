@@ -1,7 +1,7 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
-exports.archive = (sourceDir, destDir) => {
+exports.archive = (sourceDir, destDir, collectionID) => {
 	logger.debug("enter");
 	logger.silly("sourceDir = " + sourceDir);
 	logger.silly("destDir = " + destDir);
@@ -11,7 +11,7 @@ exports.archive = (sourceDir, destDir) => {
 	const tar = require("tar");
 	return fs.ensureDir(destDir).then(() => {
 		return tar.create({
-			file: path.join(destDir, path.basename(sourceDir)) + ".tar.gz",
+			file: path.join(destDir, ""+collectionID) + ".tar.gz",
 			cwd: path.dirname(sourceDir),
 			gzip: true
 		}, [path.basename(sourceDir)]);
