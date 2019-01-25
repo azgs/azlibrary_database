@@ -88,7 +88,7 @@ pwPromise.then((password) => {
 }).then(() => {
 	if (global.args.repeat) {
 		//logger.error("Repeat option not yet implemented");
-		const fs = require('fs');
+		const fs = require('fs-extra');
 		if (!fs.existsSync(global.args.source)) {
 			logger.warn(global.args.source + " directory found");
 			//return Promise.resolve();
@@ -173,7 +173,7 @@ function processCollection(collection)  {
 		const collectionsInsert = 
 			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ")" + 
 			" on conflict (azgs_path) do update set private = " + (global.args.private ? true : false) +			
-			" returning collection_id, (xmax = 0) AS inserted";
+			" returning collection_id, (xmax = 0) AS inserted"; //REM: xmax is a system column that will hold a value other than zero if an update occurred.
 		logger.silly("collectionsInsert = " + collectionsInsert);
 
 		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
@@ -189,55 +189,14 @@ function processCollection(collection)  {
 			return Promise.resolve().then(() => {
 				if (data.inserted) {
 					logger.info("New collections record created");
-					return Promise.resolve();
+					if (global.args.archive) {
+						return db.none("update collections set azgs_path='" + path.resolve(global.args.archive, "" + collectionID) + "' where collection_id=" + collectionID)
+					} else {
+						return Promise.resolve();
+					}
 				} else {
 					logger.silly("Collection already exists. Issuing rollback in preparation for update.");
-					//return rollback.rollback(collectionID, db);
-
-
-					if (!testMetadataQueries) {
-						return rollback.rollback(collectionID, db);
-					} else {
-						console.log("##########################################################################");
-						const metadataType = global.metadataTypes.filter(t => t.name === 'ISO19139')[0];
-						let q = "select " + metadataType.seriesPath + " as series from metadata.metadata where collection_id = " + collectionID;
-						logger.debug(q);					
-						return db.any(q)
-						.catch(error => {logger.error("problem getting series: " + error);})
-						.then((data) => {
-							logger.debug("series = " + global.pp(data));
-							q = "select " + metadataType.authorsPath + " as author from metadata.metadata where collection_id = " + collectionID
-							logger.debug(q);					
-							return db.any(q)
-						})
-						.catch(error => {logger.error("problem getting authors: " + error);})
-						.then((data) => {
-							logger.debug("authors = " + global.pp(data));
-							const yearsPaths = metadataType.yearPath.split("###");
-							logger.debug("yearsPaths = " + global.pp(yearsPaths));
-							q = `select year from (
-									select ${yearsPaths[0]} as year from metadata.metadata where collection_id = ${collectionID}
-									union all 
-									select ${yearsPaths[1]} as year from metadata.metadata where collection_id = ${collectionID}
-								) as a
-								where year is not null`
-							logger.debug(q);					
-							return db.any(q);		
-						})
-						.catch(error => {logger.error("problem getting year: " + error);})
-						.then((data) => {
-							logger.debug("year = " + global.pp(data));
-							q = "select " + metadataType.keywordsPath + " as keyword from metadata.metadata where collection_id = " + collectionID
-							logger.debug(q);					
-							return db.any(q);		
-						})
-						.catch(error => {logger.error("problem getting keywords: " + error);})
-						.then((data) => {
-							logger.debug("keywords = " + global.pp(data));
-							console.log("##########################################################################");
-							return rollback.rollback(collectionID, db);
-						});
-					}
+					return rollback.rollback(collectionID, db);
 				}
 			});
 		}).then(() => {
@@ -247,15 +206,14 @@ function processCollection(collection)  {
 				collectionID + "$$, current_timestamp) returning upload_id";
 			//console.log(uploadsInsert);
 			return db.one(uploadsInsert).catch(error => {throw new Error(error);});
-		}).then(data => {
-			return require("./metadata").upload(source, "", "metadata", collectionID, db)
-			.then(() => {return Promise.resolve(data)}).catch((error) => {logger.error("Unable to process top-level metadata: " + error); return Promise.reject(error);});
-		}).then(data => {
-			uploadID = data.upload_id;
-
+		}).then((upload) => {
+			uploadID = upload.upload_id;
+			return require("./azgsMetadata").upload(source, collectionID, db)
+			.then(() => {return Promise.resolve()}).catch((error) => {logger.error("Unable to process azgs metadata: " + error); return Promise.reject(error);});
+		}).then(() => {
 			const promises = [
 				require("./gisdata").upload(source, global.datasetName, collectionID, db),
-				//require("./metadata").upload(source, "", "metadata", collectionID, db),
+				require("./metadata").upload(source, "", "metadata", collectionID, db),
 				require("./notes").upload(source, collectionID, db),
 				require("./documents").upload(source, collectionID, db),
 				require("./images").upload(source, collectionID, db)
@@ -284,9 +242,13 @@ function processCollection(collection)  {
 			collection.result = "success"; //TODO: this should reflect archiving as well
 			if (global.args.archive) {
 				logger.silly("squishin stuff");
-				return require("./archiver").archive(source, global.args.archive).catch(error => {
-					logger.error("Unable to create archive of source directory. " + global.pp(error));
-					throw new Error(error);
+				const dest = path.join(global.args.source, ""+collectionID);
+				const fs = require("fs-extra");
+				fs.move(source, dest).then(() => {
+					return require("./archiver").archive(dest, global.args.archive, collectionID).catch(error => {
+						logger.error("Unable to create archive of source directory. " + global.pp(error));
+						throw new Error(error);
+					});
 				});
 			} else {
 				logger.silly("returning blank resolve");
