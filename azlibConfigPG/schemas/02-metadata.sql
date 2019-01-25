@@ -1,304 +1,29 @@
 CREATE SCHEMA metadata;
 
-create table metadata.types
-(
-	type_name text primary key,
-	title_query_path text,
-	minx_query_path text,
-	maxx_query_path text,
-	miny_query_path text,
-	maxy_query_path text,
-	series_query_path text,
-	authors_query_path text,
-	year_query_path text,
-	keywords_query_path text
-);
-insert into metadata.types (type_name) values ('FGDC');
 
-insert into metadata.types (
-	type_name, 
-	title_query_path, 
-	minx_query_path, 
-	maxx_query_path, 
-	miny_query_path, 
-	maxy_query_path,
-	series_query_path,
-	authors_query_path,
-	year_query_path,
-	keywords_query_path
-
-) values ( --TODO: These fields are just for development
-	'AZGS',
-	$$json_data->>'title'$$,
-	--$$json_data->>'minx'$$,
-	--$$json_data->>'maxx'$$,
-	--$$json_data->>'miny'$$,
-	--$$json_data->>'maxy'$$,
-	$$json_data->'bounding_box'->>'west'$$,
-	$$json_data->'bounding_box'->>'east'$$,
-	$$json_data->'bounding_box'->>'south'$$,
-	$$json_data->'bounding_box'->>'north'$$,
-	$$json_data#>'{"series"}'$$,
-	--$$json_data#>'{"authors"}'$$,
-	$$jsonb_array_elements(
-			json_data #> 
-			'{"authors"}'					
-		) 
-		#>> '{"person"}'$$,
-	$$json_data->>'year'$$,
-	--$$json_data#>'{"keywords"}'$$
-	$$jsonb_array_elements(
-			json_data #> 
-			'{"keywords"}'					
-		) 
-		#>> '{"name"}'$$
-);
-
-insert into metadata.types (
-	type_name, 
-	title_query_path, 
-	minx_query_path, 
-	maxx_query_path, 
-	miny_query_path, 
-	maxy_query_path,
-	series_query_path,
-	authors_query_path,
-	year_query_path,
-	keywords_query_path
-
-) values (
-	'ISO19139',
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:citation'->0->
-						'gmd:CI_Citation'->0->
-							'gmd:title'->0->
-								'gco:CharacterString'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:westBoundLongitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:eastBoundLongitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:southBoundLatitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:northBoundLatitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:identifier"}'
-	) 
-	--#>> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString",0}'$$,
-	#> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString"}'$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:citedResponsibleParty"}'
-	) 
-	--#>> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString",0}'$$,
-	#> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString"}'$$,
-
-	$$extract(year from (jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
-	) 
-	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:DateTime",0}')::date)###
-	extract(year from (jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
-	) 
-	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:Date",0}')::date)$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			jsonb_array_elements(
-				json_data #> 
-				'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-			) 
-			#> '{"gmd:MD_DataIdentification", 0, "gmd:descriptiveKeywords"}'
-		) 
-		#> '{"gmd:MD_Keywords",0, "gmd:keyword"}'
-	--) #>> '{"gco:CharacterString",0}'$$
-	) #> '{"gco:CharacterString"}'$$
-);
-insert into metadata.types (
-	type_name, 
-	title_query_path, 
-	minx_query_path, 
-	maxx_query_path, 
-	miny_query_path, 
-	maxy_query_path,
-	series_query_path,
-	authors_query_path,
-	year_query_path,
-	keywords_query_path
-) values (
-	'ISO19115', 
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:citation'->0->
-						'gmd:CI_Citation'->0->
-							'gmd:title'->0->
-								'gco:CharacterString'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:westBoundLongitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:eastBoundLongitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:southBoundLatitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$json_data->
-		'gmd:MD_Metadata'->
-			'gmd:identificationInfo'->0->
-				'gmd:MD_DataIdentification'->0->
-					'gmd:extent'->0->
-						'gmd:EX_Extent'->0->
-							'gmd:geographicElement'->0->
-								'gmd:EX_GeographicBoundingBox'->0->
-									'gmd:northBoundLatitude'->0->
-										'gco:Decimal'->>0$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:identifier"}'
-	) 
-	--#>> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString",0}'$$,
-	#> '{"gmd:MD_Identifier", 0, "gmd:code", 0, "gco:CharacterString"}'$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:citedResponsibleParty"}'
-	) 
-	--#>> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString",0}'$$,
-	#> '{"gmd:CI_ResponsibleParty", 0, "gmd:individualName", 0, "gco:CharacterString"}'$$,
-
-	$$extract(year from (jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
-	) 
-	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:DateTime",0}')::date)###
-	extract(year from (jsonb_array_elements(
-		jsonb_array_elements(
-			json_data #> 
-			'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-		) 
-		#> '{"gmd:MD_DataIdentification", 0, "gmd:citation", 0, "gmd:CI_Citation", 0, "gmd:date"}'
-	) 
-	#>> '{"gmd:CI_Date", 0, "gmd:date", 0, "gco:Date",0}')::date)$$,
-
-	$$jsonb_array_elements(
-		jsonb_array_elements(
-			jsonb_array_elements(
-				json_data #> 
-				'{"gmd:MD_Metadata", "gmd:identificationInfo"}'					
-			) 
-			#> '{"gmd:MD_DataIdentification", 0, "gmd:descriptiveKeywords"}'
-		) 
-		#> '{"gmd:MD_Keywords",0, "gmd:keyword"}'
-	--) #>> '{"gco:CharacterString",0}'$$
-	) #> '{"gco:CharacterString"}'$$
-);
-
-CREATE TABLE metadata.metadata
+CREATE TABLE metadata.azgs
 (
 	metadata_id serial PRIMARY KEY,
 	collection_id integer REFERENCES public.collections(collection_id) not null, 
-	type text references metadata.types(type_name) not null,
 	json_data jsonb not null,
 	title_search tsvector,
 	author_search tsvector,
 	keyword_search tsvector,
 	series_search tsvector,
 	kitchensink_search tsvector,
-	metadata_file text not null,
 	geom geometry
+);
+CREATE INDEX title_idx ON metadata.azgs USING gin(title_search);
+CREATE INDEX author_idx ON metadata.azgs USING gin(author_search);
+CREATE INDEX keyword_idx ON metadata.azgs USING gin(keyword_search);
+CREATE INDEX series_idx ON metadata.azgs USING gin(series_search);
+CREATE INDEX kitchensink_idx ON metadata.azgs USING gin(kitchensink_search);
+
+
+CREATE TABLE metadata.metadata (
+	metadata_id serial PRIMARY KEY,
+	collection_id integer REFERENCES public.collections(collection_id),
+	metadata_file text not null
 );
 
 CREATE FUNCTION metadata.title_trigger() RETURNS trigger AS $$
@@ -308,10 +33,6 @@ declare
 	title_result text;
 
 begin
-	--Get the query path for this metadata type
-	--select title_query_path into json_path from metadata.types where type_name = new.type;
-	select title_query_path into json_path from metadata.types where type_name = 'AZGS';
-
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -320,7 +41,11 @@ begin
 		json_data jsonb
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
-	title_query := 'select ' || json_path || ' from tabletemp'; --TODO: Use format here
+	title_query := $jq$
+		select 
+			json_data->>'title' 
+		from tabletemp
+	$jq$; 
 	execute title_query into title_result;
 
 	--Get the thing we're after
@@ -330,7 +55,7 @@ end
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER titleTSVupdate BEFORE INSERT OR UPDATE
-    ON metadata.metadata FOR EACH ROW EXECUTE PROCEDURE metadata.title_trigger();
+    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.title_trigger();
 
 CREATE FUNCTION metadata.author_trigger() RETURNS trigger AS $$
 declare
@@ -339,11 +64,6 @@ declare
 	author_result text;
 
 begin
-
-	--Get the query path for this metadata type
-	--select authors_query_path into json_path from metadata.types where type_name = new.type;
-	select authors_query_path into json_path from metadata.types where type_name = 'AZGS';
-
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -359,10 +79,16 @@ begin
 			SELECT 
 				string_agg(author, ';') as authors
 			FROM (
-				select $jq$ || json_path || $jq$ 
+				select 
+					jsonb_array_elements(
+						json_data #> 
+							'{"authors"}'					
+					) 
+					#>> '{"person"}' 
 				  as author from tabletemp
 			) as a
-		) k$jq$;
+		) k
+	$jq$;
 	execute author_query into author_result;
 
 	--Get the thing we're after
@@ -373,7 +99,7 @@ end
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER authorTSVupdate BEFORE INSERT OR UPDATE
-    ON metadata.metadata FOR EACH ROW EXECUTE PROCEDURE metadata.author_trigger();
+    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.author_trigger();
 
 CREATE FUNCTION metadata.keyword_trigger() RETURNS trigger AS $$
 declare
@@ -382,11 +108,6 @@ declare
 	keyword_result text;
 
 begin
-
-	--Get the query path for this metadata type
-	--select keywords_query_path into json_path from metadata.types where type_name = new.type;
-	select keywords_query_path into json_path from metadata.types where type_name = 'AZGS';
-
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -402,10 +123,16 @@ begin
 			SELECT 
 				string_agg(keyword, ';') as keywords
 			FROM (
-				select $jq$ || json_path || $jq$ 
+				select  
+					jsonb_array_elements(
+						json_data #> 
+							'{"keywords"}'					
+					) 
+					#>> '{"name"}' 
 				  as keyword from tabletemp
 			) as a
-		) k$jq$;
+		) k
+	$jq$;
 	execute keyword_query into keyword_result;
 
 	--Get the thing we're after
@@ -416,7 +143,7 @@ end
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER keywordTSVupdate BEFORE INSERT OR UPDATE
-    ON metadata.metadata FOR EACH ROW EXECUTE PROCEDURE metadata.keyword_trigger();
+    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.keyword_trigger();
 
 CREATE FUNCTION metadata.series_trigger() RETURNS trigger AS $$
 declare
@@ -425,11 +152,6 @@ declare
 	series_result text;
 
 begin
-
-	--Get the query path for this metadata type
-	--select series_query_path into json_path from metadata.types where type_name = new.type;
-	select series_query_path into json_path from metadata.types where type_name = 'AZGS';
-
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -438,9 +160,10 @@ begin
 		json_data jsonb
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
-	series_query := $jq$  
-		select $jq$ || json_path || $jq$ 
-		  as serial from tabletemp
+	series_query := $jq$
+		select
+			json_data#>'{"series"}' as serial 
+		from tabletemp
 	$jq$;
 /*
 		SELECT  
@@ -464,26 +187,7 @@ end
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER seriesTSVupdate BEFORE INSERT OR UPDATE
-    ON metadata.metadata FOR EACH ROW EXECUTE PROCEDURE metadata.series_trigger();
+    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.series_trigger();
 
 
-/*
-CREATE TABLE metadata.json_entries
-(
-	json_entry_id serial PRIMARY KEY,
-	collection_id integer REFERENCES public.collections(collection_id), 
-	type text references metadata.types(type_name),
-	metadata jsonb,
-	metadata_file text
-);
 
-CREATE TABLE metadata.xml_entries
-(
-	xml_entry_id serial PRIMARY KEY,
-	collection_id integer REFERENCES public.collections(collection_id), 
-	type text references metadata.types(type_name) not null,
-	textdata text,
-	--xmldata text, This does not behave as expected. Might revisit later.
-	metadata_file text
-);
-*/
