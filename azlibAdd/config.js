@@ -24,26 +24,6 @@ exports.load = (db) => {
 		db.any("select type_name from gisdata.raster_types").then(data => {
 			global.rasterTypes = data.map(datum => {return datum.type_name});
 			logger.debug("Raster types = " + global.rasterTypes)
-		}),
-		db.any("select * from metadata.types").then(data => {
-			global.metadataTypes = data.map(datum => {
-				return {
-					name: datum.type_name, 
-					formalNamePath: datum.title_query_path,
-					xMinPath: datum.minx_query_path,
-					xMaxPath: datum.maxx_query_path,
-					yMinPath: datum.miny_query_path,
-					yMaxPath: datum.maxy_query_path,
-					seriesPath: datum.series_query_path,
-					authorsPath: datum.authors_query_path,
-					yearPath: datum.year_query_path,
-					keywordsPath: datum.keywords_query_path
-				}
-			});
-			
-			logger.debug("Metadata types = " + global.pp(global.metadataTypes));
-			logger.debug("ISO path = " + metadataTypes[1].formalNamePath);
-			logger.silly("Keywords path = " + metadataTypes[1].keywordsPath);
 		})
 	];
 
