@@ -1,5 +1,95 @@
 "use strict";
 
+const path = require("path");
+const logger = require("./logger")(path.basename(__filename));
+
+exports.upload = (rootDir, collectionID, db) => {
+	logger.debug("enter");
+
+	const path = require('path');
+	const azgsPath = path.join(rootDir, "azgs.json");
+
+	//Verify that azgs.json exists
+	const fs = require('fs-extra');
+	if (!fs.existsSync(azgsPath)) {
+		return Promise.reject("No azgs.json file found in collection");
+	}
+
+	return fs.readJson(azgsPath)
+	.catch(error => {logger.warn("Problem reading azgs.json: " + error);return Promise.reject(error);})
+	.then((metadata) => {      
+		logger.silly("metadata = " + global.pp(metadata));
+
+		//Add collection data
+		metadata.identifiers.collection_id = collectionID;
+		if (global.args.archive) {
+			metadata.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
+		} else {
+			metadata.identifiers.directory = path.resolve(global.args.source);
+		}
+		logger.silly("metadata collection info = " + global.pp(metadata));
+		
+		
+		const metadataInsert = 
+			"insert into metadata.azgs (collection_id, json_data, geom) values (" +
+			collectionID + ", $$" + 
+			JSON.stringify(metadata) + "$$, " +
+			"ST_MakeEnvelope(" + 
+				metadata.bounding_box.west + "," + 
+				metadata.bounding_box.south + "," + 
+				metadata.bounding_box.east + "," + 
+				metadata.bounding_box.north + ",4326))";
+
+		logger.silly("insert = " + metadataInsert);
+
+		return db.none(metadataInsert)
+		.catch(error => {
+			logger.error("Problem inserting azgs metadata record: " + global.pp(error));
+			return Promise.reject("Problem inserting azgs metadata record: " + error);
+		})
+		.then(() => {
+			let azgs_old_url;
+			if (metadata.links[0]) {
+				azgs_old_url = metadata.links[0].url;
+			}
+			const collectionsUpdate = "update collections set formal_name = $$" + metadata.title + 
+										"$$, informal_name = $$" + metadata.informal_name + 
+										"$$, azgs_old_url = $$" + azgs_old_url + 
+										"$$ where collection_id = " + collectionID;
+			return db.none(collectionsUpdate).catch(error => {
+				logger.error("Problem updating formal_name in collections: " + global.pp(error));
+				return Promise.reject(error);
+			});
+		});
+		
+/*
+		return db.tx(t => { 
+			const metadataInsert = 
+				"insert into metadata.azgs (collection_id, json_data, geom) values (" +
+				collectionID + ", $$" + 
+				JSON.stringify(metadata) + "$$, " +
+				"ST_MakeEnvelope(" + metadata.bounding_box.west + "," + 
+					metadata.bounding_box.south + "," + 
+					metadata.bounding_box.east + "," + 
+					metadata.bounding_box.north + ",4326))";
+			logger.silly("insert = " + metadataInsert);
+
+			const collectionsUpdate = "update public.collections set formal_name = $$" + metadata.title + 
+										"$$, informal_name = $$" + metadata.informal_name + 
+										"$$ where collection_id = " + collectionID;
+			logger.silly("update for = " + collectionsUpdate);
+
+			return t.batch([metadataInsert, collectionsUpdate]);
+		})
+		.then(data => {
+			logger.silly("azgs metadata successful");
+		})
+		.catch(error => {logger.error(error);throw new Error(error);});
+*/
+
+	});
+};
+
 exports.Metadata =	class {
 	constructor () {
 		this.title = "";
@@ -60,6 +150,7 @@ exports.Link = class {
 exports.File = class {
 	constructor() {	
 		this.name = "";
+		this.extension = "";
 		this.type = "";
 	}
 };          
@@ -70,7 +161,6 @@ exports.Keyword = class {
 		this.type = "";
 	}
 };
-
 
 
 
