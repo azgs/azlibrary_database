@@ -3,8 +3,8 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
-exports.upload = (rootDir, collectionID, db) => {
-	logger.debug("enter");
+exports.readMetadata = (rootDir) => {
+	logger.debug("enter read");
 
 	const path = require('path');
 	const azgsPath = path.join(rootDir, "azgs.json");
@@ -14,25 +14,20 @@ exports.upload = (rootDir, collectionID, db) => {
 	if (!fs.existsSync(azgsPath)) {
 		return Promise.reject("No azgs.json file found in collection");
 	}
-
+	logger.silly("reading json");
 	return fs.readJson(azgsPath)
 	.catch(error => {logger.warn("Problem reading azgs.json: " + error);return Promise.reject(error);})
-	.then((metadata) => {      
-		logger.silly("metadata = " + global.pp(metadata));
+}
 
-		//Add collection data
-		metadata.identifiers.collection_id = collectionID;
-		if (global.args.archive) {
-			metadata.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
-		} else {
-			metadata.identifiers.directory = path.resolve(global.args.source);
-		}
-		logger.silly("metadata collection info = " + global.pp(metadata));
-		
+exports.upload = (metadata, db) => {
+	logger.debug("enter");
+
+	return Promise.resolve().then(() => {      
+		logger.silly("metadata = " + global.pp(metadata));
 		
 		const metadataInsert = 
 			"insert into metadata.azgs (collection_id, json_data, geom) values (" +
-			collectionID + ", $$" + 
+			metadata.identifiers.collection_id + ", $$" + 
 			JSON.stringify(metadata) + "$$, " +
 			"ST_MakeEnvelope(" + 
 				metadata.bounding_box.west + "," + 
@@ -47,6 +42,7 @@ exports.upload = (rootDir, collectionID, db) => {
 			logger.error("Problem inserting azgs metadata record: " + global.pp(error));
 			return Promise.reject("Problem inserting azgs metadata record: " + error);
 		})
+		/*
 		.then(() => {
 			let azgs_old_url;
 			if (metadata.links[0]) {
@@ -55,12 +51,13 @@ exports.upload = (rootDir, collectionID, db) => {
 			const collectionsUpdate = "update collections set formal_name = $$" + metadata.title + 
 										"$$, informal_name = $$" + metadata.informal_name + 
 										"$$, azgs_old_url = $$" + azgs_old_url + 
-										"$$ where collection_id = " + collectionID;
+										"$$ where collection_id = " + metadata.identifiers.collection_id;
 			return db.none(collectionsUpdate).catch(error => {
 				logger.error("Problem updating formal_name in collections: " + global.pp(error));
 				return Promise.reject(error);
 			});
 		});
+		*/
 		
 /*
 		return db.tx(t => { 
