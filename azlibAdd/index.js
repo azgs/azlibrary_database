@@ -38,7 +38,6 @@ console.log("repeat = " + args.repeat);
 */
 
 global.pp = (object) => {
-	logger.debug("typeof Object = " + typeof object);
 	return require('util').inspect(object, {depth:null, maxArrayLength: null});
 };
 
@@ -87,12 +86,10 @@ pwPromise.then((password) => {
 	return require("./config").load(db)
 }).then(() => {
 	if (global.args.repeat) {
-		//logger.error("Repeat option not yet implemented");
 		const fs = require('fs-extra');
 		if (!fs.existsSync(global.args.source)) {
-			logger.warn(global.args.source + " directory found");
-			//return Promise.resolve();
-			throw new Error(global.args.source + " directory found");
+			logger.warn(global.args.source + " directory not found");
+			return Promise.reject(global.args.source + " directory not found");
 		}
 
 		let collectionPaths = [];
@@ -107,44 +104,43 @@ pwPromise.then((password) => {
 			return {path: cP, result: null, processingNotes: []};
 		});
 		
-		collections.reduce((promiseChain, collection) => {
+		return collections.reduce((promiseChain, collection) => {
 			logger.silly("reduce iteration, collection = " + collection.path);
 			return promiseChain.then(() => {
 				logger.silly("promiseChain.then");
-				return processCollection(collection);
+				return processCollection(collection)
 			}).catch(error => {
 				//When processing multiple collections, we always return success to the command line. 
 				//Errors are in the collections array we just printed to the log, and in each collection folder.
+				logger.warn("Error processing collection: " + global.pp(error));
 				return Promise.resolve();
 			});
 		}, Promise.resolve())
 		.then(() => {
 			logger.debug("----------------------all done-----------------------");
-			/*pgp.end();*/
 			logger.info(global.pp(collections));
 			return Promise.resolve(); 
 		});
 			
 	} else {
 		const collection = { path:'', result:null, processingNotes:[]};
-		//return processCollection(collection);
-		processCollection(collection).catch(eror => {
+		return processCollection(collection).catch(error => {
 			//When processing a single collection, we want to return any failure to the command line.
 			logger.error("returning failure");
-			process.exit(1);});
+			process.exit(1);
+		});
 	}
-});/*
+})
 .catch(() => {
 	pgp.end();
 })
 .then(() => {
 	pgp.end();
-});*/
+});
 
-//TODO:Hmmm... why did I put this here and not use it?
-function processCollectionFactory(source) {
-	return processCollection(source);
-}
+
+		
+
 
 //const processCollection = (source) => {
 function processCollection(collection)  {
@@ -152,132 +148,141 @@ function processCollection(collection)  {
 	logger.silly("source = " + source);
 
 	const rollback = require("./rollback");
+	const fs = require("fs-extra");
+	const azgs = require("./azgsMetadata");
 
-	return new Promise((resolve, reject) => {
+	let metadata;
+	let uploadID;
+
+	return azgs.readMetadata(source).then((md) => {
 		logger.debug("processing collection " + source);
+		metadata = md;
+		logger.silly("metadata = " + global.pp(metadata));
 
 		global.datasetName = source.split("/").pop(); //The last element in the path
 
-		let collectionID;
-		let uploadID;
-
-		//const path = require("path");
-		let dsPath;
-		if (global.args.archive) {
-			dsPath = path.resolve(global.args.archive, path.basename(source));
+	}).then(() => {
+		if (metadata.identifiers.collection_id &&
+			metadata.identifiers.collection_id != "") {
+			//collection already exists. This is an update.
+			logger.silly("collection exists, update");
+			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null;
+			const updateSQL = "update public.collections set " + 
+								"private = " + (global.args.private ? true : false) + ", " +
+								"formal_name = $$" + metadata.title + "$$, " +
+								"informal_name = $$" + metadata.informal_name + "$$, " +
+								"azgs_old_url = $$" + azgs_old_url + "$$ " +
+								"where collection_id = " + metadata.identifiers.collection_id;
+			return rollback.rollback(metadata.identifiers.collection_id, db).then(() => {
+				return db.none(updateSQL);				
+			});
 		} else {
-			dsPath = path.resolve(source);
-		}
-		logger.silly("dsPath = " + dsPath);
-
-		const collectionsInsert = 
-			"insert into public.collections (azgs_path, private) values ($$" + dsPath + "$$, " + (global.args.private ? true : false) + ")" + 
-			" on conflict (azgs_path) do update set private = " + (global.args.private ? true : false) +			
-			" returning collection_id, (xmax = 0) AS inserted"; //REM: xmax is a system column that will hold a value other than zero if an update occurred.
-		logger.silly("collectionsInsert = " + collectionsInsert);
-
-		return db.one(collectionsInsert).catch(error => {logger.silly("error on insert collections");throw new Error(error);})
-		.then(data => {
-			logger.silly("collectionsInsert success");
-
-			collectionID = data.collection_id;
-			logger.debug("collection id = " + collectionID);
-			logger.silly("inserted = " + data.inserted);
-
-			//If insert was performed, resolve. Otherwise, an update was performed. 
-			//In this case, call rollback to clear data in prepartion for reloading.
-			return Promise.resolve().then(() => {
-				if (data.inserted) {
-					logger.info("New collections record created");
-					if (global.args.archive) {
-						return db.none("update collections set azgs_path='" + path.resolve(global.args.archive, "" + collectionID) + "' where collection_id=" + collectionID)
-					} else {
-						return Promise.resolve();
-					}
+			logger.silly("new collection");
+			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null;
+			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url) values (" + 
+								"$$" + path.resolve(source) + "$$, " + 
+								(global.args.private ? true : false) + ", " +
+								"$$" + metadata.title + "$$, " +
+								"$$" + metadata.informal_name + "$$, " +
+								"$$" + azgs_old_url + "$$) returning collection_id";
+			return db.one(insertSQL).then((collectionID) => {
+				metadata.identifiers.collection_id = collectionID.collection_id;
+				if (global.args.archive) {
+					metadata.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
+					const updateSQL = "update public.collections set azgs_path = $$" + 
+									path.join(global.args.archive, "" + metadata.identifiers.collection_id) +
+									"$$ where collection_id = " + metadata.identifiers.collection_id;
+					return db.none(updateSQL);
 				} else {
-					logger.silly("Collection already exists. Issuing rollback in preparation for update.");
-					return rollback.rollback(collectionID, db);
-				}
-			});
-		}).then(() => {
-			logger.silly("Preparing to insert upload record");
-			const uploadsInsert = 
-				"insert into public.uploads (collection_id, created_at) values ($$" +
-				collectionID + "$$, current_timestamp) returning upload_id";
-			//console.log(uploadsInsert);
-			return db.one(uploadsInsert).catch(error => {throw new Error(error);});
-		}).then((upload) => {
-			uploadID = upload.upload_id;
-			return require("./azgsMetadata").upload(source, collectionID, db)
-			.then(() => {return Promise.resolve()}).catch((error) => {logger.error("Unable to process azgs metadata: " + error); return Promise.reject(error);});
-		}).then(() => {
-			const promises = [
-				require("./gisdata").upload(source, global.datasetName, collectionID, db),
-				require("./metadata").upload(source, "", "metadata", collectionID, db),
-				require("./notes").upload(source, collectionID, db),
-				require("./documents").upload(source, collectionID, db),
-				require("./images").upload(source, collectionID, db)
-			];
-			//return Promise.all(promises).catch(error => {throw new Error(error);})
-			promiseUtil = require("./promise_util");
-			return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
-				if (results.filter(result => result.status === "rejected").length === 0) {
+					metadata.identifiers.directory = path.resolve(global.args.source);
 					return Promise.resolve();
-				} else {
-					return Promise.reject(results);
 				}
 			});
-		}).then(() => {
-			return db.none("vacuum analyze").catch(error => {throw new Error(error);});
-		}).then(() => {
-
-			return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
-			.catch(error => {throw new Error(error);});
-		}).then(() => {
-			logger.info("successfully completed upload for collection_id " + collectionID);
-			global.datasetName = undefined; 
-			//pgp.end();
-			resolve();
-		}).then(() => {
-			collection.result = "success"; //TODO: this should reflect archiving as well
-			if (global.args.archive) {
-				logger.silly("squishin stuff");
-				const dest = path.join(global.args.source, ""+collectionID);
-				const fs = require("fs-extra");
-				fs.move(source, dest).then(() => {
-					return require("./archiver").archive(dest, global.args.archive, collectionID).catch(error => {
-						logger.error("Unable to create archive of source directory. " + global.pp(error));
-						throw new Error(error);
-					});
-				});
-			} else {
-				logger.silly("returning blank resolve");
-				resolve();
-			}
-		}).catch(error => {
-			collection.result = "failure";
-			collection.processingNotes.push(error);
-			logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
-			rollback.rollback(collectionID, db)
-			.catch(error => {
-				logger.error(error);
-				collection.processingNotes.push("\nrollback failed. Manual rollback required");
-			}).then(() => {
-				//create error file?
-				//move dir to failure dir
-				return require("./failure").process(collection, source).catch((error) => {
-					logger.error("Unable to move collection to failure directory: " + global.pp(error));
-					return Promise.resolve(); //TODO: more serious action here?				
-				});
-			}).then(() => {
-				global.datasetName = undefined; 
-				//pgp.end();
-				logger.silly("resolving");				
-				reject(error);//resolve();
-			});
-
+		}
+	}).then(() => {
+		logger.silly("Preparing to insert upload record");
+		const uploadsInsert = 
+			"insert into public.uploads (collection_id, created_at) values ($$" +
+			metadata.identifiers.collection_id + "$$, current_timestamp) returning upload_id";
+		return db.one(uploadsInsert).catch(error => {throw new Error(error);});
+	}).then((upload) => {
+		uploadID = upload.upload_id;
+		return azgs.upload(metadata, db).catch((error) => { //TODO: Do we need this catch?
+			logger.error("Unable to process azgs metadata: " + error); 
+			return Promise.reject(error);
 		});
-	
+	}).then(() => {
+		const promises = [
+			require("./gisdata").upload(source, global.datasetName, metadata.identifiers.collection_id, db),
+			require("./metadata").upload(source, "", "metadata", metadata.identifiers.collection_id, db),
+			require("./notes").upload(source, metadata.identifiers.collection_id, db),
+			require("./documents").upload(source, metadata.identifiers.collection_id, db),
+			require("./images").upload(source, metadata.identifiers.collection_id, db)
+		];
+		//return Promise.all(promises).catch(error => {throw new Error(error);})
+		promiseUtil = require("./promise_util");
+		return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+			if (results.filter(result => result.status === "rejected").length === 0) {
+				return Promise.resolve();
+			} else {
+				return Promise.reject(results);
+			}
+		});
+	}).then(() => {
+		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
+	}).then(() => {
+		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
+		.catch(error => {throw new Error(error);});
+	}).then(() => {
+		return fs.outputJson(path.join(source, "azgs.json"), metadata);
+	}).then(() => {
+		if (global.args.archive) {
+			logger.silly("squishin stuff");
+			const dest = path.join(global.args.source, "" + metadata.identifiers.collection_id);
+			return fs.move(source, dest).then(() => {
+				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.collection_id).catch(error => {
+					logger.error("Unable to create archive of source directory. " + global.pp(error));
+					throw new Error(error);
+				});
+			});
+		} else {
+			logger.silly("returning blank resolve");
+			return Promise.resolve();
+		}
+	}).then(() => {
+		logger.info("successfully completed upload for collection_id " + metadata.identifiers.collection_id);
+		collection.result = "success"; //TODO: this should reflect archiving as well
+		global.datasetName = undefined; 
+		return Promise.resolve();
+	}).catch(error => {
+		collection.result = "failure";
+		collection.processingNotes.push(error);
+		return Promise.resolve(error).then((error) => {
+			//First, handle rollback if necessary
+			if (metadata) { //If not, failure is from reading that. Do nothing.
+				logger.error("Error during upload of collection_id " + metadata.identifiers.collection_id + ": " + global.pp(error)); 
+				return rollback.rollback(metadata.identifiers.collection_id, db)
+				.catch(error2 => {
+					logger.warn("Unable to role back: " + global.pp(error));
+					collection.processingNotes.push("\nrollback failed. Manual rollback required: " + global.pp(error2));
+					return Promise.resolve(error);
+				})
+			} else {
+				return Promise.resolve(error);
+			}
+		}).then((error) => {
+			//Then, handle failure reporting
+			return require("./failure").process(collection, source).catch((error2) => {
+				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error2));
+				return Promise.resolve(); //return resolve so we can clean up global before rejecting to calling routine				
+			});
+		}).then(() => {
+			//Finally, clean up global and reject to calling routine
+			global.datasetName = undefined; 
+			logger.silly("wrapping up collection error");				
+			return Promise.reject(error);
+		});
+
 	});
 }
 
