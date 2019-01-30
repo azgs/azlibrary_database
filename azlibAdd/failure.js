@@ -19,11 +19,12 @@ exports.process = (collection, source) => {
 			fs.ensureDir(global.args.failure_directory).then(() => {
 				return fs.writeJson(path.join(source, "failure.json"), collection, {spaces:"\t"})
 			}).then(() => {
-				return fs.move(source, dest);
+				return fs.move(source, dest, { overwrite: true });
 			}).catch((error) => {
-				reject(error);
+				logger.error("Unable to move to failure directory: " + global.pp(error));
+				return reject(error);
 			}).then(() => {
-				resolve();
+				return resolve();
 			});
 		}
 	});
