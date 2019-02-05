@@ -5,7 +5,7 @@ exports.fetch = (data) => {
 	logger.silly("enter, data = " + global.pp(data));
 
 	const query = 
-		"select informal_name, ua_library from public.collections where azgs_old_url like '%" + global.datasetName + "'";
+		"select informal_name, ua_library from public.collections where azgs_old_url like '/%" + global.datasetName + "'";
 	logger.silly("query = " + query);
 	return global.db.one(query).then(result => {
 		data.informal_name = result.informal_name;
