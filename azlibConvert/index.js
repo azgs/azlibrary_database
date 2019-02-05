@@ -152,6 +152,10 @@ function processCollection(collection)  {
 						fileMeta.name = path.basename(f);
 						fileMeta.type = "legacy";
 						fileMeta.extension = path.extname(f);
+					} else if (path.dirname(f).includes(path.sep + "raster")) {
+						fileMeta.name = path.basename(f);
+						fileMeta.type = "raster";
+						fileMeta.extension = path.extname(f);
 					} else if (path.dirname(f).includes(path.sep + "ncgmp09")) {
 						if (!path.dirname(f).includes(".gdb")) {
 							fileMeta.name = path.basename(f);
@@ -163,6 +167,10 @@ function processCollection(collection)  {
 							fileMeta.type = "ncgmp09";
 							fileMeta.extension = path.extname(path.basename(path.dirname(f)));
 						}
+					} else if (path.dirname(f).includes(path.sep + "metadata")) {
+						fileMeta.name = path.basename(f);
+						fileMeta.type = "metadata";
+						fileMeta.extension = path.extname(f);
 					} else {
 						fileMeta.name = path.basename(f);
 						fileMeta.type = "unknown";
