@@ -10,8 +10,10 @@ global.args
 	.option('-s, --source <source>', 'Source directory of the collection(s). Required')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
+	.option('-d, --dbname <dbname>', 'DB name. Required')
+	.option('-u, --username <username>', 'DB username. Required')
+	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	.parse(process.argv);
-if (global.args.archive === true) global.args.archive = path.dirname(global.args.source);
 
 global.pp = (object) => {
 	return require('util').inspect(object, {depth:null, maxArrayLength: null});
@@ -21,6 +23,14 @@ const logger = require("./logger")(path.basename(__filename));
 
 logger.debug(global.pp(global.args));
 logger.debug(global.pp("source = " + global.args.source));
+
+const pgp = require("pg-promise")({
+	 //Initialization Options
+});
+const cn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.dbname;
+global.db = global.args.dbname ? pgp(cn) : null;
+logger.silly("global.args.dbname = " + global.args.dbname);
+logger.silly("global.db = " + global.pp(global.db));
 
 return Promise.resolve().then(() => {
 	if (global.args.repeat) {
@@ -42,7 +52,7 @@ return Promise.resolve().then(() => {
 			return {path: cP, result: null, processingNotes: []};
 		});
 		
-		collections.reduce((promiseChain, collection) => {
+		return collections.reduce((promiseChain, collection) => {
 			logger.silly("reduce iteration, collection = " + collection.path);
 			return promiseChain.then(() => {
 				logger.silly("promiseChain.then");
@@ -68,7 +78,14 @@ return Promise.resolve().then(() => {
 			logger.error("returning failure");
 			process.exit(1);});
 	}
+}).then(() => {
+	logger.debug("Closing pgp");
+	pgp.end();
+}).catch((error) => {
+	logger.error(error);
+	pgp.end();
 });
+
 
 function processCollection(collection)  {
 	const source = path.join(global.args.source, collection.path);
@@ -185,6 +202,12 @@ function processCollection(collection)  {
 				data.files = fileEntries;
 				return data;
 			})
+		}).then((data) => {
+			if (global.args.dbname) {
+				return require("./db").fetch(data);
+			} else {
+				return Promise.resolve(data);
+			}
 		}).then((data) => {
 			logger.silly("json from " + file + " = " + global.pp(data));
 			return fs.writeJson(path.join(source, "azgs.json"), data, {spaces:"\t"})
