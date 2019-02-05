@@ -2,39 +2,39 @@
 
 exports.Metadata =	class {
 	constructor () {
-		this.title = "";
+		this.title = null;
 		this.authors = [];
 		this.collection_group = {
-			name: "",
-			id: ""
+			name: null,
+			id: null
 		};
-		this.year = "";
+		this.year = null;
 		this.journal = {
-			name: "",
-			publisher: "",
-			url: ""
+			name: null,
+			publisher: null,
+			url: null
 		}
-		this.series = "";
-		this.abstract = "";
+		this.series = null;
+		this.abstract = null;
 		this.links = [];
 		this.identifiers = {
-			collection_id: "",
-			directory: "",
-			doi: ""
+			collection_id: null,
+			directory: null,
+			doi: null
 		};
 		this.files = [];
 		this.language = "English", // prepopulate english
 		this.license = {
-			type: "",
-			url: ""
+			type: "CC BY-NC-SA 4.0",
+			url: "https://creativecommons.org/licenses/by-nc-sa/4.0/"
 		};
 		this.keywords = [];
-		this.informal_name = "";    
+		this.informal_name = null;    
 		this.bounding_box = {
-			north: "",
-			south: "",
-			east: "",
-			west: ""
+			north: null,
+			south: null,
+			east: null,
+			west: null
 		};
 		this.private = "false" //prepopulate false?
 	}
@@ -43,32 +43,32 @@ exports.Metadata =	class {
 
 exports.Author = class {
 	constructor() {	
-		this.person = "";
-		this.organization = "";
-		this.givenname= "";
-		this.surname = "";
+		this.person = null;
+		this.organization = null;
+		this.givenname= null;
+		this.surname = null;
 	}
 };       
 
 exports.Link = class {
 	constructor() {	
-		this.url = "";
-		this.name = "";
+		this.url = null;
+		this.name = null;
 	}
 };
 
 exports.File = class {
 	constructor() {	
-		this.name = "";
-		this.extension = "";
-		this.type = "";
+		this.name = null;
+		this.extension = null;
+		this.type = null;
 	}
 };          
 
 exports.Keyword = class {
 	constructor() {	
-		this.name = "";
-		this.type = "";
+		this.name = null;
+		this.type = null;
 	}
 };
 
