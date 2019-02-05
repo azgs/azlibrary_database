@@ -230,6 +230,10 @@ exports.convert = (data, fileMetadataType) => {
 											link.name = online['gmd:CI_OnlineResource'][0]
 															['gmd:name'][0]
 																['gco:CharacterString'][0];
+										} else if (link.url.includes("repository.azgs.az.gov")){
+											link.name = "AZGS old";
+										} else if (link.url.includes("????")){
+											link.name = "UA Library";
 										}
 										return accOnline.concat(link);
 									} else {
