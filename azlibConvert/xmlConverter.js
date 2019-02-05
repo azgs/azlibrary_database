@@ -232,7 +232,7 @@ exports.convert = (data, fileMetadataType) => {
 																['gco:CharacterString'][0];
 										} else if (link.url.includes("repository.azgs.az.gov")){
 											link.name = "AZGS old";
-										} else if (link.url.includes("????")){
+										} else if (link.url.includes("hdl.handle.net")){
 											link.name = "UA Library";
 										}
 										return accOnline.concat(link);
