@@ -113,11 +113,17 @@ exports.convert = (data, fileMetadataType) => {
 													['gmd:citation'][0]
 														['gmd:CI_Citation'][0]
 															['gmd:citedResponsibleParty'].reduce((accY, y) => {
-								const author = new azgs.Author();
-								author.person = y['gmd:CI_ResponsibleParty'][0]
-													['gmd:individualName'][0]
-														['gco:CharacterString'][0];
-								return accY.concat(author);
+								if ("missing" !== y['gmd:CI_ResponsibleParty'][0]
+														['gmd:individualName'][0]
+															['gco:CharacterString'][0].toLowerCase()) {
+									const author = new azgs.Author();
+									author.person = y['gmd:CI_ResponsibleParty'][0]
+														['gmd:individualName'][0]
+															['gco:CharacterString'][0];
+									return accY.concat(author);
+								} else {
+									return accY;
+								}
 							}, []));
 						} else {
 							return accX;
