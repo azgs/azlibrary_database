@@ -238,7 +238,7 @@ function processCollection(collection)  {
 	}).then(() => {
 		if (global.args.archive) {
 			logger.silly("squishin stuff");
-			const dest = path.join(global.args.source, "" + metadata.identifiers.collection_id);
+			const dest = path.join(global.args.archive, "tmp", "" + metadata.identifiers.collection_id);
 			return fs.move(source, dest).then(() => {
 				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.collection_id).catch(error => {
 					logger.error("Unable to create archive of source directory. " + global.pp(error));
