@@ -147,7 +147,7 @@ function fetchExtent(collectionID, dir, file, db) {
 		//gdal failed, so use extent from top-level metadata
 		} catch (err) {
 			logger.warn("Problem with gdal for " + file + ": " + global.pp(err));
-			db.one('select ST_XMin(geom) as "minX", ST_YMin(geom) as "minY", ST_XMax(geom) as "maxX", ST_YMax(geom) as "maxY", ST_SRID(geom) as srid from metadata.metadata where collection_id = ' + collectionID)
+			db.one('select ST_XMin(geom) as "minX", ST_YMin(geom) as "minY", ST_XMax(geom) as "maxX", ST_YMax(geom) as "maxY", ST_SRID(geom) as srid from metadata.azgs where collection_id = ' + collectionID)
 			.then((data) => {
 				resolve({extent:data, fromMeta:true});
 			})
