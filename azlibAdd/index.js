@@ -167,32 +167,49 @@ function processCollection(collection)  {
 			//collection already exists. This is an update.
 			logger.silly("collection exists, update");
 			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null;
+			const ua_library = metadata.links[1] ? metadata.links[1].url : null;
 			const updateSQL = "update public.collections set " + 
-								"private = " + (global.args.private ? true : false) + ", " +
-								"formal_name = $$" + metadata.title + "$$, " +
-								"informal_name = $$" + metadata.informal_name + "$$, " +
-								"azgs_old_url = $$" + azgs_old_url + "$$ " +
-								"where collection_id = " + metadata.identifiers.collection_id;
+								"private = $1, " +
+								"formal_name = $2, " +
+								"informal_name = $3, " +
+								"azgs_old_url = $4, " +
+								"ua_library = $5 " +
+								"where collection_id = $6";
+			const updateParams = [
+				(global.args.private ? true : false),
+				metadata.title,
+				metadata.informal_name,
+				azgs_old_url,
+				ua_library,
+				metadata.identifiers.collection_id
+			];
 			return rollback.rollback(metadata.identifiers.collection_id, db).then(() => {
-				return db.none(updateSQL);				
+				return db.none(updateSQL, updateParams);				
 			});
 		} else {
 			logger.silly("new collection");
-			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null;
-			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url) values (" + 
-								"$$" + path.resolve(source) + "$$, " + 
-								(global.args.private ? true : false) + ", " +
-								"$$" + metadata.title + "$$, " +
-								"$$" + metadata.informal_name + "$$, " +
-								"$$" + azgs_old_url + "$$) returning collection_id";
-			return db.one(insertSQL).then((collectionID) => {
+			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null; //TODO: Make both of these check for name string rather than position in array.
+			const ua_library = metadata.links[1] ? metadata.links[1].url : null;
+			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url, ua_library) " + 
+								"values ($1, $2, $3, $4, $5, $6) returning collection_id"; 
+			const insertParams = [
+				path.resolve(source),
+				(global.args.private ? true : false),
+				metadata.title,
+				metadata.informal_name,
+				azgs_old_url,
+				ua_library
+			];
+			return db.one(insertSQL, insertParams).then((collectionID) => {
 				metadata.identifiers.collection_id = collectionID.collection_id;
 				if (global.args.archive) {
 					metadata.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
-					const updateSQL = "update public.collections set azgs_path = $$" + 
-									path.join(global.args.archive, "" + metadata.identifiers.collection_id) +
-									"$$ where collection_id = " + metadata.identifiers.collection_id;
-					return db.none(updateSQL);
+					const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
+					const updateParams = [
+						path.join(global.args.archive, "" + metadata.identifiers.collection_id),
+						metadata.identifiers.collection_id
+					];
+					return db.none(updateSQL, updateParams);
 				} else {
 					metadata.identifiers.directory = path.resolve(global.args.source);
 					return Promise.resolve();
@@ -202,9 +219,11 @@ function processCollection(collection)  {
 	}).then(() => {
 		logger.silly("Preparing to insert upload record");
 		const uploadsInsert = 
-			"insert into public.uploads (collection_id, created_at) values ($$" +
-			metadata.identifiers.collection_id + "$$, current_timestamp) returning upload_id";
-		return db.one(uploadsInsert).catch(error => {throw new Error(error);});
+			"insert into public.uploads (collection_id, created_at) values ($1, current_timestamp) returning upload_id";
+		const uploadsParams = [
+			metadata.identifiers.collection_id
+		];
+		return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
 	}).then((upload) => {
 		uploadID = upload.upload_id;
 		return azgs.upload(metadata, db).catch((error) => { //TODO: Do we need this catch?
