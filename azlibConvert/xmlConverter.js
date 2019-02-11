@@ -226,6 +226,14 @@ exports.convert = (data, fileMetadataType) => {
 										link.url = online['gmd:CI_OnlineResource'][0]
 														['gmd:linkage'][0]
 															['gmd:URL'][0];
+
+										//We know the format we expect for azgs urls. 
+										//Some are corrupted. Here, we insure it looks correct.
+										if (link.url.match(/repository.*azgs\/dlio/g)) {
+											link.url = "http://repository.azgs.az.gov/uri_gin/azgs/dlio/" + 
+														link.url.split("/").pop(); //last element should be old id
+										}
+
 										if (online['gmd:CI_OnlineResource'][0]
 												['gmd:name'] &&
 											online['gmd:CI_OnlineResource'][0]
