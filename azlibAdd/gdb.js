@@ -104,9 +104,9 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 			const ogrPromise = new Promise((resolve, reject) => {
 				ogr2ogr(dir + "/" + dirs[0])
 				.format('PostgreSQL')
-				//.project('EPSG:4326')
+				.project('EPSG:4326')
 				.timeout(50000)
-				.options(layers.concat(['-t_srs', 'EPSG:4326', '-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-append']))
+				.options(layers.concat(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO', '-append']))
 				.destination('PG:host=localhost user=' + args.username + ' password=' + args.password + ' dbname=' + args.dbname + ' schemas=' + schemaName)
 				.exec(function(error, data) {
 					if (error) {
