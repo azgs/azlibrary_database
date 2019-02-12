@@ -70,34 +70,6 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 				return schemaName + '."' + layer + '"';
 			});
 
-			//**************tmp testing
-			try {
-				logger.silly("running gdal");
-				const gdal = require("gdal");
-				const dataset = gdal.open(dir + "/" + dirs[0]); logger.silly("dataset = " + global.pp(dataset));
-				//logger.silly("dataset layers = " + global.pp(dataset.layers.DatasetLayers));
-				//const extent1 = dataset.getProjectionRef(); logger.silly("projRef = " + global.pp(extent1));
-				dataset.layers.forEach((layer, i) => {
-					logger.silly("layer " + i + " = " + global.pp(layer));
-					try {
-						extent = layer.getExtent(); logger.silly("extent = " + global.pp(extent));
-						extent.srid = (layer.srs ? layer.srs.toProj4() : 'null'); logger.silly("layer.srs = " + layer.srs);
-						logger.silly("srid = " + extent.srid);
-					} catch (err) {
-						logger.warn("Unable to get extent from layer ");
-					}
-				});				
-				
-				//const layer = dataset.layers.get(14); logger.silly("layer = " + global.pp(layer));
-				//extent = layer.getExtent(); logger.silly("extent = " + global.pp(extent));
-				//extent.srid = (layer.srs ? layer.srs.toProj4() : 'null'); logger.silly("layer.srs = " + layer.srs);
-				//logger.silly("srid = " + extent.srid);
-			} catch (err) {
-				logger.warn("Problem with gdal for " + dir + "/" + dirs[0] + ": " + global.pp(err));
-			}
-
-			//*****************************
-
 			const ogr2ogr = require('ogr2ogr');
 
 			//append new gdb to existing gdb (fetching only the layers we want)
