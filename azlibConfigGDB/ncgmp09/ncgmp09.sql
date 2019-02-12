@@ -50,7 +50,7 @@ CREATE TABLE ncgmp09."ContactsAndFaults" (
     "LTYPE" character varying(255),
     "RuleID" integer,
     "Override" bytea,
-    geom public.geometry(MultiLineString,26912),
+    geom public.geometry(MultiLineString,4326),
     collection_id integer
 );
 
@@ -178,7 +178,7 @@ CREATE TABLE ncgmp09."MapUnitPolys" (
     "Symbol" character varying(254),
     "Notes" character varying,
     "DataSourceID" character varying(50),
-    geom public.geometry(MultiPolygon,26912),
+    geom public.geometry(MultiPolygon,4326),
     collection_id integer
 );
 
@@ -231,7 +231,7 @@ CREATE TABLE ncgmp09."OrientationPoints" (
     "PTTYPE" character varying(255),
     "RuleID" integer,
     "Override" bytea,
-    geom public.geometry(Point,26912),
+    geom public.geometry(Point,4326),
     collection_id integer
 );
 
@@ -283,7 +283,7 @@ CREATE TABLE ncgmp09."Stations" (
     "MapY" real,
     "DataSourceID" character varying(50),
     "Notes" character varying,
-    geom public.geometry(Point,26912),
+    geom public.geometry(Point,4326),
     collection_id integer
 );
 
