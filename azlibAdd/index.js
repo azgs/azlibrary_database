@@ -173,14 +173,16 @@ function processCollection(collection)  {
 								"formal_name = $2, " +
 								"informal_name = $3, " +
 								"azgs_old_url = $4, " +
-								"ua_library = $5 " +
-								"where collection_id = $6";
+								"ua_library = $5, " +
+								"collection_group_id = $6" +
+								"where collection_id = $7";
 			const updateParams = [
 				(global.args.private ? true : false),
 				metadata.title,
 				metadata.informal_name,
 				azgs_old_url,
 				ua_library,
+				metadata.collection_group.id,
 				metadata.identifiers.collection_id
 			];
 			return rollback.rollback(metadata.identifiers.collection_id, db).then(() => {
@@ -190,15 +192,16 @@ function processCollection(collection)  {
 			logger.silly("new collection");
 			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null; //TODO: Make both of these check for name string rather than position in array.
 			const ua_library = metadata.links[1] ? metadata.links[1].url : null;
-			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url, ua_library) " + 
-								"values ($1, $2, $3, $4, $5, $6) returning collection_id"; 
+			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url, ua_library, collection_group_id) " + 
+								"values ($1, $2, $3, $4, $5, $6, $7) returning collection_id"; 
 			const insertParams = [
 				path.resolve(source),
 				(global.args.private ? true : false),
 				metadata.title,
 				metadata.informal_name,
 				azgs_old_url,
-				ua_library
+				ua_library,
+				metadata.collection_group.id
 			];
 			return db.one(insertSQL, insertParams).then((collectionID) => {
 				metadata.identifiers.collection_id = collectionID.collection_id;
