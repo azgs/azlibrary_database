@@ -10,8 +10,9 @@ global.args
 	.option('-s, --source <source>', 'Source directory of the collection(s). Required')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
-	.option('-d, --dbname <dbname>', 'DB name. Required')
-	.option('-u, --username <username>', 'DB username. Required')
+	.option('-o, --old_dbname <dbname>', 'Old DB name.')
+	.option('-n, --new_dbname <dbname>', 'New DB name.')
+	.option('-u, --username <username>', 'DB username. Required if -o or -n specified.')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	.parse(process.argv);
 
@@ -27,10 +28,12 @@ logger.debug(global.pp("source = " + global.args.source));
 const pgp = require("pg-promise")({
 	 //Initialization Options
 });
-const cn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.dbname;
-global.db = global.args.dbname ? pgp(cn) : null;
-logger.silly("global.args.dbname = " + global.args.dbname);
-logger.silly("global.db = " + global.pp(global.db));
+const ocn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.old_dbname;
+const ncn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.new_dbname;
+global.odb = global.args.old_dbname ? pgp(ocn) : null;
+global.ndb = global.args.old_dbname ? pgp(ncn) : null;
+//logger.silly("global.args.dbname = " + global.args.dbname);
+//logger.silly("global.db = " + global.pp(global.db));
 
 return Promise.resolve().then(() => {
 	if (global.args.repeat) {
@@ -203,7 +206,7 @@ function processCollection(collection)  {
 				return data;
 			})
 		}).then((data) => {
-			if (global.args.dbname) {
+			if (global.args.old_dbname || global.args.new_dbname) {
 				return require("./db").fetch(data);
 			} else {
 				return Promise.resolve(data);
