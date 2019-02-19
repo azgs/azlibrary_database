@@ -101,7 +101,7 @@ exports.convert = (data, fileMetadataType) => {
 						}
 					}, [])
 					logger.silly("seriesArray = " + global.pp(seriesArray));
-					metadata.series = seriesArray[0] ? seriesArray[0] : "";
+					metadata.series = seriesArray[0] ? seriesArray[0] : null;
 
 					metadata.authors = uglyMetadata['gmd:MD_Metadata']
 											['gmd:identificationInfo'].reduce((accX, x) => {
