@@ -27,6 +27,7 @@ insert into public.collection_groups (collection_group_name) values ('Arizona Ge
 insert into public.collection_groups (collection_group_name) values ('Oil & Gas Publications');
 insert into public.collection_groups (collection_group_name) values ('Arizona Department of Mines and Mineral Resources');
 insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Map Series');
+insert into public.collection_groups (collection_group_name) values ('AZGS Miscellaneous Minedata Collection');
 
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.
