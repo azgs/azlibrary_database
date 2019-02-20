@@ -162,12 +162,15 @@ function processCollection(collection)  {
 		global.datasetName = source.split("/").pop(); //The last element in the path
 
 	}).then(() => {
+		const azgs_old_url = metadata.links.filter(link => 
+			(link.name && link.name.toLowerCase() === "azgs old")).shift().url;
+		const ua_library = metadata.links.filter(link => 
+			(link.name && link.name.toLowerCase() === "ua library")).shift().url;
+
 		if (metadata.identifiers.collection_id &&
 			metadata.identifiers.collection_id != "") {
 			//collection already exists. This is an update.
 			logger.silly("collection exists, update");
-			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null;
-			const ua_library = metadata.links[1] ? metadata.links[1].url : null;
 			const updateSQL = "update public.collections set " + 
 								"private = $1, " +
 								"formal_name = $2, " +
@@ -190,8 +193,6 @@ function processCollection(collection)  {
 			});
 		} else {
 			logger.silly("new collection");
-			const azgs_old_url = metadata.links[0] ? metadata.links[0].url : null; //TODO: Make both of these check for name string rather than position in array.
-			const ua_library = metadata.links[1] ? metadata.links[1].url : null;
 			const insertSQL = "insert into public.collections (azgs_path, private, formal_name, informal_name, azgs_old_url, ua_library, collection_group_id) " + 
 								"values ($1, $2, $3, $4, $5, $6, $7) returning collection_id"; 
 			const insertParams = [
