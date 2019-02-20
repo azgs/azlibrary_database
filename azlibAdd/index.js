@@ -206,7 +206,7 @@ function processCollection(collection)  {
 			return db.one(insertSQL, insertParams).then((collectionID) => {
 				metadata.identifiers.collection_id = collectionID.collection_id;
 				if (global.args.archive) {
-					metadata.identifiers.directory = path.resolve(global.args.archive, ""+collectionID);
+					metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.collection_id);
 					const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
 					const updateParams = [
 						path.join(global.args.archive, "" + metadata.identifiers.collection_id),
@@ -256,7 +256,8 @@ function processCollection(collection)  {
 		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
 		.catch(error => {throw new Error(error);});
 	}).then(() => {
-		return fs.outputJson(path.join(source, "azgs.json"), metadata);
+		//return fs.outputJson(path.join(source, "azgs.json"), metadata);
+		return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"});
 	}).then(() => {
 		if (global.args.archive) {
 			logger.silly("squishin stuff");
