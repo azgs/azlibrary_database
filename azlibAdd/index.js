@@ -162,10 +162,12 @@ function processCollection(collection)  {
 		global.datasetName = source.split("/").pop(); //The last element in the path
 
 	}).then(() => {
-		const azgs_old_url = metadata.links.filter(link => 
-			(link.name && link.name.toLowerCase() === "azgs old")).shift().url;
-		const ua_library = metadata.links.filter(link => 
-			(link.name && link.name.toLowerCase() === "ua library")).shift().url;
+		let azgs_old_url = metadata.links.filter(link => 
+			(link.name && link.name.toLowerCase() === "azgs old")).shift();
+		azgs_old_url = azgs_old_url ? azgs_old_url.url : null;
+		let ua_library = metadata.links.filter(link => 
+			(link.name && link.name.toLowerCase() === "ua library")).shift();
+		ua_library = ua_library ? ua_library.url : null;
 
 		if (metadata.identifiers.collection_id &&
 			metadata.identifiers.collection_id != "") {
