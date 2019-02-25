@@ -1,33 +1,34 @@
 --Create the collection_groups table. This table is for defining the overarching funding/project that a set of data collections were collected under - e.g, StateMap 2017, NGGDP 2018. All collections must be associated with a collection_group. For older collections belonging to an unknown project, use "unknown legacy project"
 CREATE TABLE collection_groups (
 	collection_group_id serial PRIMARY KEY,
-	collection_group_name text NOT NULL,
-	collection_group_desc text
+	collection_group_name text UNIQUE NOT NULL,
+	collection_group_desc text,
+	collection_group_abbrv text
 );
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Open File Reports');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Circulars');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geology - Fieldnotes Newsletters');
-insert into public.collection_groups (collection_group_name) values ('Poster Publications');
-insert into public.collection_groups (collection_group_name) values ('Arizona Mine Files');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey - Miscellaneous Maps');
-insert into public.collection_groups (collection_group_name) values ('Geologic Investiation Folio');
-insert into public.collection_groups (collection_group_name) values ('Down-To-Earth Series');
-insert into public.collection_groups (collection_group_name) values ('Troy L. PŽwŽ Environmental Geology Collection');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Special Paper 9');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Special Paper');
-insert into public.collection_groups (collection_group_name) values ('US Bureau of Mines (I.C.)');
-insert into public.collection_groups (collection_group_name) values ('US Bureau of Mines (R.I)');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Contributed Reports');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Digital Geologic Maps');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Digital Information');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Bulletins');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Contributed Maps');
-insert into public.collection_groups (collection_group_name) values ('Airphoto indexes');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Digital Maps (DM)');
-insert into public.collection_groups (collection_group_name) values ('Oil & Gas Publications');
-insert into public.collection_groups (collection_group_name) values ('Arizona Department of Mines and Mineral Resources');
-insert into public.collection_groups (collection_group_name) values ('Arizona Geological Survey Map Series');
-insert into public.collection_groups (collection_group_name) values ('AZGS Miscellaneous Minedata Collection');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Open File Reports', 'AOFR');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Circulars', 'AGSC');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geology - Fieldnotes Newsletters', 'AGFN');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Poster Publications', 'PPPP');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Mine Files', 'AZMR');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey - Miscellaneous Maps', 'AGMM');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Geologic Investiation Folio', 'GGIF');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Down-To-Earth Series', 'DTES');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Troy L. PŽwŽ Environmental Geology Collection', 'PEGC');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Special Paper 9', 'AGS9');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Special Paper', 'AGSP');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('US Bureau of Mines (I.C.)', 'BMIC');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('US Bureau of Mines (R.I)', 'BMRI');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Contributed Reports', 'AGCR');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Geologic Maps', 'ADGM');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Information', 'AGDI');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Bulletins', 'AGSB');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Contributed Maps', 'AGCM');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Airphoto indexes', 'APIX');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Maps (DM)', 'AGDM');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Oil & Gas Publications', 'OGPB');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Department of Mines and Mineral Resources', 'ADMM');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Map Series', 'AGMS');
+insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('AZGS Miscellaneous Minedata Collection', 'AGMM');
 
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.
@@ -45,8 +46,10 @@ CREATE TABLE publications (
 );
 
 --This is the collections, its purpose to to keep track of what collections have been entered and their relations
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE collections (
 	collection_id serial PRIMARY KEY, 
+	perm_id uuid not null unique default uuid_generate_v1(),
 	private boolean not null default false,
 	collection_group_id integer REFERENCES collection_groups(collection_group_id),
 	publication_id integer UNIQUE REFERENCES publications(publication_id), -- Unique because collection_id is synonymous with publication_id, but not all collections may have publication_id

@@ -18,6 +18,7 @@ exports.Metadata =	class {
 		this.abstract = null;
 		this.links = [];
 		this.identifiers = {
+			perm_id: null,
 			collection_id: null,
 			directory: null,
 			doi: null

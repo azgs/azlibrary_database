@@ -169,6 +169,7 @@ function processCollection(collection)  {
 			(link.name && link.name.toLowerCase() === "ua library")).shift();
 		ua_library = ua_library ? ua_library.url : null;
 
+		/*
 		if (metadata.identifiers.collection_id &&
 			metadata.identifiers.collection_id != "") {
 			//collection already exists. This is an update.
@@ -222,6 +223,72 @@ function processCollection(collection)  {
 				}
 			});
 		}
+		*/
+
+		//This is a snazzy thing used by pg-promise to trigger use of a default value on insert
+		const DEFAULT = {
+			rawType: true,
+			toPostgres: () => 'default'
+		};
+
+		const insertSQL = `insert into public.collections (
+								azgs_path, 
+								private, 		
+								formal_name, 
+								informal_name, 
+								azgs_old_url, 
+								ua_library, 
+								collection_group_id, 
+								perm_id)
+							values ($1, $2, $3, $4, $5, $6, $7, $8)
+							on conflict (perm_id) do update set
+								azgs_path = $1,
+								private = $2,
+								formal_name = $3,
+								informal_name = $4,
+								azgs_old_url = $5,
+								ua_library = $6,
+								collection_group_id = $7
+							returning collection_id, perm_id, (xmax=0) as inserted`;
+		const upsertParams = [
+			path.resolve(source),
+			(global.args.private ? true : false),
+			metadata.title,
+			metadata.informal_name,
+			azgs_old_url,
+			ua_library,
+			metadata.collection_group.id,
+			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
+		];
+							
+		return db.one(insertSQL, upsertParams).then((result) => {
+			metadata.identifiers.collection_id = result.collection_id; //TODO:keep this?
+			metadata.identifiers.perm_id = result.perm_id;
+
+			return Promise.resolve().then(() => {
+				if (global.args.archive) {
+					metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
+					const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
+					const updateParams = [
+						path.join(global.args.archive, "" + metadata.identifiers.collection_id),
+						metadata.identifiers.collection_id
+					];
+					return db.none(updateSQL, updateParams);
+				} else {
+					metadata.identifiers.directory = path.resolve(global.args.source);
+					return Promise.resolve();
+				}
+			}).then(() => {
+				if (result.inserted) {
+					logger.debug("Inserted");
+					return Promise.resolve();
+				} else {
+					logger.debug("Updated");
+					return rollback.rollback(metadata.identifiers.collection_id, db);
+				}
+			});
+		});
+
 	}).then(() => {
 		logger.silly("Preparing to insert upload record");
 		const uploadsInsert = 
@@ -264,9 +331,9 @@ function processCollection(collection)  {
 	}).then(() => {
 		if (global.args.archive) {
 			logger.silly("squishin stuff");
-			const dest = path.join(global.args.archive, "tmp", "" + metadata.identifiers.collection_id);
+			const dest = path.join(global.args.archive, "tmp", "" + metadata.identifiers.perm_id);
 			return fs.move(source, dest).then(() => {
-				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.collection_id).catch(error => {
+				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.perm_id).catch(error => {
 					logger.error("Unable to create archive of source directory. " + global.pp(error));
 					throw new Error(error);
 				});
