@@ -6,7 +6,6 @@ exports.Metadata =	class {
 		this.authors = [];
 		this.collection_group = {
 			name: null,
-			id: null
 		};
 		this.year = null;
 		this.journal = {
@@ -19,7 +18,6 @@ exports.Metadata =	class {
 		this.links = [];
 		this.identifiers = {
 			perm_id: null,
-			collection_id: null,
 			directory: null,
 			doi: null
 		};
