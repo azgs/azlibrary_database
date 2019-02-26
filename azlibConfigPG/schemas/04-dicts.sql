@@ -149,10 +149,6 @@ alter table dicts.azgs_glossary alter column source_id set default uuid_generate
 
 
 
-/*******************************************************************************************
-Below are tables filled from macrostat. No longer used, I am ghosting them for now. Sometimes
-they come back...
-
 CREATE TABLE dicts.minerals
 (
 	mineral_id integer NOT NULL,
@@ -235,4 +231,4 @@ COPY dicts.environments  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs
 
 COPY dicts.grainsize  FROM PROGRAM 'curl  "https://macrostrat.org/api/V2/defs/grainsizes?all&format=csv" | csvtool namedcol grain_id,grain_symbol,grain_name,grain_group,soil_group,min_size,max_size,classification - ' WITH CSV HEADER;
 
-**********************************************************************************************/
+
