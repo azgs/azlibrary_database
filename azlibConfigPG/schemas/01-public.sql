@@ -49,7 +49,7 @@ CREATE TABLE publications (
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE collections (
 	collection_id serial PRIMARY KEY, 
-	perm_id uuid not null unique default uuid_generate_v1(),
+	perm_id text not null unique, -- default uuid_generate_v1(),
 	private boolean not null default false,
 	collection_group_id integer REFERENCES collection_groups(collection_group_id),
 	publication_id integer UNIQUE REFERENCES publications(publication_id), -- Unique because collection_id is synonymous with publication_id, but not all collections may have publication_id
@@ -71,6 +71,24 @@ BEGIN
 EXECUTE format($$COMMENT ON TABLE collections IS 'Table create date: %s'$$, current_timestamp);
 END
 $do$;
+
+create or replace function make_perm_id() returns trigger as $$
+declare
+	cg text;
+begin
+    if NEW.perm_id is null then
+    	SELECT collection_group_abbrv into cg FROM public.collection_groups where collection_group_id = NEW.collection_group_id;
+   		NEW.perm_id :=  concat(cg, '-', floor(extract(epoch from now()) * 1000)::text, '-', floor(random() * 1000 + 1)::text);
+    end if;
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger trig_make_perm_id
+	before insert
+	on collections
+	for each row
+		execute procedure make_perm_id();
 
 --This is the upload_log table, its purpose is to help keep track of what uploads have been attempted and whether they were successful, and whether they were removed if unsuccessfull
 CREATE TABLE uploads (
