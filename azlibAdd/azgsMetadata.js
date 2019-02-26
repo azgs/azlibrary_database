@@ -19,7 +19,7 @@ exports.readMetadata = (rootDir) => {
 	.catch(error => {logger.warn("Problem reading azgs.json: " + error);return Promise.reject(error);})
 }
 
-exports.upload = (metadata, db) => {
+exports.upload = (metadata, collectionID, db) => {
 	logger.debug("enter");
 
 	return Promise.resolve().then(() => {      
@@ -27,7 +27,7 @@ exports.upload = (metadata, db) => {
 		
 		const metadataInsert = 
 			"insert into metadata.azgs (collection_id, json_data, geom) values (" +
-			metadata.identifiers.collection_id + ", $$" + 
+			collectionID + ", $$" + 
 			JSON.stringify(metadata) + "$$, " +
 			"ST_MakeEnvelope(" + 
 				metadata.bounding_box.west + "," + 
@@ -68,7 +68,6 @@ exports.Metadata =	class {
 		this.authors = [];
 		this.collection_group = {
 			name: null,
-			id: null
 		};
 		this.year = null;
 		this.journal = {
@@ -81,7 +80,6 @@ exports.Metadata =	class {
 		this.links = [];
 		this.identifiers = {
 			perm_id: null,
-			collection_id: null,
 			directory: null,
 			doi: null
 		};
