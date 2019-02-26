@@ -23,7 +23,6 @@ exports.fetch = (data) => {
 	}).then(() => {
 		const query = `
 			select 
-				cg.collection_group_id, 
 				cg.collection_group_name 
 			from
 				public.collection_groups cg join 
@@ -33,7 +32,6 @@ exports.fetch = (data) => {
 		`
 		return global.ndb.one(query, ["%/" + global.datasetName]).then(result => {
 			data.collection_group.name = result.collection_group_name;
-			data.collection_group.id = result.collection_group_id;
 			return Promise.resolve(data);
 		});
 	}).catch(error => {
