@@ -1,7 +1,7 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
-exports.upload = (rootDir, datasetName, collectionID, db) => {
+exports.upload = (rootDir, collectionID, db) => {
 	logger.debug("enter");
 
 	//const path = require('path');

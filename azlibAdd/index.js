@@ -158,11 +158,13 @@ function processCollection(collection)  {
 	let collectionGroupID;
 	let uploadID;
 
+	//first, read the metadata from azgs.json
 	return azgs.readMetadata(source).then((md) => {
 		logger.debug("processing collection " + source);
 		metadata = md;
 		logger.silly("metadata = " + global.pp(metadata));
 
+		//datasetName is used by the logger
 		global.datasetName = source.split("/").pop(); //The last element in the path
 
 	}).then(() => {
@@ -260,7 +262,7 @@ function processCollection(collection)  {
 		});
 	}).then(() => {
 		const promises = [
-			require("./gisdata").upload(source, global.datasetName, collectionID, db),
+			require("./gisdata").upload(source, collectionID, db),
 			require("./metadata").upload(source, "", "metadata", collectionID, db),
 			require("./notes").upload(source, collectionID, db),
 			require("./documents").upload(source, collectionID, db),
