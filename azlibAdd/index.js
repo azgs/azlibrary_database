@@ -308,7 +308,8 @@ function processCollection(collection)  {
 		return Promise.resolve();
 	}).catch(error => {
 		collection.result = "failure";
-		collection.processingNotes.push(error);
+		const serialError = require('serialize-error');
+		collection.processingNotes.push(serializeError(error));
 		return Promise.resolve(error).then((error) => {
 			//First, handle rollback if necessary
 			if (metadata) { //If not, failure is from reading that. Do nothing.
@@ -322,6 +323,10 @@ function processCollection(collection)  {
 			} else {
 				return Promise.resolve(error);
 			}
+		}).then((error) => {
+			//Write metadata to azgs.json 
+			return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"})
+			.then((error) => {return Promise.resolve(error)});
 		}).then((error) => {
 			//Then, handle failure reporting
 			return require("./failure").process(collection, source).catch((error2) => {
