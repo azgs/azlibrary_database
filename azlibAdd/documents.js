@@ -68,7 +68,7 @@ exports.upload = (rootDir, collectionID, db) => {
 						collectionID + ", " + 
 						metadataID + ", " +
 						"'" + path.join(myDir, file) + "', " +
-						"to_tsvector($$" + data.text + "$$))";
+						"to_tsvector($tsvector$" + data.text + "$tsvector$))";
 					logger.silly("insert = " + insert);
 					return t.none(insert)
 					.catch(error => {
