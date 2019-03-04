@@ -308,7 +308,7 @@ function processCollection(collection)  {
 		return Promise.resolve();
 	}).catch(error => {
 		collection.result = "failure";
-		const serialError = require('serialize-error');
+		const serializeError = require('serialize-error');
 		collection.processingNotes.push(serializeError(error));
 		return Promise.resolve(error).then((error) => {
 			//First, handle rollback if necessary
