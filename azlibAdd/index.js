@@ -303,7 +303,7 @@ function processCollection(collection)  {
 		}
 	}).then(() => {
 		logger.info("successfully completed upload for collection_id " + collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
-		collection.result = "success"; //TODO: this should reflect archiving as well
+		collection.result = "success"; 
 		global.datasetName = undefined; 
 		return Promise.resolve();
 	}).catch(error => {
