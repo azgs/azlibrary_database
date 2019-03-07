@@ -5,30 +5,30 @@ CREATE TABLE collection_groups (
 	collection_group_desc text,
 	collection_group_abbrv text
 );
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Open File Reports', 'AOFR');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Circulars', 'AGSC');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geology - Fieldnotes Newsletters', 'AGFN');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Poster Publications', 'PPPP');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Mine Files', 'AZMR');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey - Miscellaneous Maps', 'AGMM');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Geologic Investiation Folio', 'GGIF');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Down-To-Earth Series', 'DTES');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Troy L. PŽwŽ Environmental Geology Collection', 'PEGC');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Special Paper 9', 'AGS9');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Special Paper', 'AGSP');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('US Bureau of Mines (I.C.)', 'BMIC');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('US Bureau of Mines (R.I)', 'BMRI');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Contributed Reports', 'AGCR');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Geologic Maps', 'ADGM');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Information', 'AGDI');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Bulletins', 'AGSB');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Contributed Maps', 'AGCM');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Airphoto indexes', 'APIX');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Digital Maps (DM)', 'AGDM');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Oil & Gas Publications', 'OGPB');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Department of Mines and Mineral Resources', 'ADMM');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('Arizona Geological Survey Map Series', 'AGMS');
-insert into public.collection_groups (collection_group_name, collection_group_abbrv) values ('AZGS Miscellaneous Minedata Collection', 'AGMM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Airphoto indexes', NULL, 'APIX');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Open File Reports', 'Since 1973, our most prolific publication series used to fast-track release of field investigations.  ', 'AOFR');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('US Bureau of Mines (I.C.)', 'Select Arizona-based USBM-Investigation Circular documents.', 'BMIC');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Information', 'Spatial data in Arc/INFO, ArcView, or ArcGIS data format.  ', 'AGDI');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Troy L. PŽwŽ Environmental Geology Collection', 'Thematic environmental geology investigations of geologic hazards, landform, and groundwater maps for Phoenix, Arizona and environs.', 'PEGC');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geology - Fieldnotes Newsletters', 'Newsletter(s) of the Arizona Geological Survey - 1971 to the Present. Written for a general audience. ', 'AGFN');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Contributed Reports', 'Geologic reports drafted by non-AZGS geologists since January 1989. ', 'AGCR');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Contributed Maps', 'Geologic maps produced by geologists not affiliated with AZGS.  ', 'AGCM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey - Miscellaneous Maps', 'Geologic maps produced by geologists not affiliated with AZGS; replaced by Contributed Maps series in January 1989.', 'AGMM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Special Paper', 'Geologic reports or maps frequently produced by non-AZGS geologists. ', 'AGSP');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Poster Publications', 'Technical posters produced by AZGS Staff and presented at conferences and workshops.', 'PPPP');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Oil & Gas Publications', 'A broad variety of reports and maps related to oil and gas resources in Arizona.  ', 'OGPB');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Down-To-Earth Series', 'AZGS award-winning non-technical geology booklet series; 22 volumes .', 'DTES');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Map Series', 'Geologic maps of Arizona published at variable scales. ', 'AGMS');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Mine Files', 'Miscellaneous files of select Arizona mines from the files of the former Arizona Dept. of Mines and Mineral Resources. ', 'AZMR');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Circulars', 'Comprises formal geologic maps and reports including bibliographies for metallic mineral districts for select Arizona counties.', 'AGSC');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('US Bureau of Mines (R.I)', 'Select Arizona-based Research Investigation reports of the US Bureau of Mines', 'BMRI');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Geologic Investiation Folio', ' Environmental Geology of the McDowell Mountains Area, Maricopa County, Arizona.', 'GGIF');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Special Paper 9', 'A compendium of presentations of the 48th Forum on the Geology of Industrial Minerals was held in Scottsdale, Arizona, April 30 - May 4, 2012.', 'AGS9');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Bulletins', 'Formal geologic maps and reports; 200 volumes.', 'AGSB');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Department of Mines and Mineral Resources', 'Digital publications and miscellaneous literature published by the Arizona Department of Mines and Mineral Resources.', 'ADMM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Geologic Maps', 'Geologic maps typically at 1:24,000 scale and frequently accompanied by text reports. ', 'ADGM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Maps (DM)', 'Thematic environmental geology maps and reports: - earth fissures, debris flows, and Holocene river maps', 'AGDM');
+
 
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.
