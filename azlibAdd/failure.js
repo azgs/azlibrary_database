@@ -8,13 +8,12 @@ const util = require("util");
 exports.process = (collection, source) => {
 	logger.debug("enter");
 	logger.silly("collection = " + collection);
-	logger.silly("source = " + source);
 
 	return new Promise((resolve, reject) => {
 		if (!global.args.failure_directory) {
 			resolve();
 		} else {
-			const dest = path.join(global.args.failure_directory, path.basename(source));
+			const dest = path.join(global.args.failure_directory, (collection.permID ? collection.permID + "-" : "") + collection.uploadID);
 			logger.silly("dest = " + dest);
 			fs.ensureDir(global.args.failure_directory).then(() => {
 				return fs.writeJson(path.join(source, "failure.json"), collection, {spaces:"\t"})
