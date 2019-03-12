@@ -93,9 +93,11 @@ create trigger trig_make_perm_id
 --This is the upload_log table, its purpose is to help keep track of what uploads have been attempted and whether they were successful, and whether they were removed if unsuccessfull
 CREATE TABLE uploads (
 	upload_id serial PRIMARY KEY,
-	collection_id integer NOT NULL REFERENCES collections(collection_id),
+	collection_id integer REFERENCES collections(collection_id),
 	created_at timestamptz NOT NULL,
 	completed_at timestamptz,
+	failed_at timestamptz,
+	source text,
 	removed boolean NOT NULL default FALSE
 );
 
