@@ -147,30 +147,36 @@ function processCollection(collection)  {
 	const source = path.join(global.args.source, collection.path);
 	logger.silly("source = " + source);
 
+	//datasetName is used by the logger
+	global.datasetName = source.split("/").pop(); //The last element in the path
+
 	const rollback = require("./rollback");
 	const fs = require("fs-extra");
 	const azgs = require("./azgsMetadata");
 
 	let metadata;
 
-	//We don't keep this in metadata because they should not leak to the outside in azgs.json
-	let collectionID;
-	let collectionGroupID;
-	let uploadID;
+	//first, create upload record
+	logger.silly("Preparing to insert upload record");
+	const uploadsInsert = 
+		"insert into public.uploads (created_at, source) values (current_timestamp, $1) returning upload_id";
+	const uploadsParams = [
+		source
+	];
+	return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);})
+	.then((upload) => {
+		collection.uploadID = upload.upload_id;
 
-	//first, read the metadata from azgs.json
-	return azgs.readMetadata(source).then((md) => {
-		logger.debug("processing collection " + source);
+		//then read the metadata from azgs.json
+		return azgs.readMetadata(source);
+	}).then((md) => {
 		metadata = md;
 		logger.silly("metadata = " + global.pp(metadata));
 
-		//datasetName is used by the logger
-		global.datasetName = source.split("/").pop(); //The last element in the path
-
-	}).then(() => {
+		//get collection_group_id using group specifed in metadata
 		return db.one("select collection_group_id from collection_groups where collection_group_name = $1", [metadata.collection_group.name]);
 	}).then((result) => {
-		collectionGroupID = result.collection_group_id;
+		collection.collectionGroupID = result.collection_group_id;
 
 		let azgs_old_url = metadata.links.filter(link => 
 			(link.name && link.name.toLowerCase() === "azgs old")).shift();
@@ -212,12 +218,13 @@ function processCollection(collection)  {
 			metadata.informal_name,
 			azgs_old_url,
 			ua_library,
-			collectionGroupID,
+			collection.collectionGroupID,
 			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
 		];
 							
 		return db.one(insertSQL, upsertParams).then((result) => {
-			collectionID = result.collection_id; 
+			collection.collectionID = result.collection_id; 
+			collection.permID = result.perm_id; 
 			metadata.identifiers.perm_id = result.perm_id;
 
 			return Promise.resolve().then(() => {
@@ -226,8 +233,8 @@ function processCollection(collection)  {
 					metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
 					const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
 					const updateParams = [
-						path.join(global.args.archive, "" + metadata.identifiers.perm_id),
-						collectionID
+						path.join(global.args.archive, metadata.identifiers.perm_id + ".tar.gz"),
+						collection.collectionID
 					];
 					return db.none(updateSQL, updateParams);
 				} else {
@@ -241,32 +248,32 @@ function processCollection(collection)  {
 					return Promise.resolve();
 				} else {
 					logger.debug("Updated");
-					return rollback.rollback(collectionID, db);
+					return rollback.rollback(collection.collectionID, db);
 				}
 			});
 		});
 
 	}).then(() => {
-		logger.silly("Preparing to insert upload record");
+		logger.silly("Updating upload record with collection_id");
 		const uploadsInsert = 
-			"insert into public.uploads (collection_id, created_at) values ($1, current_timestamp) returning upload_id";
+			"update public.uploads set collection_id = $1 where upload_id = $2";
 		const uploadsParams = [
-			collectionID
+			collection.collectionID,
+			collection.uploadID
 		];
-		return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
-	}).then((upload) => {
-		uploadID = upload.upload_id;
-		return azgs.upload(metadata, collectionID, db).catch((error) => { //TODO: Do we need this catch?
+		return db.none(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
+	}).then(() => {
+		return azgs.upload(metadata, collection.collectionID, db).catch((error) => { //TODO: Do we need this catch?
 			logger.error("Unable to process azgs metadata: " + error); 
 			return Promise.reject(error);
 		});
 	}).then(() => {
 		const promises = [
-			require("./gisdata").upload(source, collectionID, db),
-			require("./metadata").upload(source, "", "metadata", collectionID, db),
-			require("./notes").upload(source, collectionID, db),
-			require("./documents").upload(source, collectionID, db),
-			require("./images").upload(source, collectionID, db)
+			require("./gisdata").upload(source, collection.collectionID, db),
+			require("./metadata").upload(source, "", "metadata", collection.collectionID, db),
+			require("./notes").upload(source, collection.collectionID, db),
+			require("./documents").upload(source, collection.collectionID, db),
+			require("./images").upload(source, collection.collectionID, db)
 		];
 		//return Promise.all(promises).catch(error => {throw new Error(error);})
 		promiseUtil = require("./promise_util");
@@ -281,7 +288,7 @@ function processCollection(collection)  {
 		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
 		//Update uploads record with finish
-		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + uploadID)
+		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + collection.uploadID)
 		.catch(error => {throw new Error(error);});
 	}).then(() => {
 		//Write metadata to azgs.json 
@@ -302,7 +309,7 @@ function processCollection(collection)  {
 			return Promise.resolve();
 		}
 	}).then(() => {
-		logger.info("successfully completed upload for collection_id " + collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
+		logger.info("successfully completed upload for collection_id " + collection.collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
 		collection.result = "success"; 
 		global.datasetName = undefined; 
 		return Promise.resolve();
@@ -313,8 +320,8 @@ function processCollection(collection)  {
 		return Promise.resolve(error).then((error) => {
 			//First, handle rollback if necessary
 			if (metadata) { //If not, failure is from reading that. Do nothing.
-				logger.error("Error during upload of collection_id " + collectionID + ": " + global.pp(error)); 
-				return rollback.rollback(collectionID, db)
+				logger.error("Error during upload of collection_id " + collection.collectionID + ": " + global.pp(error)); 
+				return rollback.rollback(collection.collectionID, db)
 				.catch(error2 => {
 					logger.warn("Unable to role back: " + global.pp(error));
 					collection.processingNotes.push("\nrollback failed. Manual rollback required: " + global.pp(error2));
@@ -329,10 +336,16 @@ function processCollection(collection)  {
 			.then((error) => {return Promise.resolve(error)});
 		}).then((error) => {
 			//Then, handle failure reporting
-			return require("./failure").process(collection, source).catch((error2) => {
+			return require("./failure").process(collection, source, collection.uploadID).catch((error2) => {
 				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error2));
 				return Promise.resolve(); //return resolve so we can clean up global before rejecting to calling routine				
 			});
+		}).then(() => {
+			const update = "update public.uploads set failed_at = current_timestamp where upload_id = $1";
+			const updateParams = [
+				collection.uploadID
+			];
+			return db.none(update, updateParams).catch(error => {logger.error("Problem updating failure in uploads: " + global.pp(error));});
 		}).then(() => {
 			//Finally, clean up global and reject to calling routine
 			global.datasetName = undefined; 
