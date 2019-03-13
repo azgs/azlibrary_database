@@ -1,4 +1,4 @@
-#Prerequisites
+# Prerequisites
 
 This command line tool relies on the gdal npm package (https://www.npmjs.com/package/gdal). At the time of this writing, the gdal package is not compatibile with the latest version of node.js (9.5.0). It works fine the the current LTS release (8.9.4). If you need to install this version, you can use nvm to manage multiple node versions as follows:
 
@@ -9,7 +9,7 @@ This command line tool relies on the gdal npm package (https://www.npmjs.com/pac
 
 
 
-#Installation
+# Installation
 
 At this point, you should be able to run the tool via node:
 
@@ -32,7 +32,7 @@ If you want to be able to run the tool as a shell command and also make changes 
 	npm link
 
 
-#Usage
+# Usage
 
 Run the tool as follows:
 
@@ -54,7 +54,7 @@ Run the tool as follows:
 		-h, --help                                   output usage information
 
 
-#Source directory format
+# Source directory format
 
 The source directory must be in the following layout (note: this is still evolving):
 
@@ -171,7 +171,7 @@ The source directory must be in the following layout (note: this is still evolvi
 \*8 azgs.json is required and contains the key metadata for the collection. It's format is documented below.
 
 
-#azgs.json format
+# azgs.json format
 
 	{
 		"title": "",
@@ -232,14 +232,14 @@ The source directory must be in the following layout (note: this is still evolvi
 	}
 
 
-#Output directories
+# Output directories
 
-##Archive
+## Archive
 
 If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory.
 
 
-##Failures
+## Failures
 
 If a failure directory is specified, each collection that fails to import is moved to this directory. It is renamed as follows:
 
