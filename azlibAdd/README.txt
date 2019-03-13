@@ -58,6 +58,8 @@ The source directory must be in the following layout (note: this is still evolvi
 
 <dir name>
 	|
+	|-- azgs.json*8
+	|
 	|-- [metadata]
 	|	|
 	|	|-- [<type*1>-<name*2>.xml] (0..N)
@@ -157,5 +159,82 @@ The source directory must be in the following layout (note: this is still evolvi
 *5 Notes is basically a garbage can for stuff that doesn't fit elsewhere. As such, any type of file could be here. We only store the path in the db.
 *6 This is for geodatabases only. The schema name must be created manually and must already exist in the db prior to running this script.
 *7 This is a catch-all directory for any other weird gis files. 
+*8 azgs.json is required and contains the key metadata for the collection. It's format is documented below.
 
+
+azgs.json format
+----------------
+
+{
+	"title": "",
+	"authors": [
+		"person": null,
+		"organization": null,
+		"givenname": null,
+		"surname": null
+	],
+	"collection_group": {
+		"name": ""
+	},
+	"year": "",
+	"journal": {
+		"name": null,
+		"publisher": null,
+		"url": null
+	},
+	"series": null,
+	"abstract": "", 
+	"links": [
+		{
+			"url": "",
+			"name": "AZGS old"
+		}
+	],
+	"identifiers": {
+		"perm_id": null,
+		"directory": null,
+		"doi": null
+	},
+	"files": [
+		{
+			"name": "",
+			"extension": "",
+			"type": ""
+		}
+	],
+	"language": "English",
+	"license": {
+		"type": "CC BY-NC-SA 4.0",
+		"url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+	},
+	"keywords": [
+		{
+			"name": "",
+			"type": ""
+		}
+	],
+	"informal_name": null,
+	"bounding_box": {
+		"north": "",
+		"south": "",
+		"east": "",
+		"west": ""
+	},
+	"private": "false"
+}
+
+
+
+Archives:
+---------
+
+If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory.
+
+
+Failures:
+---------
+
+If a failure directory is specified, each collection that fails to import is moved to this directory. It is renamed as follows:
+	-- If the failure occurred before a perm_id was obtained, the collection directory is renamed to the upload_id from the uploads table.
+	-- If the failure occurred after a perm_id was obtained, the collection directory is renamed to the perm_id with the upload_id appended, separated by a "-".
 
