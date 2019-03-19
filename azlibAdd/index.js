@@ -287,6 +287,10 @@ function processCollection(collection)  {
 	}).then(() => {
 		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
+		//Turn collection on
+		return db.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
+		.catch(error => {throw new Error(error);});
+	}).then(() => {
 		//Update uploads record with finish
 		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + collection.uploadID)
 		.catch(error => {throw new Error(error);});
