@@ -59,7 +59,8 @@ CREATE TABLE collections (
 	azgs_old_url text UNIQUE,
 	ua_library text,
 	usgs_path text,
-	doi text
+	doi text,
+	removed boolean not null default true
 );
 
 --Add a comment describing the date and time that the database was created
@@ -97,8 +98,7 @@ CREATE TABLE uploads (
 	created_at timestamptz NOT NULL,
 	completed_at timestamptz,
 	failed_at timestamptz,
-	source text,
-	removed boolean NOT NULL default FALSE
+	source text
 );
 
 
