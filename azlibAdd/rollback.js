@@ -22,39 +22,43 @@ exports.rollback = (collectionID, db) => {
 	
 	return db.tx(t => {
 
-		return t.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id' and table_schema <> 'public'")	
-		.then(tables => {
+		return t.none("update public.collections set removed = true where collection_id=" + collectionID)
+		.then(() => {
+		
+			return t.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id' and table_schema <> 'public'")	
+			.then(tables => {
 
-			const dataTables = [];
-			const metadataTables = tables.reduce((acc, table) => {
-				if (table.table_name.toUpperCase() === "METADATA") {
-			 		acc.push(table);
-				} else {
-					dataTables.push(table);
-				}
-				return acc;
-			}, []);	
+				const dataTables = [];
+				const metadataTables = tables.reduce((acc, table) => {
+					if (table.table_name.toUpperCase() === "METADATA") {
+				 		acc.push(table);
+					} else {
+						dataTables.push(table);
+					}
+					return acc;
+				}, []);	
 			
-			logger.debug("dataTables = " + global.pp(dataTables));
-			logger.debug("metadataTables = " + global.pp(metadataTables));
+				logger.debug("dataTables = " + global.pp(dataTables));
+				logger.debug("metadataTables = " + global.pp(metadataTables));
 
-			const dataPromises = dataTables.map(table => {
-				return t.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
-			});
+				const dataPromises = dataTables.map(table => {
+					return t.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
+				});
 
-			const metadataPromises = metadataTables.map(table => {
-				return t.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
-			});
+				const metadataPromises = metadataTables.map(table => {
+					return t.none("delete from " + table.table_schema + ".\"" + table.table_name + "\" where collection_id = " + collectionID + " or collection_id is null");
+				});
 
-			//First clean dataTables, then metadataTables (to avoid fk violations)
-			return t.batch(dataPromises)
-			.then(() => {
-				return t.batch(metadataPromises);
+				//First clean dataTables, then metadataTables (to avoid fk violations)
+				return t.batch(dataPromises)
+				.then(() => {
+					return t.batch(metadataPromises);
+				})
+				.then(() => {
+					logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rollback complete!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					return Promise.resolve();
+				});
 			})
-			.then(() => {
-				logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rollback complete!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-				return Promise.resolve();
-			});
 		}).catch(error => {
 			logger.error("One or more errors occurred during rollback. Manual rollback required for collection_id " + collectionID + ".");
 			logger.error(global.pp(error));		
