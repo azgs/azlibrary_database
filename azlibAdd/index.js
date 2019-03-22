@@ -221,26 +221,14 @@ function processCollection(collection)  {
 			collection.collectionGroupID,
 			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
 		];
-							
-		return db.one(insertSQL, upsertParams).then((result) => {
-			collection.collectionID = result.collection_id; 
-			collection.permID = result.perm_id; 
-			metadata.identifiers.perm_id = result.perm_id;
+	
+		return db.tx((t) => {
 
-			return Promise.resolve().then(() => {
-				//Update azgs_path if archive was specified
-				if (global.args.archive) {
-					metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
-					const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
-					const updateParams = [
-						path.join(global.args.archive, metadata.identifiers.perm_id + ".tar.gz"),
-						collection.collectionID
-					];
-					return db.none(updateSQL, updateParams);
-				} else {
-					metadata.identifiers.directory = path.resolve(global.args.source);
-					return Promise.resolve();
-				}
+			return t.one(insertSQL, upsertParams).then((result) => {
+				collection.collectionID = result.collection_id; 
+				collection.permID = result.perm_id; 
+				collection.isNew = result.inserted;
+				metadata.identifiers.perm_id = result.perm_id;	
 			}).then(() => {
 				//If this is an update, rollback the old collection data
 				if (result.inserted) {
@@ -248,51 +236,59 @@ function processCollection(collection)  {
 					return Promise.resolve();
 				} else {
 					logger.debug("Updated");
-					return rollback.rollback(collection.collectionID, db);
+					return rollback.rollback(collection.collectionID, t);
 				}
+			}).then(() => {
+				//Note: this has to happen after the collections upsert because perm_id is used in the file name.
+				return Promise.resolve().then(() => {
+					//Update azgs_path if archive was specified
+					if (global.args.archive) {
+						metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
+						const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
+						const updateParams = [
+							path.join(global.args.archive, metadata.identifiers.perm_id + ".tar.gz"),
+							collection.collectionID
+						];
+						return t.none(updateSQL, updateParams);
+					} else {
+						metadata.identifiers.directory = path.resolve(global.args.source);
+						return Promise.resolve();
+					}
+				});
+			}).then(() => {
+				return azgs.upload(metadata, collection.collectionID, t).catch((error) => { //TODO: Do we need this catch?
+					logger.error("Unable to process azgs metadata: " + error); 
+					return Promise.reject(error);
+				});
+			}).then(() => {
+				const promises = [
+					require("./gisdata").upload(source, collection.collectionID, t),
+					require("./metadata").upload(source, "", "metadata", collection.collectionID, t),
+					require("./notes").upload(source, collection.collectionID, t),
+					require("./documents").upload(source, collection.collectionID, t),
+					require("./images").upload(source, collection.collectionID, t)
+				];
+				//return Promise.all(promises).catch(error => {throw new Error(error);})
+				promiseUtil = require("./promise_util");
+				return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
+					if (results.filter(result => result.status === "rejected").length === 0) {
+						return Promise.resolve();//!!!!!!!!!!!!!!!!!!!!!!!!!!
+						//return Promise.reject(new Error("Oh Hogan's goat!"));
+					} else {
+						return Promise.reject(results);
+					}
+				});
+			//}).then(() => {
+			//	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
+			}).then(() => {
+				//Turn collection on
+				return t.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
+				.catch(error => {throw new Error(error);});
 			});
 		});
-
-	}).then(() => {
-		logger.silly("Updating upload record with collection_id");
-		const uploadsInsert = 
-			"update public.uploads set collection_id = $1 where upload_id = $2";
-		const uploadsParams = [
-			collection.collectionID,
-			collection.uploadID
-		];
-		return db.none(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
-	}).then(() => {
-		return azgs.upload(metadata, collection.collectionID, db).catch((error) => { //TODO: Do we need this catch?
-			logger.error("Unable to process azgs metadata: " + error); 
-			return Promise.reject(error);
-		});
-	}).then(() => {
-		const promises = [
-			require("./gisdata").upload(source, collection.collectionID, db),
-			require("./metadata").upload(source, "", "metadata", collection.collectionID, db),
-			require("./notes").upload(source, collection.collectionID, db),
-			require("./documents").upload(source, collection.collectionID, db),
-			require("./images").upload(source, collection.collectionID, db)
-		];
-		//return Promise.all(promises).catch(error => {throw new Error(error);})
-		promiseUtil = require("./promise_util");
-		return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
-			if (results.filter(result => result.status === "rejected").length === 0) {
-				return Promise.resolve();
-			} else {
-				return Promise.reject(results);
-			}
-		});
-	}).then(() => {
-		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
-	}).then(() => {
-		//Turn collection on
-		return db.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
-		.catch(error => {throw new Error(error);});
 	}).then(() => {
 		//Update uploads record with finish
-		return db.none("update public.uploads set completed_at = current_timestamp where upload_id=" + collection.uploadID)
+		return db.none("update public.uploads set collection_id = " + collection.collectionID + ", completed_at = current_timestamp where upload_id=" + collection.uploadID)
 		.catch(error => {throw new Error(error);});
 	}).then(() => {
 		//Write metadata to azgs.json 
@@ -321,33 +317,28 @@ function processCollection(collection)  {
 		collection.result = "failure";
 		const serializeError = require('serialize-error');
 		collection.processingNotes.push(serializeError(error));
-		return Promise.resolve(error).then((error) => {
-			//First, handle rollback if necessary
-			if (metadata) { //If not, failure is from reading that. Do nothing.
-				logger.error("Error during upload of collection_id " + collection.collectionID + ": " + global.pp(error)); 
-				return rollback.rollback(collection.collectionID, db)
-				.catch(error2 => {
-					logger.warn("Unable to role back: " + global.pp(error));
-					collection.processingNotes.push("\nrollback failed. Manual rollback required: " + global.pp(error2));
-					return Promise.resolve(error);
-				})
-			} else {
-				return Promise.resolve(error);
-			}
-		}).then((error) => {
+		return Promise.resolve(error)/*.then((error) => {
 			//Write metadata to azgs.json 
 			return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"})
 			.then((error) => {return Promise.resolve(error)});
-		}).then((error) => {
+		})*/.then((error) => {
 			//Then, handle failure reporting
-			return require("./failure").process(collection, source, collection.uploadID).catch((error2) => {
+			if (collection.isNew) {
+				//Data has been rolled back, so collections record does not exist
+				collection.permID = null;
+				collection.collectionID = null;
+			}
+			return require("./failure").process(collection, source).catch((error2) => {
 				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error2));
 				return Promise.resolve(); //return resolve so we can clean up global before rejecting to calling routine				
 			});
 		}).then(() => {
-			const update = "update public.uploads set failed_at = current_timestamp where upload_id = $1";
+			const update = collection.isNew ? 
+				"update public.uploads set failed_at = current_timestamp where upload_id = $1" :
+				"update public.uploads set collection_id = $2, failed_at = current_timestamp where upload_id = $1";
 			const updateParams = [
-				collection.uploadID
+				collection.uploadID,
+				collection.collectionID
 			];
 			return db.none(update, updateParams).catch(error => {logger.error("Problem updating failure in uploads: " + global.pp(error));});
 		}).then(() => {

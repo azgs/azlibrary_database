@@ -10,7 +10,7 @@ TODO: Consider putting rollback logic in each schema handler. Or at least, in th
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
-exports.rollback = (collectionID, db) => {
+exports.rollback = (collectionID, t) => {
 	logger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!rolling back!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	logger.debug("enter, collection_id = " + collectionID);
 
@@ -20,7 +20,7 @@ exports.rollback = (collectionID, db) => {
 		return Promise.resolve();
 	}
 	
-	return db.tx(t => {
+	//return db.tx(t => {
 
 		return t.none("update public.collections set removed = true where collection_id=" + collectionID)
 		.then(() => {
@@ -64,7 +64,7 @@ exports.rollback = (collectionID, db) => {
 			logger.error(global.pp(error));		
 			return Promise.reject(error);
 		});
-	});
+	//});
 }
 
 
