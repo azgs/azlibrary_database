@@ -150,7 +150,7 @@ function processCollection(collection)  {
 	//datasetName is used by the logger
 	global.datasetName = source.split("/").pop(); //The last element in the path
 
-	const rollback = require("./rollback");
+	const clean = require("./clean");
 	const fs = require("fs-extra");
 	const azgs = require("./azgsMetadata");
 
@@ -222,21 +222,25 @@ function processCollection(collection)  {
 			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
 		];
 	
+		//Everything happens in a transaction. This way failures will be rolled back automatically.
 		return db.tx((t) => {
 
 			return t.one(insertSQL, upsertParams).then((result) => {
+				logger.silly("Upserting...");
 				collection.collectionID = result.collection_id; 
 				collection.permID = result.perm_id; 
 				collection.isNew = result.inserted;
-				metadata.identifiers.perm_id = result.perm_id;	
-			}).then(() => {
+				metadata.identifiers.perm_id = result.perm_id;
+				logger.silly("result.inserted = " + global.pp(result.inserted));
+				logger.silly("collection = " + global.pp(collection));	
+
 				//If this is an update, rollback the old collection data
 				if (result.inserted) {
 					logger.debug("Inserted");
 					return Promise.resolve();
 				} else {
 					logger.debug("Updated");
-					return rollback.rollback(collection.collectionID, t);
+					return clean.prep(collection.collectionID, t);
 				}
 			}).then(() => {
 				//Note: this has to happen after the collections upsert because perm_id is used in the file name.
@@ -262,7 +266,7 @@ function processCollection(collection)  {
 				});
 			}).then(() => {
 				const promises = [
-					require("./gisdata").upload(source, collection.collectionID, t),
+					require("./gisdata").upload(source, collection, t),
 					require("./metadata").upload(source, "", "metadata", collection.collectionID, t),
 					require("./notes").upload(source, collection.collectionID, t),
 					require("./documents").upload(source, collection.collectionID, t),
@@ -272,14 +276,12 @@ function processCollection(collection)  {
 				promiseUtil = require("./promise_util");
 				return Promise.all(promises.map(promiseUtil.reflect)).then(results => {
 					if (results.filter(result => result.status === "rejected").length === 0) {
-						return Promise.resolve();//!!!!!!!!!!!!!!!!!!!!!!!!!!
-						//return Promise.reject(new Error("Oh Hogan's goat!"));
+						return Promise.resolve();
+						//return Promise.reject(new Error("Hogan's goat!"));//for testing!!!!!!!!!!!!!!
 					} else {
 						return Promise.reject(results);
 					}
 				});
-			//}).then(() => {
-			//	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 			}).then(() => {
 				//Turn collection on
 				return t.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
@@ -290,6 +292,8 @@ function processCollection(collection)  {
 		//Update uploads record with finish
 		return db.none("update public.uploads set collection_id = " + collection.collectionID + ", completed_at = current_timestamp where upload_id=" + collection.uploadID)
 		.catch(error => {throw new Error(error);});
+	}).then(() => {
+		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
 		//Write metadata to azgs.json 
 		return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"});
@@ -317,22 +321,32 @@ function processCollection(collection)  {
 		collection.result = "failure";
 		const serializeError = require('serialize-error');
 		collection.processingNotes.push(serializeError(error));
-		return Promise.resolve(error)/*.then((error) => {
-			//Write metadata to azgs.json 
-			return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"})
-			.then((error) => {return Promise.resolve(error)});
-		})*/.then((error) => {
+
+		return Promise.resolve().then(() => {
+			logger.silly("Error: In drop section");
+			//If this collection had a gdb, there may be a remnant schema for it in the db at 
+			//this point. This is because the temporary schema is created by ogr2ogr, which is
+			//outside of the ongoing db transaction. After the gdb is imported, the temp schema
+			//is deleted by the transaction. This means that when something goes wrong, 
+			//the transaction rollback recreates the temporary schema, which we really don't 
+			//want to leave laying around, so...
+			const tmpSchema = collection.permID.replace(/-/g, '_');
+			return db.none(`drop schema if exists ${tmpSchema} cascade`);
+			return Promise.resolve();
+		}).then(() => {
 			//Then, handle failure reporting
+			logger.silly("Error: In failure handler section");
 			if (collection.isNew) {
 				//Data has been rolled back, so collections record does not exist
 				collection.permID = null;
 				collection.collectionID = null;
 			}
-			return require("./failure").process(collection, source).catch((error2) => {
-				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error2));
+			return require("./failure").process(collection, source).catch((error) => {
+				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error));
 				return Promise.resolve(); //return resolve so we can clean up global before rejecting to calling routine				
 			});
 		}).then(() => {
+			logger.silly("Error: In update uploads section");
 			const update = collection.isNew ? 
 				"update public.uploads set failed_at = current_timestamp where upload_id = $1" :
 				"update public.uploads set collection_id = $2, failed_at = current_timestamp where upload_id = $1";
@@ -343,6 +357,7 @@ function processCollection(collection)  {
 			return db.none(update, updateParams).catch(error => {logger.error("Problem updating failure in uploads: " + global.pp(error));});
 		}).then(() => {
 			//Finally, clean up global and reject to calling routine
+			logger.silly("Error: In final section");
 			global.datasetName = undefined; 
 			logger.silly("wrapping up collection error");				
 			return Promise.reject(error);
