@@ -1,7 +1,7 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 
-exports.upload = (rootDir, collectionID, db) => {
+exports.upload = (rootDir, collection, db) => {
 	logger.debug("enter");
 
 	//const path = require('path');
@@ -24,17 +24,17 @@ exports.upload = (rootDir, collectionID, db) => {
 
 	const promises = dirs.map(thisDir => {
 		if (thisDir.toLowerCase() === "metadata") {
-			return require("./metadata").upload(dir, path.relative(rootDir, dir), collectionID, db);
+			return require("./metadata").upload(dir, path.relative(rootDir, dir), collection.collectionID, db);
 		} else if (thisDir.toLowerCase() === "legacy") {
-			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
+			return require("./legacy").upload(rootDir, path.relative(rootDir, dir), collection.collectionID, db);
 		} else if (thisDir.toLowerCase() === "layers") {
-			return require("./layers").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
+			return require("./layers").upload(rootDir, path.relative(rootDir, dir), collection.collectionID, db);
 		} else if (thisDir.toLowerCase() === "raster") {
-			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collectionID, db);
+			return require("./raster").upload(rootDir, path.relative(rootDir, dir), collection.collectionID, db);
 		//} else if (thisDir.toLowerCase() === "ncgmp09") {
-		//	return require("./ncgmp09").upload(dir, thisDir, collectionID, db);
+		//	return require("./ncgmp09").upload(dir, thisDir, collection.collectionID, db);
 		} else { //All other dirs are assumed to be flavors of gdb. The gdb handler will sort them out
-			return require("./gdb").upload(dir, thisDir, collectionID, db);
+			return require("./gdb").upload(dir, thisDir, collection, db);
 		}
 	});
 
