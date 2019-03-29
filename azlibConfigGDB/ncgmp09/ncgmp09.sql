@@ -34,7 +34,9 @@ SET default_with_oids = false;
 -- Name: ContactsAndFaults; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."ContactsAndFaults" (
+set search_path to $1; 
+
+CREATE TABLE "ContactsAndFaults" (
     "OBJECTID" integer NOT NULL,
     "Shape_Length" double precision,
     "ContactsAndFaults_ID" character varying(50),
@@ -60,7 +62,7 @@ CREATE TABLE ncgmp09."ContactsAndFaults" (
 -- Name: ContactsAndFaults_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."ContactsAndFaults_OBJECTID_seq"
+CREATE SEQUENCE "ContactsAndFaults_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -74,7 +76,7 @@ CREATE SEQUENCE ncgmp09."ContactsAndFaults_OBJECTID_seq"
 -- Name: ContactsAndFaults_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."ContactsAndFaults_OBJECTID_seq" OWNED BY ncgmp09."ContactsAndFaults"."OBJECTID";
+ALTER SEQUENCE "ContactsAndFaults_OBJECTID_seq" OWNED BY "ContactsAndFaults"."OBJECTID";
 
 
 --
@@ -82,7 +84,7 @@ ALTER SEQUENCE ncgmp09."ContactsAndFaults_OBJECTID_seq" OWNED BY ncgmp09."Contac
 -- Name: DescriptionOfMapUnits; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."DescriptionOfMapUnits" (
+CREATE TABLE "DescriptionOfMapUnits" (
     "OBJECTID" integer NOT NULL,
     "DescriptionOfMapUnits_ID" character varying(50),
     "MapUnit" character varying(10),
@@ -108,7 +110,7 @@ CREATE TABLE ncgmp09."DescriptionOfMapUnits" (
 -- Name: DescriptionOfMapUnits_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."DescriptionOfMapUnits_OBJECTID_seq"
+CREATE SEQUENCE "DescriptionOfMapUnits_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -122,7 +124,7 @@ CREATE SEQUENCE ncgmp09."DescriptionOfMapUnits_OBJECTID_seq"
 -- Name: DescriptionOfMapUnits_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."DescriptionOfMapUnits_OBJECTID_seq" OWNED BY ncgmp09."DescriptionOfMapUnits"."OBJECTID";
+ALTER SEQUENCE "DescriptionOfMapUnits_OBJECTID_seq" OWNED BY "DescriptionOfMapUnits"."OBJECTID";
 
 
 --
@@ -130,7 +132,7 @@ ALTER SEQUENCE ncgmp09."DescriptionOfMapUnits_OBJECTID_seq" OWNED BY ncgmp09."De
 -- Name: Glossary; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."Glossary" (
+CREATE TABLE "Glossary" (
     "OBJECTID" integer NOT NULL,
     "Glossary_ID" character varying(50),
     "Term" character varying(254),
@@ -145,7 +147,7 @@ CREATE TABLE ncgmp09."Glossary" (
 -- Name: Glossary_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."Glossary_OBJECTID_seq"
+CREATE SEQUENCE "Glossary_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -159,7 +161,7 @@ CREATE SEQUENCE ncgmp09."Glossary_OBJECTID_seq"
 -- Name: Glossary_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."Glossary_OBJECTID_seq" OWNED BY ncgmp09."Glossary"."OBJECTID";
+ALTER SEQUENCE "Glossary_OBJECTID_seq" OWNED BY "Glossary"."OBJECTID";
 
 
 --
@@ -167,7 +169,7 @@ ALTER SEQUENCE ncgmp09."Glossary_OBJECTID_seq" OWNED BY ncgmp09."Glossary"."OBJE
 -- Name: MapUnitPolys; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."MapUnitPolys" (
+CREATE TABLE "MapUnitPolys" (
     "OBJECTID" integer NOT NULL,
     "Shape_Length" double precision,
     "Shape_Area" double precision,
@@ -188,7 +190,7 @@ CREATE TABLE ncgmp09."MapUnitPolys" (
 -- Name: MapUnitPolys_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."MapUnitPolys_OBJECTID_seq"
+CREATE SEQUENCE "MapUnitPolys_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -202,7 +204,7 @@ CREATE SEQUENCE ncgmp09."MapUnitPolys_OBJECTID_seq"
 -- Name: MapUnitPolys_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."MapUnitPolys_OBJECTID_seq" OWNED BY ncgmp09."MapUnitPolys"."OBJECTID";
+ALTER SEQUENCE "MapUnitPolys_OBJECTID_seq" OWNED BY "MapUnitPolys"."OBJECTID";
 
 
 --
@@ -210,7 +212,7 @@ ALTER SEQUENCE ncgmp09."MapUnitPolys_OBJECTID_seq" OWNED BY ncgmp09."MapUnitPoly
 -- Name: OrientationPoints; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."OrientationPoints" (
+CREATE TABLE "OrientationPoints" (
     "OBJECTID" integer NOT NULL,
     "OrientationPoints_ID" character varying(50),
     "Type" character varying(254),
@@ -241,7 +243,7 @@ CREATE TABLE ncgmp09."OrientationPoints" (
 -- Name: OrientationPoints_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."OrientationPoints_OBJECTID_seq"
+CREATE SEQUENCE "OrientationPoints_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -255,7 +257,7 @@ CREATE SEQUENCE ncgmp09."OrientationPoints_OBJECTID_seq"
 -- Name: OrientationPoints_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."OrientationPoints_OBJECTID_seq" OWNED BY ncgmp09."OrientationPoints"."OBJECTID";
+ALTER SEQUENCE "OrientationPoints_OBJECTID_seq" OWNED BY "OrientationPoints"."OBJECTID";
 
 
 --
@@ -263,7 +265,7 @@ ALTER SEQUENCE ncgmp09."OrientationPoints_OBJECTID_seq" OWNED BY ncgmp09."Orient
 -- Name: Stations; Type: TABLE; Schema: ncgmp09; Owner: -
 --
 
-CREATE TABLE ncgmp09."Stations" (
+CREATE TABLE "Stations" (
     "OBJECTID" integer NOT NULL,
     "Stations_ID" character varying(50),
     "FieldID" character varying(50),
@@ -293,7 +295,7 @@ CREATE TABLE ncgmp09."Stations" (
 -- Name: Stations_OBJECTID_seq; Type: SEQUENCE; Schema: ncgmp09; Owner: -
 --
 
-CREATE SEQUENCE ncgmp09."Stations_OBJECTID_seq"
+CREATE SEQUENCE "Stations_OBJECTID_seq"
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -307,7 +309,7 @@ CREATE SEQUENCE ncgmp09."Stations_OBJECTID_seq"
 -- Name: Stations_OBJECTID_seq; Type: SEQUENCE OWNED BY; Schema: ncgmp09; Owner: -
 --
 
-ALTER SEQUENCE ncgmp09."Stations_OBJECTID_seq" OWNED BY ncgmp09."Stations"."OBJECTID";
+ALTER SEQUENCE "Stations_OBJECTID_seq" OWNED BY "Stations"."OBJECTID";
 
 
 --
@@ -315,7 +317,7 @@ ALTER SEQUENCE ncgmp09."Stations_OBJECTID_seq" OWNED BY ncgmp09."Stations"."OBJE
 -- Name: ContactsAndFaults OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."ContactsAndFaults" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."ContactsAndFaults_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "ContactsAndFaults" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"ContactsAndFaults_OBJECTID_seq"'::regclass);
 
 
 --
@@ -323,7 +325,7 @@ ALTER TABLE ONLY ncgmp09."ContactsAndFaults" ALTER COLUMN "OBJECTID" SET DEFAULT
 -- Name: DescriptionOfMapUnits OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."DescriptionOfMapUnits_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "DescriptionOfMapUnits" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"DescriptionOfMapUnits_OBJECTID_seq"'::regclass);
 
 
 --
@@ -331,7 +333,7 @@ ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits" ALTER COLUMN "OBJECTID" SET DEF
 -- Name: Glossary OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Glossary" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."Glossary_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "Glossary" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"Glossary_OBJECTID_seq"'::regclass);
 
 
 --
@@ -339,7 +341,7 @@ ALTER TABLE ONLY ncgmp09."Glossary" ALTER COLUMN "OBJECTID" SET DEFAULT nextval(
 -- Name: MapUnitPolys OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."MapUnitPolys" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."MapUnitPolys_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "MapUnitPolys" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"MapUnitPolys_OBJECTID_seq"'::regclass);
 
 
 --
@@ -347,7 +349,7 @@ ALTER TABLE ONLY ncgmp09."MapUnitPolys" ALTER COLUMN "OBJECTID" SET DEFAULT next
 -- Name: OrientationPoints OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."OrientationPoints" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."OrientationPoints_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "OrientationPoints" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"OrientationPoints_OBJECTID_seq"'::regclass);
 
 
 --
@@ -355,7 +357,7 @@ ALTER TABLE ONLY ncgmp09."OrientationPoints" ALTER COLUMN "OBJECTID" SET DEFAULT
 -- Name: Stations OBJECTID; Type: DEFAULT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Stations" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('ncgmp09."Stations_OBJECTID_seq"'::regclass);
+ALTER TABLE ONLY "Stations" ALTER COLUMN "OBJECTID" SET DEFAULT nextval('"Stations_OBJECTID_seq"'::regclass);
 
 
 --
@@ -363,7 +365,7 @@ ALTER TABLE ONLY ncgmp09."Stations" ALTER COLUMN "OBJECTID" SET DEFAULT nextval(
 -- Name: ContactsAndFaults ContactsAndFaults_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."ContactsAndFaults"
+ALTER TABLE ONLY "ContactsAndFaults"
     ADD CONSTRAINT "ContactsAndFaults_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -372,7 +374,7 @@ ALTER TABLE ONLY ncgmp09."ContactsAndFaults"
 -- Name: DescriptionOfMapUnits DescriptionOfMapUnits_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits"
+ALTER TABLE ONLY "DescriptionOfMapUnits"
     ADD CONSTRAINT "DescriptionOfMapUnits_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -381,7 +383,7 @@ ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits"
 -- Name: Glossary Glossary_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Glossary"
+ALTER TABLE ONLY "Glossary"
     ADD CONSTRAINT "Glossary_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -390,7 +392,7 @@ ALTER TABLE ONLY ncgmp09."Glossary"
 -- Name: MapUnitPolys MapUnitPolys_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."MapUnitPolys"
+ALTER TABLE ONLY "MapUnitPolys"
     ADD CONSTRAINT "MapUnitPolys_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -399,7 +401,7 @@ ALTER TABLE ONLY ncgmp09."MapUnitPolys"
 -- Name: OrientationPoints OrientationPoints_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."OrientationPoints"
+ALTER TABLE ONLY "OrientationPoints"
     ADD CONSTRAINT "OrientationPoints_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -408,7 +410,7 @@ ALTER TABLE ONLY ncgmp09."OrientationPoints"
 -- Name: Stations Stations_pkey; Type: CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Stations"
+ALTER TABLE ONLY "Stations"
     ADD CONSTRAINT "Stations_pkey" PRIMARY KEY ("OBJECTID");
 
 
@@ -417,7 +419,7 @@ ALTER TABLE ONLY ncgmp09."Stations"
 -- Name: ContactsAndFaults_geom_geom_idx; Type: INDEX; Schema: ncgmp09; Owner: -
 --
 
-CREATE INDEX "ContactsAndFaults_geom_geom_idx" ON ncgmp09."ContactsAndFaults" USING gist (geom);
+CREATE INDEX "ContactsAndFaults_geom_geom_idx" ON "ContactsAndFaults" USING gist (geom);
 
 
 --
@@ -425,7 +427,7 @@ CREATE INDEX "ContactsAndFaults_geom_geom_idx" ON ncgmp09."ContactsAndFaults" US
 -- Name: MapUnitPolys_geom_geom_idx; Type: INDEX; Schema: ncgmp09; Owner: -
 --
 
-CREATE INDEX "MapUnitPolys_geom_geom_idx" ON ncgmp09."MapUnitPolys" USING gist (geom);
+CREATE INDEX "MapUnitPolys_geom_geom_idx" ON "MapUnitPolys" USING gist (geom);
 
 
 --
@@ -433,7 +435,7 @@ CREATE INDEX "MapUnitPolys_geom_geom_idx" ON ncgmp09."MapUnitPolys" USING gist (
 -- Name: OrientationPoints_geom_geom_idx; Type: INDEX; Schema: ncgmp09; Owner: -
 --
 
-CREATE INDEX "OrientationPoints_geom_geom_idx" ON ncgmp09."OrientationPoints" USING gist (geom);
+CREATE INDEX "OrientationPoints_geom_geom_idx" ON "OrientationPoints" USING gist (geom);
 
 
 --
@@ -441,7 +443,7 @@ CREATE INDEX "OrientationPoints_geom_geom_idx" ON ncgmp09."OrientationPoints" US
 -- Name: Stations_geom_geom_idx; Type: INDEX; Schema: ncgmp09; Owner: -
 --
 
-CREATE INDEX "Stations_geom_geom_idx" ON ncgmp09."Stations" USING gist (geom);
+CREATE INDEX "Stations_geom_geom_idx" ON "Stations" USING gist (geom);
 
 
 --
@@ -449,7 +451,7 @@ CREATE INDEX "Stations_geom_geom_idx" ON ncgmp09."Stations" USING gist (geom);
 -- Name: ContactsAndFaults ContactsAndFaults_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."ContactsAndFaults"
+ALTER TABLE ONLY "ContactsAndFaults"
     ADD CONSTRAINT "ContactsAndFaults_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -458,7 +460,7 @@ ALTER TABLE ONLY ncgmp09."ContactsAndFaults"
 -- Name: DescriptionOfMapUnits DescriptionOfMapUnits_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits"
+ALTER TABLE ONLY "DescriptionOfMapUnits"
     ADD CONSTRAINT "DescriptionOfMapUnits_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -467,7 +469,7 @@ ALTER TABLE ONLY ncgmp09."DescriptionOfMapUnits"
 -- Name: Glossary Glossary_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Glossary"
+ALTER TABLE ONLY "Glossary"
     ADD CONSTRAINT "Glossary_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -476,7 +478,7 @@ ALTER TABLE ONLY ncgmp09."Glossary"
 -- Name: MapUnitPolys MapUnitPolys_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."MapUnitPolys"
+ALTER TABLE ONLY "MapUnitPolys"
     ADD CONSTRAINT "MapUnitPolys_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -485,7 +487,7 @@ ALTER TABLE ONLY ncgmp09."MapUnitPolys"
 -- Name: OrientationPoints OrientationPoints_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."OrientationPoints"
+ALTER TABLE ONLY "OrientationPoints"
     ADD CONSTRAINT "OrientationPoints_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -494,7 +496,7 @@ ALTER TABLE ONLY ncgmp09."OrientationPoints"
 -- Name: Stations Stations_collection_id_fkey; Type: FK CONSTRAINT; Schema: ncgmp09; Owner: -
 --
 
-ALTER TABLE ONLY ncgmp09."Stations"
+ALTER TABLE ONLY "Stations"
     ADD CONSTRAINT "Stations_collection_id_fkey" FOREIGN KEY (collection_id) REFERENCES public.collections(collection_id);
 
 
@@ -504,18 +506,18 @@ ALTER TABLE ONLY ncgmp09."Stations"
 -- PostgreSQL database dump complete
 --
 
-create table ncgmp09.layers (
+create table layers (
 	layer_id serial primary key,
     name text not null,
     required boolean not null
 );
 
-insert into ncgmp09.layers (name, required) values ('ContactsAndFaults', false);
-insert into ncgmp09.layers (name, required) values ('DescriptionOfMapUnits', true);
-insert into ncgmp09.layers (name, required) values ('Glossary', false);
-insert into ncgmp09.layers (name, required) values ('MapUnitPolys', true);
-insert into ncgmp09.layers (name, required) values ('OrientationPoints', false);
-insert into ncgmp09.layers (name, required) values ('Stations', false);
+insert into layers (name, required) values ('ContactsAndFaults', false);
+insert into layers (name, required) values ('DescriptionOfMapUnits', true);
+insert into layers (name, required) values ('Glossary', false);
+insert into layers (name, required) values ('MapUnitPolys', true);
+insert into layers (name, required) values ('OrientationPoints', false);
+insert into layers (name, required) values ('Stations', false);
 
 
 
