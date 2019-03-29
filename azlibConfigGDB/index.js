@@ -10,6 +10,7 @@ args
 	.option('-d, --dbname <dbname>', 'DB name. Required')
 	.option('-u, --username <username>', 'DB username. Required')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
+	.option('-c, --create ', 'Create schema but do not load it (used for temporary schemas when importing collections)')
 	.parse(process.argv);
 
 const pgp = require("pg-promise")({
@@ -51,22 +52,23 @@ promise.then((password) => {
 
 	//create schema
 	return db.none('create schema ' + args.gdbschema).catch(error => {throw new Error(error);});
-}).then((data) => {
-	return db.none('set search_path to ' + args.gdbschema + ',public').catch(error => {throw new Error(error);}); //TODO: not sure this is necessary
 }).then(() => {
+	if (args.create) {
+		return Promise.resolve(); //We're done in this case
+	}
+
 	//TODO: Currently using the same template for ncgmp09 and gems. This is not accurate and will change in the future.
 	if (args.gdbschema.toLowerCase() === "ncgmp09" || args.gdbschema.toLowerCase() === "gems") {
 
-		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true});
+		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true, params: args.gdbschema});
 
 		return db.none(file).catch(error => {
 			console.log("Problem processing ncgmp09 template: ");console.log(error); 
 			throw new Error(error);
 		});
 	} else {
-		//return Promise.resolve();
 		//TODO: Also using same template for everything else
-		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true});
+		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true, params: args.gdbschema});
 
 		return db.none(file).catch(error => {
 			console.log("Problem processing ncgmp09 template: ");console.log(error); 
@@ -79,6 +81,7 @@ promise.then((password) => {
 })
 .catch(error => { 
 	console.log(error);
+	process.exit(1);
 });
 	
 			
