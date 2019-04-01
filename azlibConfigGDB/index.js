@@ -81,6 +81,7 @@ promise.then((password) => {
 })
 .catch(error => { 
 	console.log(error);
+	pgp.end();
 	process.exit(1);
 });
 	
