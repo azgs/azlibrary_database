@@ -86,7 +86,7 @@ exports.upload = (dir, schemaName, collection, db) => {
 			//transaction. We pass a -c option here to tell it to create the schema but not load it.
 			//This allows us to trap possible schema errors in the incoming collection. Prior to this,
 			//ogr2ogr just kinda rolled with it.
-			const execStr = 'azlibConfigGDB -c -g ' + tmpSchema + ' -d achoo -u ' + args.username + ' -p ' + args.password;
+			const execStr = 'azlibConfigGDB -c -g ' + tmpSchema + ' -d ' +  args.dbname + ' -u ' + args.username + ' -p ' + args.password;
 			logger.silly(execStr);
 			return exec(execStr)
 			.then(() => {
