@@ -7,7 +7,7 @@ const util = require("util");
 
 exports.process = (collection, source) => {
 	logger.debug("enter");
-	logger.silly("collection = " + collection);
+	logger.silly("collection = " + global.pp(collection));
 
 	return new Promise((resolve, reject) => {
 		if (!global.args.failure_directory) {
