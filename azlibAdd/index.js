@@ -221,7 +221,7 @@ function processCollection(collection)  {
 			collection.collectionGroupID,
 			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
 		];
-	
+
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
 		return db.tx((t) => {
 
@@ -330,9 +330,18 @@ function processCollection(collection)  {
 			//is deleted by the transaction. This means that when something goes wrong, 
 			//the transaction rollback recreates the temporary schema, which we really don't 
 			//want to leave laying around, so...
-			const tmpSchema = collection.permID.replace(/-/g, '_');
-			return db.none(`drop schema if exists ${tmpSchema} cascade`);
-			return Promise.resolve();
+			if (collection.permID) {
+				const tmpSchema = collection.permID.replace(/-/g, '_');
+				db.none(`drop schema if exists ${tmpSchema} cascade`)
+				.catch((err) => {
+					logger.warn("Error dropping temp schema: " + global.pp(error));
+					return Promise.resolve();
+				}).then(() => {
+					return Promise.resolve();
+				});
+			} else {
+				return Promise.resolve();
+			}
 		}).then(() => {
 			//Then, handle failure reporting
 			logger.silly("Error: In failure handler section");
