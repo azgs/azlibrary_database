@@ -24,7 +24,17 @@ exports.upload = (metadata, collectionID, db) => {
 
 	return Promise.resolve().then(() => {      
 		logger.silly("metadata = " + global.pp(metadata));
-		
+
+		//Ach, Javascript. Takes all this to make sure we have numbers. 
+		//Number catches strings like "7x", and parseFloat catches blanks and empty strings.
+		if (isNaN(Number(metadata.bounding_box.west)) || isNaN(parseFloat(metadata.bounding_box.west)) ||
+			isNaN(Number(metadata.bounding_box.south)) || isNaN(parseFloat(metadata.bounding_box.south)) ||
+			isNaN(Number(metadata.bounding_box.east)) || isNaN(parseFloat(metadata.bounding_box.east)) ||
+			isNaN(Number(metadata.bounding_box.north)) || isNaN(parseFloat(metadata.bounding_box.north))) {
+			return Promise.reject("Invalid bounding box in metadata");
+		}
+
+
 		const metadataInsert = 
 			"insert into metadata.azgs (collection_id, json_data, geom) values (" +
 			collectionID + ", $$" + 
