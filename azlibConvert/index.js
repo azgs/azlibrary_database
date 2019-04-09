@@ -10,8 +10,8 @@ global.args
 	.option('-s, --source <source>', 'Source directory of the collection(s). Required')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
-	.option('-o, --old_dbname <dbname>', 'Old DB name.')
-	.option('-n, --new_dbname <dbname>', 'New DB name.')
+	.option('-o, --old_dbname <dbname>', 'Old DB name. Optional. This is only used if there are existing entries for UA_library and informal_name to be brought forward from a previous run. This was for a special use case and will likely be deprecated soon.')
+	.option('-n, --new_dbname <dbname>', 'New DB name. Optional. Used to fetch collection group name based on azgs_old_url. This was for a special use case and will likely be deprecated soon.')
 	.option('-u, --username <username>', 'DB username. Required if -o or -n specified.')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	.parse(process.argv);
@@ -31,7 +31,7 @@ const pgp = require("pg-promise")({
 const ocn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.old_dbname;
 const ncn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.new_dbname;
 global.odb = global.args.old_dbname ? pgp(ocn) : null;
-global.ndb = global.args.old_dbname ? pgp(ncn) : null;
+global.ndb = global.args.new_dbname ? pgp(ncn) : null;
 //logger.silly("global.args.dbname = " + global.args.dbname);
 //logger.silly("global.db = " + global.pp(global.db));
 
