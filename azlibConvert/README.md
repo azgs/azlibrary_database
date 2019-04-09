@@ -40,7 +40,7 @@ Run the tool as follows:
 	  -p, --password <password>  DB password (will be prompted if not included)
 	  -h, --help                 output usage information
 
-#Input
+# Input
 
 Each collection to be processed must have a directory called "metadata" in its top level. Inside that directory, there must be a file called either ISO19115.xml or ISO19139.xml (not case sensative).
 
