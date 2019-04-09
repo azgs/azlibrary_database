@@ -240,7 +240,9 @@ All attempted imports will have a record in the uploads table. Thus, they will b
 ## Permanent collection ID
 
 When a new collection is sucessfully imported, it is assigned a permanent ID (perm\_id). This perm\_id is of the following format:
->    <collection group acronym>-<epoch time milliseconds>-<random number between 0 and 1000>
+```
+<collection group acronym>-<epoch time milliseconds>-<random number between 0 and 1000>
+```
 
 # Output directories
 
