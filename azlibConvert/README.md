@@ -46,9 +46,9 @@ Each collection to be processed must have a directory called "metadata" in its t
 
 # Output
 
-Output is a file called azgs.json in the top level directory of the each collection processed. This file contains relevant data parsed from the xml.
+Output is a file called azgs.json in the top level directory of each collection processed. This file contains relevant data parsed from the xml.
 
-# azgs.json format
+## azgs.json format
 
 	{
 		"title": "",
