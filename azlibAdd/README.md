@@ -246,6 +246,8 @@ When a new collection is sucessfully imported, it is assigned a permanent ID (pe
 
 # Output directories
 
+The command line interface includes parameters for specifying both an archive directory (-a/--archive) for successfully imported collections and a failures directory (-f/--failure_directory) for storing collections that failed import.
+
 ## Archive
 
 If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory. If no archive directory is specified, the collection directories are left in place.
