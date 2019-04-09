@@ -250,11 +250,11 @@ The command line interface includes parameters for specifying both an archive di
 
 ## Archive
 
-If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory. If no archive directory is specified, the collection directories are left in place.
+If an archive directory is specified, each collection successfully imported is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory. If no archive directory is specified, the collection directories are left in place.
 
 ## Failures
 
-Except for the creation of the upload record, all of the db work for an import takes place in a transaction. This insures that any problems encountered during import result in the db being rolled back to its previous state. (Note: We use ogr2ogr for gdb processing. It's interaction with the database takes place outside of the import transaction. Special handling during error recovery insures that artifacts of this processing are rolled back as well.) The only artifact left in the database is the upload record for this attempt.
+Except for the creation of the upload record, all of the db work for an import takes place in a transaction. This insures that any problems encountered during import result in the db being rolled back to its previous state. (Note: We use ogr2ogr for gdb processing. It's interaction with the database takes place outside of the import transaction. Special handling during error recovery insures that artifacts of this processing are rolled back as well.) The only artifact left in the database after an import failure is the upload record for this attempt.
 
 When a collection fails to import, a failure.json file is created in its directory containing data on what happened.
 
