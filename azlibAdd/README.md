@@ -231,18 +231,28 @@ The source directory must be in the following layout (note: this is still evolvi
 		"private": "false"
 	}
 
+# Collection identification
+
+## Upload ID
+
+All attempted imports will have a record in the uploads table. Thus, they will be assigned an upload ID. This record and its ID will exist whether the import succeeds or not.
+
+## Permanent collection ID
+
+When a new collection is sucessfully imported, it is assigned a permanent ID (perm\_id). This perm\_id is of the following format:
+>    <collection group acronym>-<epoch time milliseconds>-<random number between 0 and 1000>
 
 # Output directories
 
 ## Archive
 
-If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory.
-
+If an archive directory is specified, each collection processed is tar.gz'd into a file bearing the collection's perm_id and moved into the archive directory. If no archive directory is specified, the collection directories are left in place.
 
 ## Failures
 
-If a failure directory is specified, each collection that fails to import is moved to this directory. It is renamed as follows:
+Except for the creation of the upload record, all of the db work for an import takes place in a transaction. This insures that any problems encountered during import result in the db being rolled back to its previous state. (Note: We use ogr2ogr for gdb processing. It's interaction with the database takes place outside of the import transaction. Special handling during error recovery insures that artifacts of this processing are rolled back as well.) The only artifact left in the database is the upload record for this attempt.
 
-- If the failure occurred before a perm\_id was obtained, the collection directory is renamed to the upload_id from the uploads table.
-- If the failure occurred after a perm\_id was obtained, the collection directory is renamed to the perm\_id with the upload_id appended, separated by a "-".
+When a collection fails to import, a failure.json file is created in its directory containing data on what happened.
+
+If a failure directory is specified, the directories of collections that fail during import are renamed to the upload ID of the import attempt and moved to this directory. If no failure directory is specified, the directories of failed collections are left in place.
 
