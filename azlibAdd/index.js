@@ -318,6 +318,7 @@ function processCollection(collection)  {
 		global.datasetName = undefined; 
 		return Promise.resolve();
 	}).catch(error => {
+		logger.info("Collection processing error. UploadID = " + collection.uploadID);
 		collection.result = "failure";
 		const serializeError = require('serialize-error');
 		collection.processingNotes.push(serializeError(error));
