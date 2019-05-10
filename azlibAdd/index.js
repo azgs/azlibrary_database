@@ -259,7 +259,64 @@ function processCollection(collection)  {
 						return Promise.resolve();
 					}
 				});
-			}).then(() => {
+			}).then(() => { //update files in metadata
+				const readDir = require("recursive-readdir");
+				return readDir(source).then(filePaths => {
+					logger.silly("filePaths = " + global.pp(filePaths));
+					const azgs = require("./azgsMetadata");
+					const fileEntries = filePaths.reduce((accF, f) => {
+						logger.silly("dirname = " + path.dirname(f));
+						const fileMeta = new azgs.File();
+						if (path.dirname(f).includes(path.sep + "images")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "images";
+							fileMeta.extension = path.extname(f);
+						} else if (path.dirname(f).includes(path.sep + "documents")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "documents";
+							fileMeta.extension = path.extname(f);
+						} else if (path.dirname(f).includes(path.sep + "notes")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "notes";
+							fileMeta.extension = path.extname(f);
+						} else if (path.dirname(f).includes(path.sep + "legacy")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "legacy";
+							fileMeta.extension = path.extname(f);
+						} else if (path.dirname(f).includes(path.sep + "raster")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "raster";
+							fileMeta.extension = path.extname(f);
+						} else if (path.dirname(f).includes(path.sep + "ncgmp09")) {
+							if (!path.dirname(f).includes(".gdb")) {
+								fileMeta.name = path.basename(f);
+								fileMeta.type = "ncgmp09";
+								fileMeta.extension = path.extname(f);
+							} else if (path.dirname(f).includes(path.sep + "ncgmp09" + path.sep)) {
+								logger.silly("ncgmp09 thing = " + f);
+								fileMeta.name = path.basename(path.dirname(f));
+								fileMeta.type = "ncgmp09";
+								fileMeta.extension = path.extname(path.basename(path.dirname(f)));
+							}
+						} else if (path.dirname(f).includes(path.sep + "metadata")) {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "metadata";
+							fileMeta.extension = path.extname(f);
+						} else {
+							fileMeta.name = path.basename(f);
+							fileMeta.type = "unknown";
+							fileMeta.extension = path.extname(f);
+						}
+						if (fileMeta.extension !== ".gdb" || !accF.some(e => e.name === fileMeta.name)) {
+							return accF.concat(fileMeta);
+						} else {
+							return accF;
+						}
+					}, []);
+					metadata.files = fileEntries;
+					return Promise.resolve();
+				});
+			}).then(() => { //add azgs metadata to db
 				return azgs.upload(metadata, collection.collectionID, t).catch((error) => { //TODO: Do we need this catch?
 					logger.error("Unable to process azgs metadata: " + error); 
 					return Promise.reject(error);
