@@ -28,6 +28,7 @@ INSERT INTO public.collection_groups (collection_group_name, collection_group_de
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Department of Mines and Mineral Resources', 'Digital publications and miscellaneous literature published by the Arizona Department of Mines and Mineral Resources.', 'ADMM');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Geologic Maps', 'Geologic maps typically at 1:24,000 scale and frequently accompanied by text reports. ', 'ADGM');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Maps (DM)', 'Thematic environmental geology maps and reports: - earth fissures, debris flows, and Holocene river maps', 'AGDM');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geology Magazine', 'A publication of the Arizona Geological Survey (AZGS)', 'GMAG');
 
 
 
