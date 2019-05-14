@@ -60,6 +60,7 @@ CREATE TRIGGER titleTSVupdate BEFORE INSERT OR UPDATE
 CREATE FUNCTION metadata.author_trigger() RETURNS trigger AS $$
 declare
 	json_path text;
+	author_nulltest text;
 	author_query text;
 	author_result text;
 
@@ -72,23 +73,33 @@ begin
 		json_data jsonb
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
-	author_query := $jq$  
-		SELECT  
-			k.authors
-		FROM (
-			SELECT 
-				string_agg(author, ';') as authors
+
+	select json_data #>> '{"authors"}' from tabletemp into author_nulltest;
+	if author_nulltest is null then
+		author_query := $nq$
+			SELECT
+				null as authors
+		$nq$;
+	else
+		author_query := $jq$  
+			SELECT  
+				k.authors
 			FROM (
-				select 
-					jsonb_array_elements(
-						json_data #> 
-							'{"authors"}'					
-					) 
-					#>> '{"person"}' 
-				  as author from tabletemp
-			) as a
-		) k
-	$jq$;
+				SELECT 
+					string_agg(author, ';') as authors
+				FROM (
+					select 
+						jsonb_array_elements(
+							json_data #> 
+								'{"authors"}'					
+						) 
+						#>> '{"person"}' 
+					  as author from tabletemp
+				) as a
+			) k
+		$jq$;
+	end if;
+
 	execute author_query into author_result;
 
 	--Get the thing we're after
@@ -104,6 +115,7 @@ CREATE TRIGGER authorTSVupdate BEFORE INSERT OR UPDATE
 CREATE FUNCTION metadata.keyword_trigger() RETURNS trigger AS $$
 declare
 	json_path text;
+	keyword_nulltest text;
 	keyword_query text;
 	keyword_result text;
 
@@ -116,23 +128,33 @@ begin
 		json_data jsonb
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
-	keyword_query := $jq$  
-		SELECT  
-			k.keywords
-		FROM (
-			SELECT 
-				string_agg(keyword, ';') as keywords
+
+	select json_data #>> '{"keywords"}' from tabletemp into keyword_nulltest;
+	if keyword_nulltest is null then
+		keyword_query := $nq$
+			SELECT
+				null as keywords
+		$nq$;
+	else
+		keyword_query := $jq$  
+			SELECT  
+				k.keywords
 			FROM (
-				select  
-					jsonb_array_elements(
-						json_data #> 
-							'{"keywords"}'					
-					) 
-					#>> '{"name"}' 
-				  as keyword from tabletemp
-			) as a
-		) k
-	$jq$;
+				SELECT 
+					string_agg(keyword, ';') as keywords
+				FROM (
+					select  
+						jsonb_array_elements(
+							json_data #> 
+								'{"keywords"}'					
+						) 
+						#>> '{"name"}' 
+					  as keyword from tabletemp
+				) as a
+			) k
+		$jq$;
+	end if;
+	
 	execute keyword_query into keyword_result;
 
 	--Get the thing we're after
