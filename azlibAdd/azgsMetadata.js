@@ -50,7 +50,7 @@ exports.upload = (metadata, collectionID, db) => {
 		return db.none(metadataInsert)
 		.catch(error => {
 			logger.error("Problem inserting azgs metadata record: " + global.pp(error));
-			return Promise.reject("Problem inserting azgs metadata record: " + error);
+			return Promise.reject("Problem inserting azgs metadata record. Error from DB: " + error);
 		})
 		/*
 		.then(() => {
