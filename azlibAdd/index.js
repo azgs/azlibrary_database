@@ -44,7 +44,7 @@ global.pp = (object) => {
 const logger = require("./logger")(path.basename(__filename));
 
 logger.debug(global.pp(global.args));
-logger.debug(global.pp("source = " + global.args.source));
+logger.debug(global.pp("global source = " + global.args.source));
 logger.debug(global.pp("archive = " + global.args.archive));
 logger.debug(global.pp("archive_directory = " + global.args.archive_directory));
 logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
@@ -340,8 +340,22 @@ function processCollection(collection)  {
 					}
 				});
 			}).then(() => {
-				//Turn collection on
-				return t.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
+				//Create archive tarball if archive specified
+				if (global.args.archive) {
+					logger.silly("squishin stuff");
+					return require("./archiver").archive(source, metadata.identifiers.perm_id, t).catch(error => {
+						logger.error("Unable to create archive of source directory. " + global.pp(error));
+						throw new Error(error);
+					});
+				} else {
+					logger.silly("returning blank resolve");
+					return Promise.resolve();
+				}
+
+			}).then((oid) => {
+				logger.silly("oid = " + oid);
+				//Turn set tar_id and collection on
+				return t.none("update public.collections set tar_id = " + oid + ", removed = false where collection_id =" + collection.collectionID)
 				.catch(error => {throw new Error(error);});
 			});
 		});
@@ -352,23 +366,7 @@ function processCollection(collection)  {
 	}).then(() => {
 		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
-		//Write metadata to azgs.json 
-		return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"});
-	}).then(() => {
-		//Create archive tarball if archive specified
-		if (global.args.archive) {
-			logger.silly("squishin stuff");
-			const dest = path.join(global.args.archive, "tmp", "" + metadata.identifiers.perm_id);
-			return fs.move(source, dest).then(() => {
-				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.perm_id).catch(error => {
-					logger.error("Unable to create archive of source directory. " + global.pp(error));
-					throw new Error(error);
-				});
-			});
-		} else {
-			logger.silly("returning blank resolve");
-			return Promise.resolve();
-		}
+		return fs.remove(source);
 	}).then(() => {
 		logger.info("successfully completed upload for collection_id " + collection.collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
 		collection.result = "success"; 

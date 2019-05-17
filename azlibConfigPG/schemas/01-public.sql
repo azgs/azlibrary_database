@@ -61,6 +61,7 @@ CREATE TABLE collections (
 	ua_library text,
 	usgs_path text,
 	doi text,
+	tar_id integer,
 	removed boolean not null default true
 );
 
