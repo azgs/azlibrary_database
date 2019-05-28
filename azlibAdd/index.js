@@ -19,13 +19,11 @@ global.args
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	//.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
-	.option('-a, --archive [archive_directory]', 'Indicates whether to archive the source directory into a tar.gz. If archive is present but archive_directory is not, defaults to source directory.')
 	.option('-f, --failure_directory <failure_directory>', 'Directory to move failed uploads to. Default is to leave in source directory.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
-if (global.args.archive === true) global.args.archive = path.dirname(global.args.source);
 
 /*
 console.log("source = " + args.source);
@@ -45,8 +43,6 @@ const logger = require("./logger")(path.basename(__filename));
 
 logger.debug(global.pp(global.args));
 logger.debug(global.pp("global source = " + global.args.source));
-logger.debug(global.pp("archive = " + global.args.archive));
-logger.debug(global.pp("archive_directory = " + global.args.archive_directory));
 logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
 
 
@@ -193,7 +189,6 @@ function processCollection(collection)  {
 
 		//Upsert collection record
 		const insertSQL = `insert into public.collections (
-								azgs_path, 
 								private, 		
 								formal_name, 
 								informal_name, 
@@ -201,18 +196,16 @@ function processCollection(collection)  {
 								ua_library, 
 								collection_group_id, 
 								perm_id)
-							values ($1, $2, $3, $4, $5, $6, $7, $8)
+							values ($1, $2, $3, $4, $5, $6, $7)
 							on conflict (perm_id) do update set
-								azgs_path = $1,
-								private = $2,
-								formal_name = $3,
-								informal_name = $4,
-								azgs_old_url = $5,
-								ua_library = $6,
-								collection_group_id = $7
+								private = $1,
+								formal_name = $2,
+								informal_name = $3,
+								azgs_old_url = $4,
+								ua_library = $5,
+								collection_group_id = $6
 							returning collection_id, perm_id, (xmax=0) as inserted`;
 		const upsertParams = [
-			path.resolve(source),
 			(global.args.private ? true : false),
 			metadata.title,
 			metadata.informal_name,
@@ -242,23 +235,6 @@ function processCollection(collection)  {
 					logger.debug("Updated");
 					return clean.prep(collection.collectionID, t);
 				}
-			}).then(() => {
-				//Note: this has to happen after the collections upsert because perm_id is used in the file name.
-				return Promise.resolve().then(() => {
-					//Update azgs_path if archive was specified
-					if (global.args.archive) {
-						metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
-						const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
-						const updateParams = [
-							path.join(global.args.archive, metadata.identifiers.perm_id + ".tar.gz"),
-							collection.collectionID
-						];
-						return t.none(updateSQL, updateParams);
-					} else {
-						metadata.identifiers.directory = path.resolve(global.args.source);
-						return Promise.resolve();
-					}
-				});
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
 				return readDir(source).then(filePaths => {
@@ -340,23 +316,19 @@ function processCollection(collection)  {
 					}
 				});
 			}).then(() => {
-				//Create archive tarball if archive specified
-				if (global.args.archive) {
-					logger.silly("squishin stuff");
-					return require("./archiver").archive(source, metadata.identifiers.perm_id, t).catch(error => {
-						logger.error("Unable to create archive of source directory. " + global.pp(error));
-						throw new Error(error);
-					});
-				} else {
-					logger.silly("returning blank resolve");
-					return Promise.resolve();
-				}
-
+				logger.silly("squishin stuff");
+				return require("./archiver").archive(source, metadata.identifiers.perm_id, t)
+				.catch(error => {
+					logger.error("Unable to create archive of source directory. " + global.pp(error));
+					throw new Error(error);
+				});
 			}).then((oid) => {
 				logger.silly("oid = " + oid);
-				//Turn set tar_id and collection on
-				return t.none("update public.collections set tar_id = " + oid + ", removed = false where collection_id =" + collection.collectionID)
-				.catch(error => {throw new Error(error);});
+				//Set archive_id and turn collection on
+				return t.none(
+					"update public.collections set archive_id = $1, removed = false where collection_id = $2",
+					[oid, collection.collectionID]
+				).catch(error => {throw new Error(error);});
 			});
 		});
 	}).then(() => {
