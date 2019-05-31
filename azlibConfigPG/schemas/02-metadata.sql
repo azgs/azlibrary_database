@@ -26,6 +26,55 @@ CREATE TABLE metadata.metadata (
 	metadata_file text not null
 );
 
+
+CREATE FUNCTION metadata.collections_trigger() RETURNS trigger AS $$
+declare
+	json_path text;
+	title_query text;
+	title_result text;
+	informal_query text;
+	informal_result text;
+
+begin
+	--This approach feels janky, but it's the only way I've been able to query jsonb
+	--in the "new" variable.
+	drop table if exists tabletemp;
+	CREATE TEMP TABLE tabletemp 
+	( 
+		json_data jsonb
+	) on commit drop;
+	insert into tabletemp values(new.json_data);
+	title_query := $jq$
+		select 
+			json_data->>'title' 
+		from tabletemp
+	$jq$; 
+	execute title_query into title_result;
+
+	informal_query := $iq$
+		select 
+			json_data->>'informal_name' 
+		from tabletemp
+	$iq$; 
+	execute informal_query into informal_result;
+
+	update 
+		public.collections
+	set
+		formal_name = title_result,
+		informal_name = informal_result
+	where
+		collection_id = new.collection_id;
+
+	return new;
+end
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER collectionsUpdate BEFORE INSERT OR UPDATE
+    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.collections_trigger();
+
+
+
 CREATE FUNCTION metadata.title_trigger() RETURNS trigger AS $$
 declare
 	json_path text;
