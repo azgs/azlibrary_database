@@ -13,40 +13,52 @@ exports.archive = (sourceDir, collectionID, tx) => {
 	const path = require("path");
 	const tar = require("tar");
 
-	const tmpDir = path.join(path.dirname(sourceDir), collectionID);
-	logger.silly("tmpDir = " + tmpDir);
+	const oidQ = "select archive_id from public.collections where perm_id = $1";
+	return tx.one(oidQ, [collectionID]).then(result => {
+	//remove old large object if there is one
+		if (result.archive_id) {
+			return man.unlinkAsync(result.archive_id);
+		} else {
+			return Promise.resolve();
+		}
+	}).then(() => {
+	//tar/gz the collection and store in large object, returning oid
+		return fs.remove(path.join(sourceDir, "azgs.json")).then(() => {//remove azgs.json before archiving
+			const tmpDir = path.join(path.dirname(sourceDir), collectionID);
+			logger.silly("tmpDir = " + tmpDir);
+			return fs.ensureSymlink(sourceDir, tmpDir).then(() => { 
+		 		return man.createAndWritableStreamAsync(bufferSize)
+				.then(([oid, loStream]) => { //recent EMCA weirdness: destructuring assignment
+					logger.silly("oid = " + oid);
 
-	return fs.ensureSymlink(sourceDir, tmpDir).then(() => { 
- 		return man.createAndWritableStreamAsync(bufferSize)
-		.then(([oid, loStream]) => { //recent EMCA weirdness: destructuring assignment
-			logger.silly("oid = " + oid);
+					const gzStream =  tar.create({
+						cwd: path.dirname(tmpDir),
+						follow: true,
+						gzip: true
+					},[path.basename(tmpDir)]);
 
-			const gzStream =  tar.create({
-				cwd: path.dirname(tmpDir),
-				follow: true,
-				gzip: true
-			},[path.basename(tmpDir)]);
-
-			gzStream.pipe(loStream);
-			return new Promise((resolve, reject) => {
-				//gzStream.on('data', (chunk) => { //For testing
-				//  logger.silly(`Received ${chunk.length} bytes of data.`);
-				//});
-				loStream.on('finish', () => {
-					logger.silly("stream finished");
-					return resolve(oid)
+					gzStream.pipe(loStream);
+					return new Promise((resolve, reject) => {
+						//gzStream.on('data', (chunk) => { //For testing
+						//  logger.silly(`Received ${chunk.length} bytes of data.`);
+						//});
+						loStream.on('finish', () => {
+							logger.silly("stream finished");
+							return resolve(oid)
+						});
+						loStream.on('error', (error) => {
+							logger.silly("stream error: " + global.pp(error));
+							return reject(error);
+						});
+					});
 				});
-				loStream.on('error', (error) => {
-					logger.silly("stream error: " + global.pp(error));
-					return reject(error);
+			}).then((oid) => {
+				//clean up and return oid
+				logger.silly("done archiving oid = " + oid);
+				return fs.remove(tmpDir).then(() => {
+					return Promise.resolve(oid);
 				});
 			});
-		});
-	}).then((oid) => {
-		//clean up and return oid
-		logger.silly("done archiving oid = " + oid);
-		return fs.remove(tmpDir).then(() => {
-			return Promise.resolve(oid);
 		});
 	}).catch(error => {
 		logger.error("Problem creating archive: " + global.pp(error));
