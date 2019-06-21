@@ -59,7 +59,6 @@ exports.Link = class {
 exports.File = class {
 	constructor() {	
 		this.name = null;
-		this.extension = null;
 		this.type = null;
 	}
 };          
