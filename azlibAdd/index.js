@@ -237,58 +237,29 @@ function processCollection(collection)  {
 				}
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
-				return readDir(source).then(filePaths => {
+
+				logger.silly("source = " + global.pp(source));
+				return readDir(source, [
+					"azgs.json",
+					(file, stats) => //TODO: ignore unknown paths
+						(stats.isDirectory() && /\.gdb$/i.test(path.basename(file))) ||
+						(/^\./.test(path.basename(file)))
+				]).then(filePaths => {
 					logger.silly("filePaths = " + global.pp(filePaths));
 					const azgs = require("./azgsMetadata");
 					const fileEntries = filePaths.reduce((accF, f) => {
 						logger.silly("dirname = " + path.dirname(f));
+						logger.silly("relative = " + path.relative(source, f));
+						logger.silly("path within collection = " + path.dirname(path.relative(source, f)));
 						const fileMeta = new azgs.File();
-						if (path.dirname(f).includes(path.sep + "images")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "images";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "documents")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "documents";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "notes")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "notes";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "legacy")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "legacy";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "raster")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "raster";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "ncgmp09")) {
-							if (!path.dirname(f).includes(".gdb")) {
-								fileMeta.name = path.basename(f);
-								fileMeta.type = "ncgmp09";
-								fileMeta.extension = path.extname(f);
-							} else if (path.dirname(f).includes(path.sep + "ncgmp09" + path.sep)) {
-								logger.silly("ncgmp09 thing = " + f);
-								fileMeta.name = path.basename(path.dirname(f));
-								fileMeta.type = "ncgmp09";
-								fileMeta.extension = path.extname(path.basename(path.dirname(f)));
-							}
-						} else if (path.dirname(f).includes(path.sep + "metadata")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "metadata";
-							fileMeta.extension = path.extname(f);
-						} else {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "unknown";
-							fileMeta.extension = path.extname(f);
-						}
-						if (fileMeta.extension !== ".gdb" || !accF.some(e => e.name === fileMeta.name)) {
-							return accF.concat(fileMeta);
-						} else {
-							return accF;
-						}
+
+						fileMeta.name = path.basename(f);
+						fileMeta.type = path.dirname(path.relative(source, f)).replace(new RegExp(path.sep,"g"), ":");
+						logger.silly("fileMeta = " + global.pp(fileMeta));
+
+						return accF.concat(fileMeta);
 					}, []);
+
 					metadata.files = fileEntries;
 					return Promise.resolve();
 				});
@@ -338,7 +309,8 @@ function processCollection(collection)  {
 	}).then(() => {
 		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
-		return fs.remove(source);
+		//return fs.remove(source);
+		return Promise.resolve(); //leave dir for testing
 	}).then(() => {
 		logger.info("successfully completed upload for collection_id " + collection.collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
 		collection.result = "success"; 
