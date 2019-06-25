@@ -35,6 +35,33 @@ global.ndb = global.args.new_dbname ? pgp(ncn) : null;
 //logger.silly("global.args.dbname = " + global.args.dbname);
 //logger.silly("global.db = " + global.pp(global.db));
 
+
+//The legal relative paths allowed for files in the collection
+const legalPaths = [
+	"metadata",
+	"documents",
+	path.join("documents", "metadata"),
+	"images",
+	path.join("images", "metadata"),
+	"notes",
+	path.join("notes", "metadata"),
+	path.join("notes", "misc"),
+	path.join("notes", "misc", "metadata"),
+	path.join("notes", "standard"),
+	path.join("notes", "standard", "metadata"),
+	"gisdata",
+	path.join("gisdata", "metadata"),
+	path.join("gisdata", "layers"),
+	path.join("gisdata", "layers", "metadata"),
+	path.join("gisdata", "legacy"),
+	path.join("gisdata", "legacy", "metadata"),
+	path.join("gisdata", "ncgmp09"),
+	path.join("gisdata", "ncgmp09", "metadata"),
+	path.join("gisdata", "raster"),
+	path.join("gisdata", "raster", "metadata")
+]
+
+
 return Promise.resolve().then(() => {
 	if (global.args.repeat) {
 		if (!fs.existsSync(global.args.source)) {
@@ -149,62 +176,33 @@ function processCollection(collection)  {
 			logger.warn("Problem parsing xml in " + file + ": " + global.pp(error)); 
 			//return Promise.reject(error);
 		}).then((data) => {
-			const readDir = require("recursive-readdir");
-			return readDir(source).then(filePaths => {
-				logger.silly("filePaths = " + global.pp(filePaths));
-				const azgs = require("./azgsMetadata");
-				const fileEntries = filePaths.reduce((accF, f) => {
-					logger.silly("dirname = " + path.dirname(f));
-					const fileMeta = new azgs.File();
-					if (path.dirname(f).includes(path.sep + "images")) {
+				const readDir = require("recursive-readdir");
+
+				const pathRegex = new RegExp("^(" + legalPaths.join("|") + ")$", 'i');
+
+				logger.silly("source = " + global.pp(source));
+				return readDir(source, [
+					(file, stats) =>
+						//ignore non-standard directories (this also handles the case of unzipped gdb's)
+						(stats.isDirectory() && !pathRegex.test(path.relative(source, file))) ||
+						//ignore files in top level directory
+						(!stats.isDirectory() && path.relative(source, file) === path.basename(file)) ||
+						//ignore hidden files
+						(/^\./.test(path.basename(file)))
+				]).then(filePaths => {
+					logger.silly("filePaths = " + global.pp(filePaths));
+					const azgs = require("./azgsMetadata");
+					const fileEntries = filePaths.reduce((accF, f) => {
+						const fileMeta = new azgs.File();
 						fileMeta.name = path.basename(f);
-						fileMeta.type = "images";
-						fileMeta.extension = path.extname(f);
-					} else if (path.dirname(f).includes(path.sep + "documents")) {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "documents";
-						fileMeta.extension = path.extname(f);
-					} else if (path.dirname(f).includes(path.sep + "notes")) {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "notes";
-						fileMeta.extension = path.extname(f);
-					} else if (path.dirname(f).includes(path.sep + "legacy")) {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "legacy";
-						fileMeta.extension = path.extname(f);
-					} else if (path.dirname(f).includes(path.sep + "raster")) {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "raster";
-						fileMeta.extension = path.extname(f);
-					} else if (path.dirname(f).includes(path.sep + "ncgmp09")) {
-						if (!path.dirname(f).includes(".gdb")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "ncgmp09";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "ncgmp09" + path.sep)) {
-							logger.silly("ncgmp09 thing = " + f);
-							fileMeta.name = path.basename(path.dirname(f));
-							fileMeta.type = "ncgmp09";
-							fileMeta.extension = path.extname(path.basename(path.dirname(f)));
-						}
-					} else if (path.dirname(f).includes(path.sep + "metadata")) {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "metadata";
-						fileMeta.extension = path.extname(f);
-					} else {
-						fileMeta.name = path.basename(f);
-						fileMeta.type = "unknown";
-						fileMeta.extension = path.extname(f);
-					}
-					if (fileMeta.extension !== ".gdb" || !accF.some(e => e.name === fileMeta.name)) {
+						fileMeta.type = path.dirname(path.relative(source, f)).replace(new RegExp(path.sep,"g"), ":");
 						return accF.concat(fileMeta);
-					} else {
-						return accF;
-					}
-				}, []);
-				data.files = fileEntries;
-				return data;
-			})
+					}, []);
+
+					data.files = fileEntries;
+					return data;
+				});
+
 		}).then((data) => {
 			if (global.args.old_dbname || global.args.new_dbname) {
 				return require("./db").fetch(data);
