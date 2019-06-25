@@ -45,6 +45,31 @@ logger.debug(global.pp(global.args));
 logger.debug(global.pp("global source = " + global.args.source));
 logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
 
+//The legal relative paths allowed for files in the collection
+const legalPaths = [
+	"metadata",
+	"documents",
+	path.join("documents", "metadata"),
+	"images",
+	path.join("images", "metadata"),
+	"notes",
+	path.join("notes", "metadata"),
+	path.join("notes", "misc"),
+	path.join("notes", "misc", "metadata"),
+	path.join("notes", "standard"),
+	path.join("notes", "standard", "metadata"),
+	"gisdata",
+	path.join("gisdata", "metadata"),
+	path.join("gisdata", "layers"),
+	path.join("gisdata", "layers", "metadata"),
+	path.join("gisdata", "legacy"),
+	path.join("gisdata", "legacy", "metadata"),
+	path.join("gisdata", "ncgmp09"),
+	path.join("gisdata", "ncgmp09", "metadata"),
+	path.join("gisdata", "raster"),
+	path.join("gisdata", "raster", "metadata")
+]
+
 
 // get password sorted
 let pwPromise = new Promise((resolve) => {
@@ -238,11 +263,16 @@ function processCollection(collection)  {
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
 
+				const pathRegex = new RegExp("^(" + legalPaths.join("|") + ")$", 'i');
+
 				logger.silly("source = " + global.pp(source));
 				return readDir(source, [
-					"azgs.json",
-					(file, stats) => //TODO: ignore unknown paths
-						(stats.isDirectory() && /\.gdb$/i.test(path.basename(file))) ||
+					(file, stats) =>
+						//ignore non-standard directories (this also handles the case of unzipped gdb's)
+						(stats.isDirectory() && !pathRegex.test(path.relative(source, file))) ||
+						//ignore files in top level directory
+						(!stats.isDirectory() && path.relative(source, file) === path.basename(file)) ||
+						//ignore hidden files
 						(/^\./.test(path.basename(file)))
 				]).then(filePaths => {
 					logger.silly("filePaths = " + global.pp(filePaths));
@@ -374,6 +404,5 @@ function processCollection(collection)  {
 
 	});
 }
-
 
 
