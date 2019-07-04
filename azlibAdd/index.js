@@ -220,8 +220,9 @@ function processCollection(collection)  {
 								azgs_old_url, 
 								ua_library, 
 								collection_group_id, 
-								perm_id)
-							values ($1, $2, $3, $4, $5, $6, $7)
+								perm_id,
+								supercedes)
+							values ($1, $2, $3, $4, $5, $6, $7, $8)
 							on conflict (perm_id) do update set
 								private = $1,
 								formal_name = $2,
@@ -237,7 +238,8 @@ function processCollection(collection)  {
 			azgs_old_url,
 			ua_library,
 			collection.collectionGroupID,
-			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
+			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT,
+			metadata.identifiers.supercedes
 		];
 
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
@@ -330,6 +332,16 @@ function processCollection(collection)  {
 					"update public.collections set archive_id = $1, removed = false where collection_id = $2",
 					[oid, collection.collectionID]
 				).catch(error => {throw new Error(error);});
+			}).then(() => {
+				//Deprecate old collection if necessary
+				if (metadata.identifiers.supercedes) {
+					return t.none(
+						"update public.collections set deprecated = true, superceded_by = $1 where perm_id = $2",
+						[collection.permID, metadata.identifiers.supercedes]
+					).catch(error => {throw new Error(error);});
+				} else {
+					return Promise.resolve();
+				}
 			});
 		});
 	}).then(() => {

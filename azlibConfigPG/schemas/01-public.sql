@@ -56,11 +56,14 @@ CREATE TABLE collections (
 	publication_id integer UNIQUE REFERENCES publications(publication_id), -- Unique because collection_id is synonymous with publication_id, but not all collections may have publication_id
 	formal_name text,
 	informal_name text,
-	azgs_old_url text UNIQUE,
+	azgs_old_url text,-- UNIQUE,
 	ua_library text,
 	usgs_path text,
 	doi text,
 	archive_id integer,
+	supercedes text unique references collections(perm_id),
+	superceded_by text unique references collections(perm_id),
+	deprecated boolean not null default false,
 	removed boolean not null default true
 );
 
