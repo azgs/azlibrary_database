@@ -61,8 +61,8 @@ CREATE TABLE collections (
 	usgs_path text,
 	doi text,
 	archive_id integer,
-	supercedes text unique references collections(perm_id),
-	superceded_by text unique references collections(perm_id),
+	supersedes text unique references collections(perm_id),
+	superseded_by text unique references collections(perm_id),
 	deprecated boolean not null default false,
 	removed boolean not null default true
 );

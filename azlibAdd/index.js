@@ -221,7 +221,7 @@ function processCollection(collection)  {
 								ua_library, 
 								collection_group_id, 
 								perm_id,
-								supercedes)
+								supersedes)
 							values ($1, $2, $3, $4, $5, $6, $7, $8)
 							on conflict (perm_id) do update set
 								private = $1,
@@ -239,7 +239,7 @@ function processCollection(collection)  {
 			ua_library,
 			collection.collectionGroupID,
 			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT,
-			metadata.identifiers.supercedes
+			metadata.identifiers.supersedes
 		];
 
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
@@ -334,10 +334,10 @@ function processCollection(collection)  {
 				).catch(error => {throw new Error(error);});
 			}).then(() => {
 				//Deprecate old collection if necessary
-				if (metadata.identifiers.supercedes) {
+				if (metadata.identifiers.supersedes) {
 					return t.none(
-						"update public.collections set deprecated = true, superceded_by = $1 where perm_id = $2",
-						[collection.permID, metadata.identifiers.supercedes]
+						"update public.collections set deprecated = true, superseded_by = $1 where perm_id = $2",
+						[collection.permID, metadata.identifiers.supersedes]
 					).catch(error => {throw new Error(error);});
 				} else {
 					return Promise.resolve();
