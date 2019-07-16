@@ -34,6 +34,10 @@ declare
 	title_result text;
 	informal_query text;
 	informal_result text;
+	supersedes_query text;
+	supersedes_result text;
+	superseded_by_query text;
+	superseded_by_result text;
 
 begin
 	--This approach feels janky, but it's the only way I've been able to query jsonb
@@ -58,11 +62,27 @@ begin
 	$iq$; 
 	execute informal_query into informal_result;
 
+	supersedes_query := $sq$
+		select 
+			json_data->'identifiers'->>'supersedes' 
+		from tabletemp
+	$sq$; 
+	execute supersedes_query into supersedes_result;
+
+	superseded_by_query := $sbq$
+		select 
+			json_data->'identifiers'->>'superseded_by' 
+		from tabletemp
+	$sbq$; 
+	execute superseded_by_query into superseded_by_result;
+
 	update 
 		public.collections
 	set
 		formal_name = title_result,
-		informal_name = informal_result
+		informal_name = informal_result,
+		supersedes = supersedes_result,
+		superseded_by = superseded_by_result
 	where
 		collection_id = new.collection_id;
 
