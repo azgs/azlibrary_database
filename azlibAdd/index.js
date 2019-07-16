@@ -335,10 +335,21 @@ function processCollection(collection)  {
 			}).then(() => {
 				//Deprecate old collection if necessary
 				if (metadata.identifiers.supersedes) {
-					return t.none(
-						"update public.collections set deprecated = true, superseded_by = $1 where perm_id = $2",
-						[collection.permID, metadata.identifiers.supersedes]
-					).catch(error => {throw new Error(error);});
+					return t.one(
+						"select collection_id from public.collections where perm_id = $1", 
+						[metadata.identifiers.supersedes]).then((result) => {
+						//TODO: Using template variable for param to jsonb_set because I kept getting
+						//a syntax error from postgres when I tried to use pg-promise index variable.
+						//Maybe figure out why?
+						return t.none(
+							`update 
+								metadata.azgs
+							set
+								json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '"${collection.permID}"')
+							where
+								collection_id = $1`,
+							[result.collection_id]);
+					}).catch(error => {throw new Error(error);});
 				} else {
 					return Promise.resolve();
 				}
