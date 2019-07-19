@@ -19,13 +19,11 @@ global.args
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
 	//.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
-	.option('-a, --archive [archive_directory]', 'Indicates whether to archive the source directory into a tar.gz. If archive is present but archive_directory is not, defaults to source directory.')
 	.option('-f, --failure_directory <failure_directory>', 'Directory to move failed uploads to. Default is to leave in source directory.')
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
 	.parse(process.argv);
-if (global.args.archive === true) global.args.archive = path.dirname(global.args.source);
 
 /*
 console.log("source = " + args.source);
@@ -44,10 +42,33 @@ global.pp = (object) => {
 const logger = require("./logger")(path.basename(__filename));
 
 logger.debug(global.pp(global.args));
-logger.debug(global.pp("source = " + global.args.source));
-logger.debug(global.pp("archive = " + global.args.archive));
-logger.debug(global.pp("archive_directory = " + global.args.archive_directory));
+logger.debug(global.pp("global source = " + global.args.source));
 logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
+
+//The legal relative paths allowed for files in the collection
+const legalPaths = [
+	"metadata",
+	"documents",
+	path.join("documents", "metadata"),
+	"images",
+	path.join("images", "metadata"),
+	"notes",
+	path.join("notes", "metadata"),
+	path.join("notes", "misc"),
+	path.join("notes", "misc", "metadata"),
+	path.join("notes", "standard"),
+	path.join("notes", "standard", "metadata"),
+	"gisdata",
+	path.join("gisdata", "metadata"),
+	path.join("gisdata", "layers"),
+	path.join("gisdata", "layers", "metadata"),
+	path.join("gisdata", "legacy"),
+	path.join("gisdata", "legacy", "metadata"),
+	path.join("gisdata", "ncgmp09"),
+	path.join("gisdata", "ncgmp09", "metadata"),
+	path.join("gisdata", "raster"),
+	path.join("gisdata", "raster", "metadata")
+]
 
 
 // get password sorted
@@ -193,33 +214,32 @@ function processCollection(collection)  {
 
 		//Upsert collection record
 		const insertSQL = `insert into public.collections (
-								azgs_path, 
 								private, 		
 								formal_name, 
 								informal_name, 
 								azgs_old_url, 
 								ua_library, 
 								collection_group_id, 
-								perm_id)
+								perm_id,
+								supersedes)
 							values ($1, $2, $3, $4, $5, $6, $7, $8)
 							on conflict (perm_id) do update set
-								azgs_path = $1,
-								private = $2,
-								formal_name = $3,
-								informal_name = $4,
-								azgs_old_url = $5,
-								ua_library = $6,
-								collection_group_id = $7
+								private = $1,
+								formal_name = $2,
+								informal_name = $3,
+								azgs_old_url = $4,
+								ua_library = $5,
+								collection_group_id = $6
 							returning collection_id, perm_id, (xmax=0) as inserted`;
 		const upsertParams = [
-			path.resolve(source),
 			(global.args.private ? true : false),
 			metadata.title,
 			metadata.informal_name,
 			azgs_old_url,
 			ua_library,
 			collection.collectionGroupID,
-			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
+			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT,
+			metadata.identifiers.supersedes
 		];
 
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
@@ -242,77 +262,36 @@ function processCollection(collection)  {
 					logger.debug("Updated");
 					return clean.prep(collection.collectionID, t);
 				}
-			}).then(() => {
-				//Note: this has to happen after the collections upsert because perm_id is used in the file name.
-				return Promise.resolve().then(() => {
-					//Update azgs_path if archive was specified
-					if (global.args.archive) {
-						metadata.identifiers.directory = path.resolve(global.args.archive, ""+metadata.identifiers.perm_id);
-						const updateSQL = "update public.collections set azgs_path = $1 where collection_id = $2";
-						const updateParams = [
-							path.join(global.args.archive, metadata.identifiers.perm_id + ".tar.gz"),
-							collection.collectionID
-						];
-						return t.none(updateSQL, updateParams);
-					} else {
-						metadata.identifiers.directory = path.resolve(global.args.source);
-						return Promise.resolve();
-					}
-				});
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
-				return readDir(source).then(filePaths => {
+
+				const pathRegex = new RegExp("^(" + legalPaths.join("|") + ")$", 'i');
+
+				logger.silly("source = " + global.pp(source));
+				return readDir(source, [
+					(file, stats) =>
+						//ignore non-standard directories (this also handles the case of unzipped gdb's)
+						(stats.isDirectory() && !pathRegex.test(path.relative(source, file))) ||
+						//ignore files in top level directory
+						(!stats.isDirectory() && path.relative(source, file) === path.basename(file)) ||
+						//ignore hidden files
+						(/^\./.test(path.basename(file)))
+				]).then(filePaths => {
 					logger.silly("filePaths = " + global.pp(filePaths));
 					const azgs = require("./azgsMetadata");
 					const fileEntries = filePaths.reduce((accF, f) => {
 						logger.silly("dirname = " + path.dirname(f));
+						logger.silly("relative = " + path.relative(source, f));
+						logger.silly("path within collection = " + path.dirname(path.relative(source, f)));
 						const fileMeta = new azgs.File();
-						if (path.dirname(f).includes(path.sep + "images")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "images";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "documents")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "documents";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "notes")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "notes";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "legacy")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "legacy";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "raster")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "raster";
-							fileMeta.extension = path.extname(f);
-						} else if (path.dirname(f).includes(path.sep + "ncgmp09")) {
-							if (!path.dirname(f).includes(".gdb")) {
-								fileMeta.name = path.basename(f);
-								fileMeta.type = "ncgmp09";
-								fileMeta.extension = path.extname(f);
-							} else if (path.dirname(f).includes(path.sep + "ncgmp09" + path.sep)) {
-								logger.silly("ncgmp09 thing = " + f);
-								fileMeta.name = path.basename(path.dirname(f));
-								fileMeta.type = "ncgmp09";
-								fileMeta.extension = path.extname(path.basename(path.dirname(f)));
-							}
-						} else if (path.dirname(f).includes(path.sep + "metadata")) {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "metadata";
-							fileMeta.extension = path.extname(f);
-						} else {
-							fileMeta.name = path.basename(f);
-							fileMeta.type = "unknown";
-							fileMeta.extension = path.extname(f);
-						}
-						if (fileMeta.extension !== ".gdb" || !accF.some(e => e.name === fileMeta.name)) {
-							return accF.concat(fileMeta);
-						} else {
-							return accF;
-						}
+
+						fileMeta.name = path.basename(f);
+						fileMeta.type = path.dirname(path.relative(source, f)).replace(new RegExp(path.sep,"g"), ":");
+						logger.silly("fileMeta = " + global.pp(fileMeta));
+
+						return accF.concat(fileMeta);
 					}, []);
+
 					metadata.files = fileEntries;
 					return Promise.resolve();
 				});
@@ -340,9 +319,40 @@ function processCollection(collection)  {
 					}
 				});
 			}).then(() => {
-				//Turn collection on
-				return t.none("update public.collections set removed = false where collection_id =" + collection.collectionID)
-				.catch(error => {throw new Error(error);});
+				logger.silly("squishin stuff");
+				return require("./archiver").archive(source, metadata.identifiers.perm_id, t)
+				.catch(error => {
+					logger.error("Unable to create archive of source directory. " + global.pp(error));
+					throw new Error(error);
+				});
+			}).then((oid) => {
+				logger.silly("oid = " + oid);
+				//Set archive_id and turn collection on
+				return t.none(
+					"update public.collections set archive_id = $1, removed = false where collection_id = $2",
+					[oid, collection.collectionID]
+				).catch(error => {throw new Error(error);});
+			}).then(() => {
+				//Deprecate old collection if necessary
+				if (metadata.identifiers.supersedes) {
+					return t.one(
+						"select collection_id from public.collections where perm_id = $1", 
+						[metadata.identifiers.supersedes]).then((result) => {
+						//TODO: Using template variable for param to jsonb_set because I kept getting
+						//a syntax error from postgres when I tried to use pg-promise index variable.
+						//Maybe figure out why?
+						return t.none(
+							`update 
+								metadata.azgs
+							set
+								json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '"${collection.permID}"')
+							where
+								collection_id = $1`,
+							[result.collection_id]);
+					}).catch(error => {throw new Error(error);});
+				} else {
+					return Promise.resolve();
+				}
 			});
 		});
 	}).then(() => {
@@ -352,23 +362,8 @@ function processCollection(collection)  {
 	}).then(() => {
 		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
-		//Write metadata to azgs.json 
-		return fs.writeJson(path.join(source, "azgs.json"), metadata, {spaces:"\t"});
-	}).then(() => {
-		//Create archive tarball if archive specified
-		if (global.args.archive) {
-			logger.silly("squishin stuff");
-			const dest = path.join(global.args.archive, "tmp", "" + metadata.identifiers.perm_id);
-			return fs.move(source, dest).then(() => {
-				return require("./archiver").archive(dest, global.args.archive, metadata.identifiers.perm_id).catch(error => {
-					logger.error("Unable to create archive of source directory. " + global.pp(error));
-					throw new Error(error);
-				});
-			});
-		} else {
-			logger.silly("returning blank resolve");
-			return Promise.resolve();
-		}
+		//return fs.remove(source);
+		return Promise.resolve(); //leave dir for testing
 	}).then(() => {
 		logger.info("successfully completed upload for collection_id " + collection.collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
 		collection.result = "success"; 
@@ -432,6 +427,5 @@ function processCollection(collection)  {
 
 	});
 }
-
 
 

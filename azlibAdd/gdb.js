@@ -20,22 +20,21 @@ exports.upload = (dir, schemaName, collection, db) => {
 		dir = dir + "/" + schemaName;
 		const fs = require('fs');
 		const path = require('path');
-		const listDirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory() || /\.zip$/i.test(f));
-		let dirs = listDirs(dir);
-		logger.silly("dirs before filter = " + global.pp(dirs));
-		dirs = dirs.filter(file => /\.gdb$/i.test(file) ||/\.gdb\.zip$/i.test(file)); 
-		logger.silly("dirs = " + global.pp(dirs));
 
-		if (dirs.length === 0) {
+		const listGDBs = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f));
+		let gdbs = listGDBs(dir);
+		logger.silly("gdbs = " + global.pp(gdbs));
+
+		if (gdbs.length === 0) {
 			return Promise.reject("No gdb directory found");
-		} else if (dirs.length > 1) {
+		} else if (gdbs.length > 1) {
 			return Promise.reject("Only one gdb directory allowed");
 		} 
 
 		//get list of layers in gdb
 		const gdal = require("gdal");
-		logger.silly(path.join(dir, dirs[0]));
-		const dataset = gdal.open(path.join(dir, dirs[0]));
+		logger.silly(path.join(dir, gdbs[0]));
+		const dataset = gdal.open(path.join(dir, gdbs[0]));
 		const gdbLayers = dataset.layers.map((layer) => {
 			return layer.name;
 		});
@@ -92,7 +91,7 @@ exports.upload = (dir, schemaName, collection, db) => {
 			.then(() => {
 				logger.silly("in ogr then");
 				const ogrPromise = new Promise((resolve, reject) => {
-					ogr2ogr(dir + "/" + dirs[0])
+					ogr2ogr(dir + "/" + gdbs[0])
 					.format('PostgreSQL')
 					.project('EPSG:4326')
 					.timeout(50000)
