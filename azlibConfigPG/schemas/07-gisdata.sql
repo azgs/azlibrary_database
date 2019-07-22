@@ -30,6 +30,7 @@ CREATE TABLE gisdata.layers
 );
 CREATE INDEX layers_id_idx ON gisdata.layers (layer_id);
 CREATE INDEX layers_collection_id_idx ON gisdata.layers (collection_id);
+CREATE INDEX layers_geom_idx ON gisdata.layers using gist(geom);
 
 create table gisdata.rasters
 (
