@@ -67,6 +67,9 @@ CREATE TABLE collections (
 	removed boolean not null default true
 );
 
+create index collections_id_index on public.collections (collection_id);
+create index collections_perm_id_index on public.collections (perm_id);
+
 --Add a comment describing the date and time that the database was created
 --COMMENT ON TABLE collections IS 'Date: ' || to_char(current_timestamp, 'MM-DD-YYYY HH24:MI:SS TZ');
 --Have to do this to accomplish the above, sheesh:
@@ -105,6 +108,8 @@ CREATE TABLE uploads (
 	source text
 );
 
+create index uploads_id_index on public.uploads (upload_id);
+create index uploads_collection_id_index on public.uploads (collection_id);
 
 
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

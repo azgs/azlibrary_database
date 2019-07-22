@@ -13,11 +13,13 @@ CREATE TABLE metadata.azgs
 	kitchensink_search tsvector,
 	geom geometry
 );
-CREATE INDEX title_idx ON metadata.azgs USING gin(title_search);
-CREATE INDEX author_idx ON metadata.azgs USING gin(author_search);
-CREATE INDEX keyword_idx ON metadata.azgs USING gin(keyword_search);
-CREATE INDEX series_idx ON metadata.azgs USING gin(series_search);
-CREATE INDEX kitchensink_idx ON metadata.azgs USING gin(kitchensink_search);
+CREATE INDEX azgs_id_idx ON metadata.azgs (metadata_id);
+CREATE INDEX azgs_geom_idx ON metadata.azgs using gist(geom);
+CREATE INDEX azgs_title_idx ON metadata.azgs USING gin(title_search);
+CREATE INDEX azgs_author_idx ON metadata.azgs USING gin(author_search);
+CREATE INDEX azgs_keyword_idx ON metadata.azgs USING gin(keyword_search);
+CREATE INDEX azgs_series_idx ON metadata.azgs USING gin(series_search);
+CREATE INDEX azgs_kitchensink_idx ON metadata.azgs USING gin(kitchensink_search);
 
 
 CREATE TABLE metadata.metadata (
@@ -26,6 +28,7 @@ CREATE TABLE metadata.metadata (
 	metadata_file text not null
 );
 
+CREATE INDEX metadata_id_idx ON metadata.metadata (metadata_id);
 
 CREATE FUNCTION metadata.collections_trigger() RETURNS trigger AS $$
 declare

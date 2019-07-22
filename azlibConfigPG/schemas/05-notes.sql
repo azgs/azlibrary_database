@@ -15,6 +15,8 @@ CREATE TABLE notes.misc_notes (
 	note_type note_type,
 	path text NOT NULL
 );
+CREATE INDEX misc_notes_id_idx ON notes.misc_notes (misc_note_id);
+CREATE INDEX misc_notes_collection_id_idx ON notes.misc_notes (collection_id);
 
 --This table holds the location and basic metadata information for notes meeting the AZGS standard
 CREATE TABLE notes.standard_notes (
@@ -30,6 +32,8 @@ CREATE TABLE notes.standard_notes (
 	note_comments text,
 	note_images integer[] --array of image_id's 
 );
+CREATE INDEX standard_notes_id_idx ON notes.standard_notes (standard_note_id);
+CREATE INDEX standard_notes_collection_id_idx ON notes.standard_notes (collection_id);
 
 --This table describes notes matching age estimates taken from field data. This schema only allows a single dating type U/Pb per entry. If an individual hand sample has more than one date type, then it should be listed as separate entries (i.e., diff entry_id), but the station_id in notes.standard_notes should be the same
 CREATE TABLE notes.standard_ages (
@@ -81,3 +85,6 @@ CREATE TABLE notes.metadata
 	collection_id integer REFERENCES public.collections(collection_id) not null, 
 	metadata_file text not null
 );
+CREATE INDEX metadata_id_idx ON notes.metadata (metadata_id);
+CREATE INDEX metadata_collection_id_idx ON notes.metadata (collection_id);
+
