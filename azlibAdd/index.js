@@ -151,11 +151,11 @@ pwPromise.then((password) => {
 			process.exit(1);
 		});
 	}
-})
-.catch(() => {
+}).then(() => {
+	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
+}).catch(() => {
 	pgp.end();
-})
-.then(() => {
+}).then(() => {
 	pgp.end();
 });
 
@@ -359,8 +359,8 @@ function processCollection(collection)  {
 		//Update uploads record with finish
 		return db.none("update public.uploads set collection_id = " + collection.collectionID + ", completed_at = current_timestamp where upload_id=" + collection.uploadID)
 		.catch(error => {throw new Error(error);});
-	}).then(() => {
-		return db.none("vacuum analyze").catch(error => {throw new Error(error);});
+	//}).then(() => {
+	//	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
 		//return fs.remove(source);
 		return Promise.resolve(); //leave dir for testing
