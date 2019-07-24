@@ -151,8 +151,6 @@ pwPromise.then((password) => {
 			process.exit(1);
 		});
 	}
-}).then(() => {
-	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 }).catch(() => {
 	pgp.end();
 }).then(() => {
