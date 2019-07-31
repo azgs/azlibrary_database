@@ -1,3 +1,8 @@
+create table public.version (
+	version integer
+);
+insert into public.version (version) values (1)
+
 --Create the collection_groups table. This table is for defining the overarching funding/project that a set of data collections were collected under - e.g, StateMap 2017, NGGDP 2018. All collections must be associated with a collection_group. For older collections belonging to an unknown project, use "unknown legacy project"
 CREATE TABLE collection_groups (
 	collection_group_id serial PRIMARY KEY,
@@ -105,7 +110,8 @@ CREATE TABLE uploads (
 	created_at timestamptz NOT NULL,
 	completed_at timestamptz,
 	failed_at timestamptz,
-	source text
+	source text,
+	processing_notes jsonb
 );
 
 create index uploads_id_index on public.uploads (upload_id);
