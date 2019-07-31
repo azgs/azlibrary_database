@@ -355,13 +355,28 @@ function processCollection(collection)  {
 		});
 	}).then(() => {
 		//Update uploads record with finish
-		return db.none("update public.uploads set collection_id = " + collection.collectionID + ", completed_at = current_timestamp where upload_id=" + collection.uploadID)
+		const updateSQL = `
+			update 
+				public.uploads 
+			set 
+				collection_id = $1, 
+				completed_at = current_timestamp,
+				processing_notes = $2
+			where 
+				upload_id=$3
+		`
+		const updateValues = [
+			collection.collectionID,
+			JSON.stringify(collection.processingNotes),
+			collection.uploadID
+		]
+		return db.none(updateSQL, updateValues)
 		.catch(error => {throw new Error(error);});
 	//}).then(() => {
 	//	return db.none("vacuum analyze").catch(error => {throw new Error(error);});
 	}).then(() => {
-		//return fs.remove(source);
-		return Promise.resolve(); //leave dir for testing
+		return fs.remove(source);
+		//return Promise.resolve(); //leave dir for testing
 	}).then(() => {
 		logger.info("successfully completed upload for collection_id " + collection.collectionID + " (perm_id = " + metadata.identifiers.perm_id + ")");
 		collection.result = "success"; 
@@ -394,6 +409,17 @@ function processCollection(collection)  {
 				return Promise.resolve();
 			}
 		}).then(() => {
+			logger.silly("Error: In update uploads section");
+			const update = collection.isNew ? 
+				"update public.uploads set failed_at = current_timestamp, processing_notes = $2 where upload_id = $1" :
+				"update public.uploads set collection_id = $3, failed_at = current_timestamp, processing_notes = $2 where upload_id = $1";
+			const updateParams = [
+				collection.uploadID,
+				JSON.stringify(collection.processingNotes),
+				collection.collectionID
+				];
+			return db.none(update, updateParams).catch(error => {logger.error("Problem updating failure in uploads: " + global.pp(error));});
+		}).then(() => {
 			//Then, handle failure reporting
 			logger.silly("Error: In failure handler section");
 			if (collection.isNew) {
@@ -402,19 +428,9 @@ function processCollection(collection)  {
 				collection.collectionID = null;
 			}
 			return require("./failure").process(collection, source).catch((error) => {
-				logger.error("Unable to create failure record and move collection to failure directory: " + global.pp(error));
+				logger.error("Unable to create failure file and move collection to failure directory: " + global.pp(error));
 				return Promise.resolve(); //return resolve so we can clean up global before rejecting to calling routine				
 			});
-		}).then(() => {
-			logger.silly("Error: In update uploads section");
-			const update = collection.isNew ? 
-				"update public.uploads set failed_at = current_timestamp where upload_id = $1" :
-				"update public.uploads set collection_id = $2, failed_at = current_timestamp where upload_id = $1";
-			const updateParams = [
-				collection.uploadID,
-				collection.collectionID
-			];
-			return db.none(update, updateParams).catch(error => {logger.error("Problem updating failure in uploads: " + global.pp(error));});
 		}).then(() => {
 			//Finally, clean up global and reject to calling routine
 			logger.silly("Error: In final section");
