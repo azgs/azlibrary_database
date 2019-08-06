@@ -16,7 +16,7 @@
     "fs-extra": "^6.0.1",
     "gdal": "^0.9.8",
     "mammoth": "^1.4.5",
-    "ogr2ogr": "git+ssh://git@github.com/NoisyFlowers/ogr2ogr.git#gdb-zip",
+    "ogr2ogr": "^1.4.0",
     "pdf-parse": "^1.0.8",
     "pg-large-object": "^2.0.0",
     "pg-promise": "^7.5.2",
