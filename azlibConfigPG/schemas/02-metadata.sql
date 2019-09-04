@@ -33,6 +33,8 @@ CREATE INDEX metadata_id_idx ON metadata.metadata (metadata_id);
 CREATE FUNCTION metadata.collections_trigger() RETURNS trigger AS $$
 declare
 	json_path text;
+	collection_group_query text;
+	collection_group_result integer;
 	title_query text;
 	title_result text;
 	informal_query text;
@@ -51,6 +53,22 @@ begin
 		json_data jsonb
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
+
+	collection_group_query := $cq$
+		select
+		 	cg.collection_group_id
+		from
+			public.collection_groups cg
+		where
+			cg.collection_group_name = (
+				select
+					json_data->'collection_group'->>'name'
+				from
+					tabletemp
+			)
+	$cq$; 
+	execute collection_group_query into collection_group_result;
+
 	title_query := $jq$
 		select 
 			json_data->>'title' 
@@ -82,6 +100,7 @@ begin
 	update 
 		public.collections
 	set
+		collection_group_id = collection_group_result,
 		formal_name = title_result,
 		informal_name = informal_result,
 		supersedes = supersedes_result,

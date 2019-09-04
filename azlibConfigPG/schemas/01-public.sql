@@ -1,7 +1,7 @@
 create table public.version (
 	version integer
 );
-insert into public.version (version) values (3);
+insert into public.version (version) values (4);
 
 --Create the collection_groups table. This table is for defining the overarching funding/project that a set of data collections were collected under - e.g, StateMap 2017, NGGDP 2018. All collections must be associated with a collection_group. For older collections belonging to an unknown project, use "unknown legacy project"
 CREATE TABLE collection_groups (
