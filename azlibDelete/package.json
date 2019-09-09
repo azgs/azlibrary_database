@@ -8,6 +8,9 @@
   },
   "author": "Douglas Meredith",
   "license": "Apache-2.0",
+  "bin": {
+    "azlibDelete": "./index.js"
+  },
   "dependencies": {
     "commander": "^3.0.1",
     "pg-promise": "^9.1.2",
