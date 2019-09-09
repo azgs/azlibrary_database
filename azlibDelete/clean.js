@@ -26,7 +26,7 @@ exports.prep = (collectionID, t) => {
 	}).then(result => {
 		const archive_id = result.archive_id;
 
-		return t.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id'")	
+		return t.any("select table_schema, table_name from information_schema.columns where column_name = 'collection_id' and table_name <> 'collections'")	
 		.then(tables => {
 
 			const dataTables = [];
@@ -59,12 +59,15 @@ exports.prep = (collectionID, t) => {
 				logger.info("data tables cleaned");
 				return Promise.resolve(archive_id);
 			});
+		}).then(archive_id => {
+			logger.silly("unlinking lo");
+			return t.one("select lo_unlink($1)", [archive_id]);
+		}).then(archive_id => {
+			logger.silly("deleting collections record");
+			return t.none("delete from public.collections where collection_id = $1", [collectionID]);
 		})
-	}).then(archive_id => {
-		logger.silly("unlinking lo");
-		return t.one("select lo_unlink($1)", [archive_id]);
 	}).catch(error => {
-		logger.error("One or more errors occurred during prep for collection_id " + collectionID + ".");
+		logger.error("One or more errors occurred during delete of collection_id " + collectionID + ".");
 		logger.error(global.pp(error));		
 		return Promise.reject(error);
 	});
