@@ -95,12 +95,18 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 					return Promise.reject(error);
 				})
 				.then(outFile => {
+					//Put the stuff from raster2pgsql into outFile, tweaking stuff along the way
 					return new Promise((resolve, reject) => {  
 						logger.silly("path = " + outFile.path);
 						const outStream = fs.createWriteStream(outFile.path);
 						const split = require("split");
 					  	p.stdout.pipe(split())
 						.on('data', line => {
+							//Clean up stuff we don't want to do inside a transaction
+							line = line.replace(/^BEGIN;$/, "");
+							line = line.replace(/^END;$/, "");
+							line = line.replace(/^VACUUM ANALYZE.*$/, "");
+							//Add collection_id to each insert
 							let t=0;   
 							line = line.replace(/\(/g, match => {
 								t++;
@@ -120,16 +126,16 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 							reject();
 						}).resume();
 					}).then(() => {
-						return exec("psql postgres://" + args.username + ":" + args.password + "@localhost:5432/" + args.dbname + " -f " + outFile.path)
-						.catch((stderr) => {
+						//File is now a bunch of inserts. Run it through pg-promise
+						const QueryFile = require('pg-promise').QueryFile;
+						const rastSQLFile =  new QueryFile(outFile.path);
+						return db.any(rastSQLFile)
+						.catch((err) => {
 							logger.error("Problem importing raster from tmp file"); logger.error(stderr);
-							return Promise.reject(stderr);
+							return Promise.reject(err);
 						});
 					});
-
 				});	
-
-		
 			}).catch(error => {
 				logger.error("Problem processing raster " + file + ": " + global.pp(error));
 				return Promise.reject(error);
