@@ -34,16 +34,10 @@ exports.upload = (metadata, collectionID, db) => {
 			return Promise.reject("Invalid bounding box in metadata");
 		}
 
-
 		const metadataInsert = 
-			"insert into metadata.azgs (collection_id, json_data, geom) values (" +
+			"insert into metadata.azgs (collection_id, json_data) values (" +
 			collectionID + ", $$" + 
-			JSON.stringify(metadata) + "$$, " +
-			"ST_MakeEnvelope(" + 
-				metadata.bounding_box.west + "," + 
-				metadata.bounding_box.south + "," + 
-				metadata.bounding_box.east + "," + 
-				metadata.bounding_box.north + ",4326))";
+			JSON.stringify(metadata) + "$$)";
 
 		logger.silly("insert = " + metadataInsert);
 
