@@ -1,7 +1,7 @@
 create table public.version (
 	version integer
 );
-insert into public.version (version) values (6);
+insert into public.version (version) values (7);
 
 -- User management
 create table if not exists public.roles (
