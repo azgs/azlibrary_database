@@ -23,7 +23,9 @@ global.args
 	.option('-U, --unrecOK', 'Indicates whether to allow unrecognized files in gdb schemas.')
 	.option('-l, --loglevel <loglevel>', 'Indicates logging level (error, warn, info, verbose, debug, silly). Default is info.', 'info')
 	.option('-r, --repeat', 'Indicates that the source directory contains multiple collections source directories.') 
+	.option('-a, --apioptions <apioptions>', 'JSON containing options (used internally from api server).') 
 	.parse(process.argv);
+
 
 /*
 console.log("source = " + args.source);
@@ -40,6 +42,11 @@ global.pp = (object) => {
 };
 
 const logger = require("./logger")(path.basename(__filename));
+
+global.apiOptions = {};
+if (global.args.apioptions) {
+ 	global.apiOptions = JSON.parse(global.args.apioptions);
+}
 
 logger.debug(global.pp(global.args));
 logger.debug(global.pp("global source = " + global.args.source));
@@ -175,15 +182,29 @@ function processCollection(collection)  {
 
 	let metadata;
 
-	//first, create upload record
-	logger.silly("Preparing to insert upload record");
-	const uploadsInsert = 
-		"insert into public.uploads (created_at, source) values (current_timestamp, $1) returning upload_id";
-	const uploadsParams = [
-		source
+	const userQ = 
+		"select user_id from users where email=$1";
+	const userParams = [
+		global.apiOptions.user
 	];
-	return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);})
-	.then((upload) => {
+	return db.oneOrNone(userQ, userParams).catch(error => {throw new Error(error);})
+	.then((user) => {
+		if (user === null) {
+			logger.warn("User not found. Proceeding anyway."); 
+		}
+
+		//first, create upload record
+		logger.silly("Preparing to insert upload record");
+		//TODO: add user and action to uploads table and set here. Also in metadata patch code of api.
+		const uploadsInsert = 
+			"insert into public.uploads (created_at, source, user_id, action) values (current_timestamp, $1, $2, $3) returning upload_id";
+		const uploadsParams = [
+			source,
+			user ? user.user_id : null,
+			global.apiOptions.action
+		];
+		return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
+	}).then((upload) => {
 		collection.uploadID = upload.upload_id;
 
 		//then read the metadata from azgs.json

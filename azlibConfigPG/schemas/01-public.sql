@@ -1,7 +1,7 @@
 create table public.version (
 	version integer
 );
-insert into public.version (version) values (7);
+insert into public.version (version) values (8);
 
 -- User management
 create table if not exists public.roles (
@@ -127,6 +127,7 @@ create trigger trig_make_perm_id
 		execute procedure make_perm_id();
 
 --This is the upload_log table, its purpose is to help keep track of what uploads have been attempted and whether they were successful, and whether they were removed if unsuccessfull
+create type actions as enum ('CREATE', 'REPLACE', 'PATCH', 'DELETE');
 CREATE TABLE uploads (
 	upload_id serial PRIMARY KEY,
 	collection_id integer REFERENCES collections(collection_id),
@@ -134,7 +135,9 @@ CREATE TABLE uploads (
 	completed_at timestamptz,
 	failed_at timestamptz,
 	source text,
-	processing_notes jsonb
+	processing_notes jsonb,
+	user_id integer references public.users(user_id),
+	action actions
 );
 
 create index uploads_id_index on public.uploads (upload_id);
