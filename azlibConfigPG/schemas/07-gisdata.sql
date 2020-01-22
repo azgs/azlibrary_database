@@ -50,6 +50,7 @@ CREATE TABLE gisdata.raster_types (
 );
 insert into gisdata.raster_types (type_name) values ('TIF');
 insert into gisdata.raster_types (type_name) values ('TIFF');
+insert into gisdata.raster_types (type_name) values ('GEOTIFF');
 
 
 
