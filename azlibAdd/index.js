@@ -251,7 +251,7 @@ function processCollection(collection)  {
 								collection_group_id = $6
 							returning collection_id, perm_id, (xmax=0) as inserted`;
 		const upsertParams = [
-			(global.args.private ? true : false),
+			(global.args.private || metadata.private ? true : false),
 			metadata.title,
 			metadata.informal_name,
 			azgs_old_url,
