@@ -1,7 +1,7 @@
 create table public.version (
 	version integer
 );
-insert into public.version (version) values (9);
+insert into public.version (version) values (10);
 
 -- User management
 create table if not exists public.roles (
@@ -13,7 +13,7 @@ insert into public.roles (name) values ('End User');
 
 create table if not exists public.users (
 	user_id serial PRIMARY KEY, 
-	email text not null, 
+	email text unique not null, 
 	password text not null, 
 	role_id integer references public.roles(role_id) not null default 2, --2 is End User
 	first_name text, 
