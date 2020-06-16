@@ -57,24 +57,23 @@ promise.then((password) => {
 		return Promise.resolve(); //We're done in this case
 	}
 
-	//TODO: Currently using the same template for ncgmp09 and gems. This is not accurate and will change in the future.
-	if (args.gdbschema.toLowerCase() === "ncgmp09" || args.gdbschema.toLowerCase() === "gems") {
-
-		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true, params: args.gdbschema});
-
-		return db.none(file).catch(error => {
-			console.log("Problem processing ncgmp09 template: ");console.log(error); 
+	//TODO: The gems sql file is a placeholder. Real one is in development.
+	const schemaFile = args.gdbschema.toLowerCase() === "ncgmp09" ?
+						"ncgmp09.sql" :
+						args.gdbschema.toLowerCase() === "gems" ?
+							"gems.sql" :
+							null;
+	if (schemaFile) {
+		const pgpFile = pgp.QueryFile(path.join(pathToMe, 'schemas', schemaFile), {minify: true, params: args.gdbschema});
+		return db.none(pgpFile).catch(error => {
+			console.log("Problem processing gdb template: ");console.log(error); 
 			throw new Error(error);
 		});
 	} else {
-		//TODO: Also using same template for everything else
-		const file = pgp.QueryFile(path.join(pathToMe, 'ncgmp09', 'ncgmp09.sql'), {minify: true, params: args.gdbschema});
-
-		return db.none(file).catch(error => {
-			console.log("Problem processing ncgmp09 template: ");console.log(error); 
-			throw new Error(error);
-		});
+		return Promise.reject("Unknown gdb schema type");
 	}
+	
+
 }).then(() => {
 	console.log("Schema created");
 	pgp.end();
