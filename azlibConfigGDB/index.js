@@ -62,8 +62,8 @@ promise.then((password) => {
 			//TODO: The gems sql file is a placeholder. Real one is in development.
 			const schemaFile = args.gdbschema.toLowerCase() === "ncgmp09" ?
 								"ncgmp09.sql" :
-								args.gdbschema.toLowerCase() === "gems" ?
-									"gems.sql" :
+								args.gdbschema.toLowerCase() === "gems2" ?
+									"gems2.sql" :
 									null;
 			if (schemaFile) {
 				const pgpFile = pgp.QueryFile(path.join(pathToMe, 'schemas', schemaFile), {minify: true, params: args.gdbschema});
