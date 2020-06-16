@@ -50,30 +50,32 @@ promise.then((password) => {
 	const cn = 'postgres://' + args.username + ':' + args.password + '@localhost:5432/' + args.dbname;
 	db = pgp(cn);
 
-	//create schema
-	return db.none('create schema ' + args.gdbschema).catch(error => {throw new Error(error);});
-}).then(() => {
-	if (args.create) {
-		return Promise.resolve(); //We're done in this case
-	}
+	return db.tx(t => {
 
-	//TODO: The gems sql file is a placeholder. Real one is in development.
-	const schemaFile = args.gdbschema.toLowerCase() === "ncgmp09" ?
-						"ncgmp09.sql" :
-						args.gdbschema.toLowerCase() === "gems" ?
-							"gems.sql" :
-							null;
-	if (schemaFile) {
-		const pgpFile = pgp.QueryFile(path.join(pathToMe, 'schemas', schemaFile), {minify: true, params: args.gdbschema});
-		return db.none(pgpFile).catch(error => {
-			console.log("Problem processing gdb template: ");console.log(error); 
-			throw new Error(error);
+		//create schema
+		return t.none('create schema ' + args.gdbschema).catch(error => {throw new Error(error);})
+		.then(() => {
+			if (args.create) {
+				return Promise.resolve(); //We're done in this case
+			}
+
+			//TODO: The gems sql file is a placeholder. Real one is in development.
+			const schemaFile = args.gdbschema.toLowerCase() === "ncgmp09" ?
+								"ncgmp09.sql" :
+								args.gdbschema.toLowerCase() === "gems" ?
+									"gems.sql" :
+									null;
+			if (schemaFile) {
+				const pgpFile = pgp.QueryFile(path.join(pathToMe, 'schemas', schemaFile), {minify: true, params: args.gdbschema});
+				return t.none(pgpFile).catch(error => {
+					console.log("Problem processing gdb template: ");console.log(error); 
+					throw new Error(error);
+				});
+			} else {
+				return Promise.reject("Unknown gdb schema type");
+			}
 		});
-	} else {
-		return Promise.reject("Unknown gdb schema type");
-	}
-	
-
+	});
 }).then(() => {
 	console.log("Schema created");
 	pgp.end();
@@ -83,6 +85,7 @@ promise.then((password) => {
 	pgp.end();
 	process.exit(1);
 });
+
 	
 			
 
