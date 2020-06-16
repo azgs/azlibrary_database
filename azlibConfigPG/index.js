@@ -58,7 +58,7 @@ pwPromise.then((password) => {
 	//TODO: Kind of cheesy to have to do this to get path to schemas folder. Is there a better way?
 	let pathToMe = require("global-modules-path").getPath("azlibConfigPG");
 
-	const schemas = pgp.utils.enumSql(pathToMe + '/schemas', {recursive: true}, file => {
+	const schemas = pgp.utils.enumSql(pathToMe + '/schemas', null, file => {
 		return new pgp.QueryFile(file, {minify: true});
 	});
 
