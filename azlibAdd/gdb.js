@@ -1,5 +1,55 @@
 const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
+const fs = require('fs-extra');
+
+extractGems = (dir, schemaName) => {
+	//extracts the gems zip, returning a promise that resolves with the extract dir path
+	logger.silly("extractGems enter");
+	//find the zip file...
+	const listZips = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory() && /\.zip$/i.test(f));
+	let zips = listZips(path.join(dir, schemaName));
+	logger.silly("zips = " + global.pp(zips));
+
+	if (zips.length === 0) {
+		return Promise.reject("No zip found for gems2");
+	} else if (zips.length > 1) {
+		return Promise.reject("Only one zip allowed for gems2");
+	} 
+
+	//...extract it...
+	const extractDir = path.join(dir, schemaName, zips[0].slice(0, -4));
+	logger.silly("extractDir = " + extractDir);
+	return new Promise((resolve, reject) => {
+		const StreamZip = require('node-stream-zip');
+		const zip = new StreamZip({
+			file: path.join(dir, schemaName, zips[0]),
+			storeEntries: true
+		});
+
+		zip.on('error', () => {return reject();});
+		zip.on('ready', () => {
+			fs.ensureDir(extractDir);
+			zip.extract(null, extractDir, (err, count) => {
+				logger.silly(err ? 'Extract error:' + global.pp(err) : `Extracted ${count} entries`);
+				zip.close();
+				logger.silly("resolving");
+				return resolve();
+			});
+		});
+	}).then(() => {
+		logger.silly("extract success");
+		//...find root dir of gems data...
+		const subs = fs.readdirSync(extractDir);
+		const gemsDir = subs.length === 1 ?
+			path.join(extractDir, subs[0]) :
+			extractDir;
+		//...resolve with path to the encapsulated gems data
+		return Promise.resolve(gemsDir);
+	}).catch(error => {
+		logger.error(global.pp(error));
+		throw error;
+	});
+}
 
 exports.upload = (dir, schemaName, collection, db) => {
 	logger.debug("enter with schemaName = " + schemaName);
@@ -15,13 +65,20 @@ exports.upload = (dir, schemaName, collection, db) => {
 	`)
 	.catch(error => {console.log("Schema " + schemaName + " does not exist.");return Promise.reject(error);})
 	.then(() => {
+		if ("gems2" === schemaName) {
+			logger.silly("schema is gems");
+			return extractGems(dir, schemaName);
+		} else {
+			logger.silly("schema is not gems");
+			//resolve with path to the data directory
+			return Promise.resolve(path.join(dir, schemaName));
+		}
+	}).then((dir) => {
+		logger.silly("dir = " + dir);
 
 		//Next, check for gdb directory
-		dir = dir + "/" + schemaName;
-		const fs = require('fs');
-		const path = require('path');
-
-		const listGDBs = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f));
+		const listGDBs = p => fs.readdirSync(p).filter(f => (!fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f)) ||
+															(fs.statSync(path.join(p, f)).isDirectory() && /\.gdb$/i.test(f)));
 		let gdbs = listGDBs(dir);
 		logger.silly("gdbs = " + global.pp(gdbs));
 
@@ -142,7 +199,7 @@ exports.upload = (dir, schemaName, collection, db) => {
 					WHERE 
 						table_schema = '${schemaName}' AND 
 						table_name = '${layer}' AND  
-						c.column_name NOT IN('OBJECTID')
+						c.column_name NOT IN('OBJECTID', 'feature_id')
 				`)
 				.catch((error) => {logger.error(global.pp(error)); throw error;})
 				.then((result) => {
