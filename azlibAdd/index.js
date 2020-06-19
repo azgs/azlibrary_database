@@ -73,6 +73,8 @@ const legalPaths = [
 	path.join("gisdata", "legacy", "metadata"),
 	path.join("gisdata", "ncgmp09"),
 	path.join("gisdata", "ncgmp09", "metadata"),
+	path.join("gisdata", "gems2"),
+	path.join("gisdata", "gems2", "metadata"),
 	path.join("gisdata", "raster"),
 	path.join("gisdata", "raster", "metadata")
 ]
