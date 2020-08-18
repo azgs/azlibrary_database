@@ -11,9 +11,9 @@ extractGems = (dir, schemaName) => {
 	logger.silly("zips = " + global.pp(zips));
 
 	if (zips.length === 0) {
-		return Promise.reject("No zip found for gems2");
+		return Promise.reject("No zip found for " + schemaName);
 	} else if (zips.length > 1) {
-		return Promise.reject("Only one zip allowed for gems2");
+		return Promise.reject("Only one zip allowed for " + schemaName);
 	} 
 
 	//...extract it...
@@ -65,13 +65,19 @@ exports.upload = (dir, schemaName, collection, db) => {
 	`)
 	.catch(error => {console.log("Schema " + schemaName + " does not exist.");return Promise.reject(error);})
 	.then(() => {
-		if ("gems2" === schemaName) {
-			logger.silly("schema is gems");
-			return extractGems(dir, schemaName);
-		} else {
-			logger.silly("schema is not gems");
+		const listGDBs = p => fs.readdirSync(p).filter(f => (!fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f)) ||
+															(fs.statSync(path.join(p, f)).isDirectory() && /\.gdb$/i.test(f)));
+		let gdbs = listGDBs(path.join(dir, schemaName));
+		if ("ncgmp09" === schemaName && gdbs.length > 0) {
+			//schema import is old-format ncgmp09
+			logger.silly("schema import is old-format ncgmp09");
 			//resolve with path to the data directory
 			return Promise.resolve(path.join(dir, schemaName));
+		} else {
+			//schema import format is gems
+			logger.silly("schema import format is gems");
+			//resolve with path extracted from gems zip
+			return extractGems(dir, schemaName);
 		}
 	}).then((dir) => {
 		logger.silly("dir = " + dir);
