@@ -1,7 +1,7 @@
 create table public.version (
 	version integer
 );
-insert into public.version (version) values (10);
+insert into public.version (version) values (12);
 
 -- User management
 create table if not exists public.roles (
@@ -38,7 +38,7 @@ INSERT INTO public.collection_groups (collection_group_name, collection_group_de
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Open File Reports', 'Since 1973, our most prolific publication series used to fast-track release of field investigations.  ', 'AOFR');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('US Bureau of Mines (I.C.)', 'Select Arizona-based USBM-Investigation Circular documents.', 'BMIC');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Information', 'Spatial data in Arc/INFO, ArcView, or ArcGIS data format.  ', 'AGDI');
-INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Troy L. PŽwŽ Environmental Geology Collection', 'Thematic environmental geology investigations of geologic hazards, landform, and groundwater maps for Phoenix, Arizona and environs.', 'PEGC');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Troy L. Péwé Environmental Geology Collection', 'Thematic environmental geology investigations of geologic hazards, landform, and groundwater maps for Phoenix, Arizona and environs.', 'PEGC');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geology - Fieldnotes Newsletters', 'Newsletter(s) of the Arizona Geological Survey - 1971 to the Present. Written for a general audience. ', 'AGFN');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Contributed Reports', 'Geologic reports drafted by non-AZGS geologists since January 1989. ', 'AGCR');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Contributed Maps', 'Geologic maps produced by geologists not affiliated with AZGS.  ', 'AGCM');
