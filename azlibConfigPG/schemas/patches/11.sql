@@ -1,3 +1,5 @@
+update public.version set version=11;
+
 -- To correct bad characters in collection_group 5
 update 
 	public.collection_groups 
