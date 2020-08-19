@@ -43,6 +43,8 @@ declare
 	supersedes_result text;
 	superseded_by_query text;
 	superseded_by_result text;
+	private_query text;
+	private_result boolean;
 
 begin
 	--This approach feels janky, but it's the only way I've been able to query jsonb
@@ -97,6 +99,13 @@ begin
 	$sbq$; 
 	execute superseded_by_query into superseded_by_result;
 
+	private_query := $pq$
+		select 
+			cast(json_data->>'private' as boolean) 
+		from tabletemp
+	$pq$; 
+	execute private_query into private_result;
+
 	update 
 		public.collections
 	set
@@ -104,7 +113,8 @@ begin
 		formal_name = title_result,
 		informal_name = informal_result,
 		supersedes = supersedes_result,
-		superseded_by = superseded_by_result
+		superseded_by = superseded_by_result,
+		private = private_result
 	where
 		collection_id = new.collection_id;
 
