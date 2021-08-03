@@ -25,7 +25,7 @@
     "recursive-readdir": "^2.2.2",
     "serialize-error": "^3.0.0",
     "split": "^1.0.1",
-    "tar": "^4.4.8",
+    "tar": "^4.4.15",
     "textract": "^2.2.0",
     "tmp-promise": "^1.0.5",
     "winston": "^3.0.0",
