@@ -12,7 +12,7 @@
 		"azlibConfigPG": "./index.js"
 	},
 	"dependencies": {
-		"global-modules-path": "^2.0.0",
+		"global-modules-path": "^3.0.0",
 		"pg-promise": "^7.4.1",
 		"prompt": "^1.0.0"
 	}
