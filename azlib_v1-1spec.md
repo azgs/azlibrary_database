@@ -1,8 +1,6 @@
 # Draft Technical Specification for Version 1.1 of AZLib Database
 
 ## Table of Contents
-- [Draft Technical Specification for Version 1.1 of AZLib Database](#draft-technical-specification-for-version-11-of-azlib-database)
-  - [Table of Contents](#table-of-contents)
   - [Mandatory Changes](#mandatory-changes)
     - [Multi-branch Versioning](#multi-branch-versioning)
     - [Automate Upload to ScienceBase](#automate-upload-to-sciencebase)
@@ -21,9 +19,9 @@
 ## Mandatory Changes
 Mandatory changes are feature upgrades that were proposed in a National Geophysical and Geological Data Preservation Program Grant and agreed upon in the final scope of work. These must be completed by project end -- currently slated for end of May 2024.
 
-[ ] - [Multi-branch versioning](#multi-branch-versioning)
-[ ] - [Automate Upload to ScienceBase](#automate-upload-to-sciencebase)
-[ ] - [Refactor MineData Documents](#refactor-minedata-documents)
+- [ ] [Multi-branch versioning](#multi-branch-versioning)
+- [ ] [Automate Upload to ScienceBase](#automate-upload-to-sciencebase)
+- [ ] [Refactor MineData Documents](#refactor-minedata-documents)
 
 ### Multi-branch Versioning
 AZLIB has built-in functionality to track when new publications supersede older publications. The system currently has a very robust versioning system that explicitly allows new records to be classified as an edit of an existing record or the creation of a new record that supersedes a previous record. In other words, AZLIB is strong at tracking strictly linear progressions from a single predecessor publication to a single successor publication. However, AZGS has begun encountering situations where a predecessor article may be split into multiple successor articles (splitting) or where multiple preceding items may be compiled into a single superseding item (lumping). The most salient example of this is the split of a single map covering a large geographic area into multiple smaller maps, but this is not the only scenario where support for complex versioning is needed.
@@ -41,10 +39,10 @@ An "excludes" parameter needs to be added to the API so that items from this col
 ## Requested Changes
 Requested changes are features that have been heavily requested by end-users. These changes are not mandatory and may be impossible to implement within a reasonable expenditure of resources, but must be reasonably investigated.
 
-[ ] - [Ability to Preview Files](#ability-to-preview-files)
-[ ] - [Retain Form on Back](#retain-form-on-back)
-[ ] - [Bulk Download Options](#bulk-download-options)  
-[ ] - [Search Optimization](#inexct-text-search-and-optimize-search) 
+- [ ] [Ability to Preview Files](#ability-to-preview-files)
+- [ ] [Retain Form on Back](#retain-form-on-back)
+- [ ] [Bulk Download Options](#bulk-download-options)  
+- [ ] [Search Optimization](#inexct-text-search-and-optimize-search) 
 
 ### Ability To Preview Files
 Users want the ability to download individual files listed in the `files` section of a collection instead of having to download the entire zip of the collection. This change would strike at the very heart of the data model and versioning system and would potentially requires significant redesign of the system, but is by far the most requested change by both internal AZGS staff and external end-users. A thorough investigation of options is needed.
@@ -65,9 +63,9 @@ I've combined a variety of different search parameter upgrades here into one cat
 ## Unfinished Changes
 Unfinished changes are features that were partially implemented during version 1.0 development, but were left unfinished -- often times with unsightly "placeholders" left.
 
-[ ] - [Remove Rasters Route](#remove-rasters-route)
-[ ] - [NCMGP and GeMS Routes](#ncgmp-and-gems-routes)
-[ ] - [Revised Upload Form](#revised-upload-form)
+- [ ] [Remove Rasters Route](#remove-rasters-route)
+- [ ] [NCMGP and GeMS Routes](#ncgmp-and-gems-routes)
+- [ ] [Revised Upload Form](#revised-upload-form)
 
 ### Removve Rasters Route
 The original specification called for a route that could serve raster data directly. However, the AZGS has almost no data in this category. All traces of this route should simply be removed.
@@ -83,6 +81,6 @@ We currently have a temporary upload form that is functional, but operates compl
 ## Team Changes
 Team changes are features that have been heavily requested internally by AZGS geoinformatics team members. These changes are not mandatory and may be impossible to implement within a reasonable expenditure of resources, but must be reasonably investigated.
 
-[ ] - Redeploy dev environment server
-[ ] - Docker Container Deployment
-[ ] - Metadata Validation Scripts
+- [ ] Redeploy dev environment server
+- [ ] Docker Container Deployment
+- [ ] Metadata Validation Scripts
