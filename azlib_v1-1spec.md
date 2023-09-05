@@ -59,6 +59,7 @@ I've combined a variety of different search parameter upgrades here into one cat
 1. Ability to order results by publication year
 2. Ability to toggle exact vs. inexact text matching
 3. Explore optimizations for full-text search algorithms
+4. Support AND + OR syntax for keywords queries
 
 ## Unfinished Changes
 Unfinished changes are features that were partially implemented during version 1.0 development, but were left unfinished -- often times with unsightly "placeholders" left.
