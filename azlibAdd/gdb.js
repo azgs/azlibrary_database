@@ -95,7 +95,7 @@ exports.upload = (dir, schemaName, collection, db) => {
 		} 
 
 		//get list of layers in gdb
-		const gdal = require("gdal");
+		const gdal = require("gdal-async");
 		logger.silly(path.join(dir, gdbs[0]));
 		const dataset = gdal.open(path.join(dir, gdbs[0]));
 		const gdbLayers = dataset.layers.map((layer) => {
@@ -148,21 +148,40 @@ exports.upload = (dir, schemaName, collection, db) => {
 			//transaction. We pass a -c option here to tell it to create the schema but not load it.
 			//This allows us to trap possible schema errors in the incoming collection. Prior to this,
 			//ogr2ogr just kinda rolled with it.
-			const execStr = 'azlibConfigGDB -c -g ' + tmpSchema + ' -d ' +  args.dbname + ' -u ' + args.username + ' -p ' + args.password;
+			const execStr = 'azlibConfigGDB -l silly -c -g ' + tmpSchema + 
+				' -d ' +  args.dbname + 
+				' -u ' + args.username + 
+				' -p ' + args.password + 
+				" -h " + args.host +
+                		" -o " + args.port +
+                		(args.cert ? " -s " + args.cert : "");
 			logger.silly(execStr);
+
 			return exec(execStr)
-			.then(() => {
+			.then((stdio) => {
 				logger.silly("in ogr then");
+				logger.silly(args);
+				logger.silly("output from azlibConfigGDB: " + global.pp(stdio));
+
 				const ogrPromise = new Promise((resolve, reject) => {
 					ogr2ogr(dir + "/" + gdbs[0])
 					.format('PostgreSQL')
 					.project('EPSG:4326')
 					.timeout(50000)
 					.options(layers.concat(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO']))
-					.destination('PG:host=localhost user=' + args.username + ' password=' + args.password + ' dbname=' + args.dbname + ' schemas=' + tmpSchema)
+					.destination(
+						'PG:host=' + args.host +
+						' port=' +  args.port +
+						' user=' + args.username + 
+						' password=' + args.password +
+						' sslmode=verify-ca' +
+						' sslrootcert=' + args.cert + 
+						' dbname=' + args.dbname +
+						' active_schema=' + tmpSchema + 
+						' schemas=' + tmpSchema)
 					.exec(function(error, data) {
 						if (error) {
-							logger.silly("ogr fail");
+							logger.error(">>>>>ogr fail<<<<<");
 							reject(error);
 						} else {
 							logger.silly("ogr success");
