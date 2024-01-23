@@ -57,7 +57,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 				logger.warn("No metadata file found for raster file " + file);
 			}
 
-			const gdal = require("gdal");
+			const gdal = require("gdal-async");
 			const dataset = gdal.open(dir + "/" + file);
 			const srs = (dataset.srs ? dataset.srs.toProj4() : 'null');
 			const tileSize = dataset.rasterSize.x/10 + "x" + dataset.rasterSize.y/10;

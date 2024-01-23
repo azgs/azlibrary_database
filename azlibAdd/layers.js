@@ -126,7 +126,7 @@ function fetchExtent(collectionID, dir, file, db) {
 		//Use gdal to get extent and srs (from first layer)
 		try {
 			logger.silly("running gdal");
-			const gdal = require("gdal");
+			const gdal = require("gdal-async");
 			const dataset = gdal.open(dir + "/" + file);
 			const layer = dataset.layers.get(0); logger.silly("layer = " + global.pp(layer));
 			extent = layer.getExtent(); logger.silly("extent = " + global.pp(extent));

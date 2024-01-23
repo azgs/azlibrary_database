@@ -25,7 +25,7 @@ exports.upload = (dir, schemaName, collectionID, db) => {
 		let existingTables;
 		let newTables;
 		//Create list of layers in new gdb
-		const gdal = require("gdal");
+		const gdal = require("gdal-async");
 		//console.log(process.cwd() + "/" + dir + "/" + dirs[0]);
 		console.log(path.join(dir, dirs[0]));
 		//const dataset = gdal.open(process.cwd() + "/" + dir + "/" + dirs[0]);
