@@ -8,6 +8,7 @@
 const testMetadataQueries = false;
 
 const path = require("path");
+const fs = require("fs-extra");
 
 global.args = require('commander');
 
@@ -17,6 +18,9 @@ global.args
 	.option('-d, --dbname <dbname>', 'DB name. Required')
 	.option('-u, --username <username>', 'DB username. Required')
 	.option('-p, --password <password>', 'DB password (will be prompted if not included)')
+	.option('-h, --host <host>', 'Postgres host')
+	.option('-o, --port <port>', 'Postgres port')
+	.option('-c, --cert <cert>', 'SSL public cert for PG')
 	//.option('-g, --gdbschema <gdb-schema>', 'Geodatabase schema in DB. Required if source directory includes a geodatabase.')
 	.option('-P, --private', 'Indicates if this is a private collection.')
 	.option('-f, --failure_directory <failure_directory>', 'Directory to move failed uploads to. Default is to leave in source directory.')
@@ -48,7 +52,7 @@ if (global.args.apioptions) {
  	global.apiOptions = JSON.parse(global.args.apioptions);
 }
 
-logger.debug(global.pp(global.args));
+//logger.debug(global.pp(global.args));
 logger.debug(global.pp("global source = " + global.args.source));
 logger.debug(global.pp("failure_directory = " + global.args.failure_directory));
 
@@ -99,24 +103,43 @@ let pwPromise = new Promise((resolve) => {
 	}
 });
 
-const pgp = require("pg-promise")({
-	 //Initialization Options
-});
+//This routine is to facilitate db debugging. It is not necessary.
+const initOptions = {
+    error: function (error, e) {
+        if (e.cn) {
+            // A connection-related error;
+            //logger.debug("CN:", e.cn);
+            logger.debug("EVENT:", error.message);
+        }
+    }
+};
+const pgp = require("pg-promise")(initOptions);
 let db;
 
-
-
 pwPromise.then((password) => {
-
 	global.args.password = password;
 
-	const cn = 'postgres://' + global.args.username + ':' + global.args.password + '@localhost:5432/' + global.args.dbname;
-	db = pgp(cn);
+	let cn = {
+		user: global.args.username,
+		password: global.args.password,
+		host: global.args.host,
+		database: global.args.dbname,
+		port: global.args.port,
+	};
 
+	if (global.args.cert) {
+		cn.ssl = {
+			rejectUnauthorized: true,
+			ca: fs.readFileSync(global.args.cert).toString(),
+		};
+	}
+        //logger.silly(pp(cn));
+
+        db = pgp(cn);
+	
 	return require("./config").load(db)
 }).then(() => {
 	if (global.args.repeat) {
-		const fs = require('fs-extra');
 		if (!fs.existsSync(global.args.source)) {
 			logger.warn(global.args.source + " directory not found");
 			return Promise.reject(global.args.source + " directory not found");
@@ -160,8 +183,10 @@ pwPromise.then((password) => {
 			process.exit(1);
 		});
 	}
-}).catch(() => {
+}).catch((err) => {
+	logger.error(err);
 	pgp.end();
+	process.exitCode = 1;
 }).then(() => {
 	pgp.end();
 });
@@ -172,6 +197,7 @@ pwPromise.then((password) => {
 
 //const processCollection = (source) => {
 function processCollection(collection)  {
+	logger.debug("processCollection enter");
 	const source = path.join(global.args.source, collection.path);
 	logger.silly("source = " + source);
 
@@ -207,13 +233,14 @@ function processCollection(collection)  {
 		];
 		return db.one(uploadsInsert, uploadsParams).catch(error => {throw new Error(error);});
 	}).then((upload) => {
+		logger.silly("uploads insert successful, upload_id = " + upload.upload_id);
 		collection.uploadID = upload.upload_id;
 
 		//then read the metadata from azgs.json
 		return azgs.readMetadata(source);
 	}).then((md) => {
 		metadata = md;
-		logger.silly("metadata = " + global.pp(metadata));
+		logger.debug("metadata = " + global.pp(metadata));
 
 		//get collection_group_id using group specifed in metadata
 		return db.one("select collection_group_id from collection_groups where collection_group_name = $1", [metadata.collection_group.name]);
