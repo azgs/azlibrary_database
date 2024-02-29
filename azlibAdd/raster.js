@@ -75,7 +75,7 @@ exports.upload = (rootDir, intermediateDir, collectionID, db) => {
 			const util = require('util');
 			const exec = util.promisify(require('child_process').exec);
 		
-			return db.oneOrNone("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + srs + "')")
+			return db.oneOrNone("select min(srid) from public.spatial_ref_sys where auth_name='EPSG' and trim(proj4text) = trim('" + srs + "')")
 			.catch(error => {
 				logger.error("Problem getting srid: " + global.pp(error));
 				return Promise.reject(error);

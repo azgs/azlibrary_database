@@ -133,7 +133,7 @@ function fetchExtent(collectionID, dir, file, db) {
 			extent.srid = (layer.srs ? layer.srs.toProj4() : 'null'); logger.silly("layer.srs = " + layer.srs);
 
 			//convert srid string into actual srid			
-			db.one("select srid from public.spatial_ref_sys where trim(proj4text) = trim('" + extent.srid + "')")
+			db.one("select min(srid) from public.spatial_ref_sys where auth_name='EPSG' and trim(proj4text) = trim('" + extent.srid + "')")
 			.then((data) => {
 				extent.srid = (data === null ? null : data.srid);
 				logger.silly("getExtentPromise, extent.srid = " + extent.srid);
