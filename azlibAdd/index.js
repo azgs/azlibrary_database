@@ -103,6 +103,8 @@ let pwPromise = new Promise((resolve) => {
 	}
 });
 
+//const monitor = require('pg-monitor');
+
 //This routine is to facilitate db debugging. It is not necessary.
 const initOptions = {
     error: function (error, e) {
@@ -114,6 +116,7 @@ const initOptions = {
     }
 };
 const pgp = require("pg-promise")(initOptions);
+//monitor.attach(initOptions);
 let db;
 
 pwPromise.then((password) => {
@@ -434,6 +437,7 @@ function processCollection(collection)  {
 		return Promise.resolve();
 	}).catch(error => {
 		logger.info("Collection processing error. UploadID = " + collection.uploadID);
+		logger.error(pp(error));
 		collection.result = "failure";
 		const serializeError = require('serialize-error');
 		collection.processingNotes.push(serializeError(error));

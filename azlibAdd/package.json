@@ -20,6 +20,7 @@
     "ogr2ogr": "^1.4.0",
     "pdf-parse": "^1.0.8",
     "pg-large-object": "^2.0.0",
+    "pg-monitor": "^2.0.0",
     "pg-promise": "^11.5.4",
     "prompt": "^1.0.0",
     "recursive-readdir": "^2.2.2",
