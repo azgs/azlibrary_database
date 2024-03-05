@@ -13,6 +13,8 @@ exports.archive = (sourceDir, collectionID, tx) => {
 	const path = require("path");
 	const tar = require("tar");
 
+	const tmpDir = path.join(path.dirname(sourceDir), collectionID);
+
 	const oidQ = "select archive_id from public.collections where perm_id = $1";
 	return tx.one(oidQ, [collectionID]).then(result => {
 	//remove old large object if there is one
@@ -24,7 +26,6 @@ exports.archive = (sourceDir, collectionID, tx) => {
 	}).then(() => {
 	//tar/gz the collection and store in large object, returning oid
 		return fs.remove(path.join(sourceDir, "azgs.json")).then(() => {//remove azgs.json before archiving
-			const tmpDir = path.join(path.dirname(sourceDir), collectionID);
 			logger.silly("tmpDir = " + tmpDir);
 			return fs.ensureSymlink(sourceDir, tmpDir).then(() => { 
 		 		return man.createAndWritableStreamAsync(bufferSize)
@@ -62,7 +63,11 @@ exports.archive = (sourceDir, collectionID, tx) => {
 		});
 	}).catch(error => {
 		logger.error("Problem creating archive: " + global.pp(error));
-		return fs.remove(tmpDir).then(() => {return Promise.reject(error);});
+		return fs.ensureDir(tmpDir).then(() => {
+			return fs.remove(tmpDir).then(() => {return Promise.reject(error);});
+		}).catch( error => {
+			return Promise.reject(error);
+		});
 	});
 
 }
