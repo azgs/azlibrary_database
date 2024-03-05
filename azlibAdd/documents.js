@@ -39,7 +39,7 @@ exports.upload = (rootDir, collectionID, db) => {
 			return mID;
 		});
 
-		return db.tx(t => { //do insert inside a transaction
+		return db.task(t => { //We are already in a transaction, just group actions here
 
 			//Process each file
 			const inserts = files.map((file) => {
