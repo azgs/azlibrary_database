@@ -35,10 +35,10 @@ Create a system for automated synchronization of metadata records between AZLIB 
 ## Requested Changes
 Requested changes are features that have been heavily requested by end-users. These changes are not mandatory and may be impossible to implement within a reasonable expenditure of resources, but must be reasonably investigated.
 
-- [ ] [Ability to Preview Files](#ability-to-preview-files)
-- [ ] [Retain Form on Back](#retain-form-on-back)
+- [x] [Ability to Preview Files](#ability-to-preview-files)
+- [x] [Retain Form on Back](#retain-form-on-back)
 - [ ] [Bulk Download Options](#bulk-download-options)  
-- [ ] [Search Optimization](#inexct-text-search-and-optimize-search) 
+- [x] [Search Optimization](#inexct-text-search-and-optimize-search) 
 
 ### Ability To Preview Files
 Users want the ability to download individual files listed in the `files` section of a collection instead of having to download the entire zip of the collection. This change would strike at the very heart of the data model and versioning system and would potentially requires significant redesign of the system, but is by far the most requested change by both internal AZGS staff and external end-users. A thorough investigation of options is needed.
@@ -79,13 +79,15 @@ We currently have a temporary upload form that is functional, but operates compl
 Team changes are features that have been heavily requested internally by AZGS geoinformatics team members. These changes are not mandatory and may be impossible to implement within a reasonable expenditure of resources, but must be reasonably investigated.
 
 - [ ] [Refactor MineData Documents](#refactor-minedata-documents)
-- [ ] [Redeploy Servers](#redeploy-servers)
+- [x] [Redeploy Servers](#redeploy-servers)
 - [ ] [Metadata Validation Scripts](#metadata-validation-scripts)
 
 ### Refactor MineData Documents
-AZLIB currently serves data from two original sources: http://repository.azgs.az.gov (now decomissioned) and https://minedata.azgs.arizona.edu. Items from the latter source are currently placed in the `ADMMR` `collection_group` and can be identified by having a https://minedata.azgs.arizona.edu URL in the `AZGS_old` field of the `collections` table. Currently these are all marked as private so as not to overwhelm the search returns of the main AZLIB webpage (the ratio is 8:1).
+~~AZLIB currently serves data from two original sources: http://repository.azgs.az.gov (now decomissioned) and https://minedata.azgs.arizona.edu. Items from the latter source are currently placed in the `ADMMR` `collection_group` and can be identified by having a https://minedata.azgs.arizona.edu URL in the `AZGS_old` field of the `collections` table. Currently these are all marked as private so as not to overwhelm the search returns of the main AZLIB webpage (the ratio is 8:1).~~
 
-An "excludes" parameter needs to be added to the API so that items from this collection_group can be excluded by default. Depending on how this is exactly implemented, there will need to be a variety of coprresponding front-end changes. These could be as complex as spinning up an entirely separate minedata subdomain of the current https://library.azgs.arizona.edu interface, but simpler solutions should be explored.
+~~An "excludes" parameter needs to be added to the API so that items from this collection_group can be excluded by default. Depending on how this is exactly implemented, there will need to be a variety of coprresponding front-end changes. These could be as complex as spinning up an entirely separate minedata subdomain of the current https://library.azgs.arizona.edu interface, but simpler solutions should be explored.~~
+
+> This task has been moved to version 1.2 work spec (June 2025 due date).
 
 ### Redeploy Servers
 At a minimum we need to blow away and then recreate the dev environment. Its database and pretty much everything else is *behind* rather than ahead of master. More ambitiously, we should consider moving both prod and dev into CCI early.
