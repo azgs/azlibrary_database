@@ -177,7 +177,7 @@ CREATE TABLE "OrientationPoints" (
     "IdentityConfidence" text,
     "OrientationConfidenceDegrees" double precision,
     "PlotAtScale" double precision,
-    "StationID" text,
+    "StationsID" text,
     "MapUnit" text,
     "LocationSourceID" text,
     "OrientationSourceID" text,

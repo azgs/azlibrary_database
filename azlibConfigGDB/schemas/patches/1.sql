@@ -1,0 +1,1 @@
+ALTER TABLE gems2."OrientationPoints" RENAME COLUMN "StationID" TO "StationsID"
