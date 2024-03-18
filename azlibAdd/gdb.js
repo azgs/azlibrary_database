@@ -2,55 +2,6 @@ const path = require("path");
 const logger = require("./logger")(path.basename(__filename));
 const fs = require('fs-extra');
 
-extractGems = (dir, schemaName) => {
-	//extracts the gems zip, returning a promise that resolves with the extract dir path
-	logger.silly("extractGems enter");
-	//find the zip file...
-	const listZips = p => fs.readdirSync(p).filter(f => !fs.statSync(path.join(p, f)).isDirectory() && /\.zip$/i.test(f));
-	let zips = listZips(path.join(dir, schemaName));
-	logger.silly("zips = " + global.pp(zips));
-
-	if (zips.length === 0) {
-		return Promise.reject("No zip found for " + schemaName);
-	} else if (zips.length > 1) {
-		return Promise.reject("Only one zip allowed for " + schemaName);
-	} 
-
-	//...extract it...
-	const extractDir = path.join(dir, schemaName, zips[0].slice(0, -4));
-	logger.silly("extractDir = " + extractDir);
-	return new Promise((resolve, reject) => {
-		const StreamZip = require('node-stream-zip');
-		const zip = new StreamZip({
-			file: path.join(dir, schemaName, zips[0]),
-			storeEntries: true
-		});
-
-		zip.on('error', () => {return reject();});
-		zip.on('ready', () => {
-			fs.ensureDir(extractDir);
-			zip.extract(null, extractDir, (err, count) => {
-				logger.silly(err ? 'Extract error:' + global.pp(err) : `Extracted ${count} entries`);
-				zip.close();
-				logger.silly("resolving");
-				return resolve();
-			});
-		});
-	}).then(() => {
-		logger.silly("extract success");
-		//...find root dir of gems data...
-		const subs = fs.readdirSync(extractDir);
-		const gemsDir = subs.length === 1 ?
-			path.join(extractDir, subs[0]) :
-			extractDir;
-		//...resolve with path to the encapsulated gems data
-		return Promise.resolve(gemsDir);
-	}).catch(error => {
-		logger.error(global.pp(error));
-		throw error;
-	});
-}
-
 exports.upload = (dir, schemaName, collection, db) => {
 	logger.debug("enter with schemaName = " + schemaName);
 
@@ -65,28 +16,14 @@ exports.upload = (dir, schemaName, collection, db) => {
 	`)
 	.catch(error => {console.log("Schema " + schemaName + " does not exist.");return Promise.reject(error);})
 	.then(() => {
-		const listGDBs = p => fs.readdirSync(p).filter(f => (!fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f)) ||
-															(fs.statSync(path.join(p, f)).isDirectory() && /\.gdb$/i.test(f)));
-		let gdbs = listGDBs(path.join(dir, schemaName));
-		if ("ncgmp09" === schemaName && gdbs.length > 0) {
-			//schema import is old-format ncgmp09
-			logger.silly("schema import is old-format ncgmp09");
-			//resolve with path to the data directory
-			return Promise.resolve(path.join(dir, schemaName));
-		} else {
-			//schema import format is gems
-			logger.silly("schema import format is gems");
-			//resolve with path extracted from gems zip
-			return extractGems(dir, schemaName);
-		}
-	}).then((dir) => {
-		logger.silly("dir = " + dir);
+		const schemaDir = path.join(dir, schemaName);
+		logger.silly("schemaDir = " + schemaDir)
 
-		//Next, check for gdb directory
-		const listGDBs = p => fs.readdirSync(p).filter(f => (!fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f)) ||
-															(fs.statSync(path.join(p, f)).isDirectory() && /\.gdb$/i.test(f)));
-		let gdbs = listGDBs(dir);
-		logger.silly("gdbs = " + global.pp(gdbs));
+		const listGDBs = p => fs.readdirSync(p).filter(f => 
+			(!fs.statSync(path.join(p, f)).isDirectory() && /\.gdb\.zip$/i.test(f)) ||
+			(fs.statSync(path.join(p, f)).isDirectory() && /\.gdb$/i.test(f)));
+		let gdbs = listGDBs(schemaDir);
+		logger.silly("gdbs = " + global.pp(gdbs))
 
 		if (gdbs.length === 0) {
 			return Promise.reject("No gdb directory found");
@@ -96,8 +33,8 @@ exports.upload = (dir, schemaName, collection, db) => {
 
 		//get list of layers in gdb
 		const gdal = require("gdal-async");
-		logger.silly(path.join(dir, gdbs[0]));
-		const dataset = gdal.open(path.join(dir, gdbs[0]));
+		logger.silly(path.join(schemaDir, gdbs[0]));
+		const dataset = gdal.open(path.join(schemaDir, gdbs[0]));
 		const gdbLayers = dataset.layers.map((layer) => {
 			return layer.name;
 		});
@@ -163,22 +100,18 @@ exports.upload = (dir, schemaName, collection, db) => {
 				logger.silly(args);
 				logger.silly("output from azlibConfigGDB: " + global.pp(stdio));
 
+				const destStr = `PG:host=${args.host} port=${args.port} user=${args.username} password=${args.password} ${args.cert ? `sslmode=verify-ca sslrootcert=${args.cert}` : ''} dbname=${args.dbname} active_schema=${tmpSchema} schemas=${tmpSchema} `;
+				logger.silly("destStr = " + destStr);
+
 				const ogrPromise = new Promise((resolve, reject) => {
-					ogr2ogr(dir + "/" + gdbs[0])
+					ogr2ogr(schemaDir + "/" + gdbs[0])
 					.format('PostgreSQL')
 					.project('EPSG:4326')
 					.timeout(50000)
 					.options(layers.concat(['-lco', 'GEOMETRY_NAME=geom', '-lco', 'LAUNDER=NO']))
 					.destination(
-						'PG:host=' + args.host +
-						' port=' +  args.port +
-						' user=' + args.username + 
-						' password=' + args.password +
-						' sslmode=verify-ca' +
-						' sslrootcert=' + args.cert + 
-						' dbname=' + args.dbname +
-						' active_schema=' + tmpSchema + 
-						' schemas=' + tmpSchema)
+						destStr
+					)
 					.exec(function(error, data) {
 						if (error) {
 							logger.error(">>>>>ogr fail<<<<<");
@@ -242,7 +175,6 @@ exports.upload = (dir, schemaName, collection, db) => {
 
 					//Then use that string to copy the columns we need (all but OBJECTID) into the destination table
 					//Note: This will blow up if there is a mismatch between the source and destination columns.
-					//That's ok.
 					return db.none(`
 						insert into ${schemaName}."${layer}"
 							(${columns})
@@ -253,11 +185,59 @@ exports.upload = (dir, schemaName, collection, db) => {
 					});
 				});
 			});
+
 			return Promise.all(copyPromises)
 			.catch(error => {
 				logger.error("Problem copying schema: " + global.pp(error));
 				return Promise.reject(error);
 			}).then(() => {return Promise.resolve()});
+
+			/*
+			//Note: This is a sequential executing version of the previous code.
+			//Not sure it's needed, and not sure it's correctly implemented. 
+			//I'll ghost it here for a while in case we need it. 
+			return layers.reduce((promiseChain, layer) => {
+				logger.silly("copying " + layer);
+
+				//Get list of column names in destination schema. This is a bit of postgres-fu.
+				return db.any(`
+					SELECT 
+						c.column_name
+					FROM 
+						information_schema.columns AS c
+					WHERE 
+						table_schema = '${schemaName}' AND 
+						table_name = '${layer}' AND  
+						c.column_name NOT IN('OBJECTID', 'feature_id')
+				`)
+				.catch((error) => {logger.error(global.pp(error)); throw error;})
+				.then((result) => {
+					logger.silly(layer + " column query result = " + global.pp(result));
+
+					//Build a string from the columns
+					const columns = result.reduce((acc, column, idx) => {
+						if (idx === result.length-1) {
+							return acc + '"' + column.column_name + '"';
+						} else {
+							return acc + '"' + column.column_name + '",';
+						}
+					},'');
+					logger.silly(layer + " columns = " + global.pp(columns));
+
+					//Then use that string to copy the columns we need (all but OBJECTID) into the destination table
+					//Note: This will blow up if there is a mismatch between the source and destination columns.
+					return db.none(`
+						insert into ${schemaName}."${layer}"
+							(${columns})
+							select ${columns} from ${tmpSchema}."${layer}"
+					`).catch(error => {
+						logger.error("Aw man, can't copy " + layer + ". Error: " + global.pp(error)); 
+						return Promise.reject(error);
+					});
+				});
+			}, Promise.resolve());
+			*/
+
 		}).then ((layers) => {
 			logger.silly("In drop section");
 			return db.none(`drop schema if exists "${tmpSchema}" cascade`);
