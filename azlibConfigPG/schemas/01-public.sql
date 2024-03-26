@@ -75,6 +75,12 @@ CREATE TABLE publications (
 	mapjson json --json of map metadata
 );
 
+CREATE TABLE lineage (
+	lineage_id serial PRIMARY KEY,
+	collection text REFERENCES collections(perm_id), 
+	supersedes text unique references collections(perm_id)
+);
+
 --This is the collections, its purpose to to keep track of what collections have been entered and their relations
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE collections (
@@ -90,8 +96,6 @@ CREATE TABLE collections (
 	usgs_path text,
 	doi text,
 	archive_id oid,
-	supersedes text unique references collections(perm_id),
-	superseded_by text unique references collections(perm_id),
 	removed boolean not null default true
 );
 
