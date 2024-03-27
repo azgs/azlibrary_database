@@ -78,7 +78,8 @@ CREATE TABLE publications (
 CREATE TABLE lineage (
 	lineage_id serial PRIMARY KEY,
 	collection text REFERENCES collections(perm_id), 
-	supersedes text unique references collections(perm_id)
+	supersedes text references collections(perm_id),
+	UNIQUE (collection, supersedes)
 );
 
 --This is the collections, its purpose to to keep track of what collections have been entered and their relations
