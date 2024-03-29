@@ -134,5 +134,20 @@ set
 where
 	json_data->'identifiers'->'supersedes' is not null
 
+--This updates the metadata so superseded_by is an array. Only run this after trigger 
+--is updated. 
+update 
+    metadata.azgs
+set
+	json_data =
+	jsonb_set(
+		json_data,
+		'{identifiers,superseded_by}',
+        jsonb_build_array(json_data->'identifiers'->>'superseded_by'),
+        false)
+where
+	json_data->'identifiers'->'superseded_by' is not null
+
+
 */
 
