@@ -263,38 +263,35 @@ function processCollection(collection)  {
 			toPostgres: () => 'default'
 		};
 
-		//Upsert collection record
-		const insertSQL = `insert into public.collections (
-								private, 		
-								formal_name, 
-								informal_name, 
-								azgs_old_url, 
-								ua_library, 
-								collection_group_id, 
-								perm_id,
-								supersedes)
-							values ($1, $2, $3, $4, $5, $6, $7, $8)
-							on conflict (perm_id) do update set
-								private = $1,
-								formal_name = $2,
-								informal_name = $3,
-								azgs_old_url = $4,
-								ua_library = $5,
-								collection_group_id = $6
-							returning collection_id, perm_id, (xmax=0) as inserted`;
-		const upsertParams = [
-			(global.args.private || metadata.private ? true : false),
-			metadata.title,
-			metadata.informal_name,
-			azgs_old_url,
-			ua_library,
-			collection.collectionGroupID,
-			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT,
-			metadata.identifiers.supersedes
-		];
-
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
 		return db.tx((t) => {
+			//Upsert collection record
+			const insertSQL = `insert into public.collections (
+				private, 		
+				formal_name, 
+				informal_name, 
+				azgs_old_url, 
+				ua_library, 
+				collection_group_id, 
+				perm_id)
+			values ($1, $2, $3, $4, $5, $6, $7)
+			on conflict (perm_id) do update set
+				private = $1,
+				formal_name = $2,
+				informal_name = $3,
+				azgs_old_url = $4,
+				ua_library = $5,
+				collection_group_id = $6
+			returning collection_id, perm_id, (xmax=0) as inserted`;
+			const upsertParams = [
+				(global.args.private || metadata.private ? true : false),
+				metadata.title,
+				metadata.informal_name,
+				azgs_old_url,
+				ua_library,
+				collection.collectionGroupID,
+				metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
+			];
 
 			return t.one(insertSQL, upsertParams).then((result) => {
 				logger.silly("Upserting...");
@@ -308,11 +305,41 @@ function processCollection(collection)  {
 				//If this is an update, rollback the old collection data
 				if (result.inserted) {
 					logger.debug("Inserted");
-					return Promise.resolve();
+					return Promise.resolve(collection);
 				} else {
 					logger.debug("Updated");
-					return clean.prep(collection.collectionID, t);
+					return clean.prep(collection.collectionID, t).then((collection) => Promise.resolve(collection));
 				}
+			}).then((collection) => {
+				//If there are no supersedes, skip this step
+				if (!metadata.identifiers.supersedes || metadata.identifiers.supersedes.length === 0) {
+					return Promise.resolve();
+				}
+
+				let lineageInsert = `insert into public.lineage (
+					collection,
+					supersedes
+				)
+				values
+				`;
+				const lineageValues = [];
+				metadata.identifiers.supersedes.forEach((supersedeVal, index, supersedeArr) => {
+					logger.silly("iterating supersedes " + index)
+					logger.silly(supersedeVal);
+					const valueIndex = index * 2;
+					lineageInsert = `${lineageInsert}
+						($${valueIndex+1}, $${valueIndex+2})`;
+					if (index < supersedeArr.length-1) {
+						lineageInsert = `${lineageInsert},`
+					}
+					lineageValues[valueIndex] = collection.perm_id; 
+					lineageValues[valueIndex+1] = supersedeVal;
+				})
+				logger.silly("lineageInsert = " + lineageInsert);
+				logger.silly("lineageValues = " + global.pp(lineageValues));
+		
+				return t.one(lineageInsert, lineageValues);
+
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
 
@@ -384,6 +411,7 @@ function processCollection(collection)  {
 					[oid, collection.collectionID]
 				).catch(error => {throw new Error(error);});
 			}).then(() => {
+				/*
 				//Deprecate old collection if necessary
 				if (metadata.identifiers.supersedes) {
 					return t.one(
@@ -404,6 +432,58 @@ function processCollection(collection)  {
 				} else {
 					return Promise.resolve();
 				}
+				*/
+
+
+				//Deprecate old collections if necessary
+				if (metadata.identifiers.supersedes && metadata.identifiers.supersedes > 0) {
+					return metadata.identifiers.supersedes.reduce((promiseChain, oldCollection) => {
+						return t.one(
+							`select 
+								c.collection_id,
+								count (l.collection) > 0 as superseded
+							from 
+								public.collections c
+								left join public.lineage l on l.supersedes = c.perm_id
+							where 
+								c.perm_id = $1 
+							group by c.collection_id`, 
+							[oldCollection]
+						).then((result) => {
+							let updateSQL;
+							if (result.superseded) { //add to superseded_by array
+								updateSQL =
+								`update 
+									metadata.azgs
+								set
+									json_data = jsonb_insert(
+										json_data, 
+										'{identifiers, superseded_by, 0}',
+										'"${collection.permID}"'
+									)
+								where
+									collection_id = $1`
+							} else { //create superseded_by array
+								updateSQL =
+								`update 
+									metadata.azgs
+								set
+									json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '["${collection.permID}"]')
+								where
+									collection_id = $1`
+							}
+
+							return t.none(
+								updateSQL,
+								[result.collection_id]);
+						}).catch(error => {throw new Error(error);});
+					}, Promise.resolve());
+
+				} else {
+					return Promise.resolve();
+				}
+
+
 			});
 		});
 	}).then(() => {
