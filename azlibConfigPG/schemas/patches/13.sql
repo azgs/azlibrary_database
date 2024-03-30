@@ -119,6 +119,23 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER collectionsUpdate BEFORE INSERT OR UPDATE
     ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.collections_trigger();
 
+alter table public.collections drop column supersedes;
+alter table public.collections drop column superseded_by;
+
+-- View to facilitate working with the lineage table
+create view
+	public.collections_lineage_status
+as
+	select 
+		c.*,
+		count(l1.supersedes) > 0 as superseded,
+		count (l2.collection) > 0 as supersedes
+	from 
+		public.collections c
+		left join public.lineage l1 on l1.supersedes = c.perm_id
+		left join public.lineage l2 on l2.collection = c.perm_id
+	group by c.collection_id;
+
 /*
 --This updates the metadata so supersedes is an array. Only run this after trigger 
 --is updated. 

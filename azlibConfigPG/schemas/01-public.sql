@@ -131,6 +131,21 @@ create trigger trig_make_perm_id
 	for each row
 		execute procedure make_perm_id();
 
+-- View to facilitate working with the lineage table
+create view
+	public.collections_lineage_status
+as
+	select 
+		c.*,
+		count(l1.supersedes) > 0 as superseded,
+		count (l2.collection) > 0 as supersedes
+	from 
+		public.collections c
+		left join public.lineage l1 on l1.supersedes = c.perm_id
+		left join public.lineage l2 on l2.collection = c.perm_id
+	group by c.collection_id;
+
+
 --This is the upload_log table, its purpose is to help keep track of what uploads have been attempted and whether they were successful, and whether they were removed if unsuccessfull
 create type actions as enum ('CREATE', 'REPLACE', 'PATCH', 'DELETE');
 CREATE TABLE uploads (
