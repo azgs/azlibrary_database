@@ -137,8 +137,10 @@ create view
 as
 	select 
 		c.*,
-		count(l1.supersedes) > 0 as superseded,
-		count (l2.collection) > 0 as supersedes
+		--count(l1.supersedes) > 0 as superseded,
+		--count (l2.collection) > 0 as supersedes
+		string_agg(l1.collection, ',') as superseded_by,
+		string_agg (l2.supersedes, ',') as supersedes
 	from 
 		public.collections c
 		left join public.lineage l1 on l1.supersedes = c.perm_id
