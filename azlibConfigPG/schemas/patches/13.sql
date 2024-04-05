@@ -110,7 +110,8 @@ begin
 		select 
 			json_data->'identifiers'->>'perm_id' as collection,
 			jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
-		from tabletemp;
+		from tabletemp
+    on conflict do nothing;
 
 	return new;
 end
@@ -124,7 +125,7 @@ alter table public.collections drop column superseded_by;
 
 -- View to facilitate working with the lineage table
 create view
-	public.collections_lineage_status
+	public.collections_lineage_view
 as
 	select 
 		c.*,

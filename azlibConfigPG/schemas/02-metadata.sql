@@ -125,7 +125,8 @@ begin
 		select 
 			json_data->'identifiers'->>'perm_id' as collection,
 			jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
-		from tabletemp;
+		from tabletemp
+	on conflict do nothing;
 
 	return new;
 end
