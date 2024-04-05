@@ -133,7 +133,7 @@ create trigger trig_make_perm_id
 
 -- View to facilitate working with the lineage table
 create view
-	public.collections_lineage_status
+	public.collections_lineage_view
 as
 	select 
 		c.*,
