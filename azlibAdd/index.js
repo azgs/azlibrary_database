@@ -310,36 +310,6 @@ function processCollection(collection)  {
 					logger.debug("Updated");
 					return clean.prep(collection.collectionID, t).then((collection) => Promise.resolve(collection));
 				}
-			}).then((collection) => {
-				//If there are no supersedes, skip this step
-				if (!metadata.identifiers.supersedes || metadata.identifiers.supersedes.length === 0) {
-					return Promise.resolve();
-				}
-
-				let lineageInsert = `insert into public.lineage (
-					collection,
-					supersedes
-				)
-				values
-				`;
-				const lineageValues = [];
-				metadata.identifiers.supersedes.forEach((supersedeVal, index, supersedeArr) => {
-					logger.silly("iterating supersedes " + index)
-					logger.silly(supersedeVal);
-					const valueIndex = index * 2;
-					lineageInsert = `${lineageInsert}
-						($${valueIndex+1}, $${valueIndex+2})`;
-					if (index < supersedeArr.length-1) {
-						lineageInsert = `${lineageInsert},`
-					}
-					lineageValues[valueIndex] = collection.perm_id; 
-					lineageValues[valueIndex+1] = supersedeVal;
-				})
-				logger.silly("lineageInsert = " + lineageInsert);
-				logger.silly("lineageValues = " + global.pp(lineageValues));
-		
-				return t.one(lineageInsert, lineageValues);
-
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
 
@@ -410,80 +380,6 @@ function processCollection(collection)  {
 					"update public.collections set archive_id = $1, removed = false where collection_id = $2",
 					[oid, collection.collectionID]
 				).catch(error => {throw new Error(error);});
-			}).then(() => {
-				/*
-				//Deprecate old collection if necessary
-				if (metadata.identifiers.supersedes) {
-					return t.one(
-						"select collection_id from public.collections where perm_id = $1", 
-						[metadata.identifiers.supersedes]).then((result) => {
-						//TODO: Using template variable for param to jsonb_set because I kept getting
-						//a syntax error from postgres when I tried to use pg-promise index variable.
-						//Maybe figure out why?
-						return t.none(
-							`update 
-								metadata.azgs
-							set
-								json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '"${collection.permID}"')
-							where
-								collection_id = $1`,
-							[result.collection_id]);
-					}).catch(error => {throw new Error(error);});
-				} else {
-					return Promise.resolve();
-				}
-				*/
-
-
-				//Deprecate old collections if necessary
-				if (metadata.identifiers.supersedes && metadata.identifiers.supersedes > 0) {
-					return metadata.identifiers.supersedes.reduce((promiseChain, oldCollection) => {
-						return t.one(
-							`select 
-								c.collection_id,
-								count (l.collection) > 0 as superseded
-							from 
-								public.collections c
-								left join public.lineage l on l.supersedes = c.perm_id
-							where 
-								c.perm_id = $1 
-							group by c.collection_id`, 
-							[oldCollection]
-						).then((result) => {
-							let updateSQL;
-							if (result.superseded) { //add to superseded_by array
-								updateSQL =
-								`update 
-									metadata.azgs
-								set
-									json_data = jsonb_insert(
-										json_data, 
-										'{identifiers, superseded_by, 0}',
-										'"${collection.permID}"'
-									)
-								where
-									collection_id = $1`
-							} else { //create superseded_by array
-								updateSQL =
-								`update 
-									metadata.azgs
-								set
-									json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '["${collection.permID}"]')
-								where
-									collection_id = $1`
-							}
-
-							return t.none(
-								updateSQL,
-								[result.collection_id]);
-						}).catch(error => {throw new Error(error);});
-					}, Promise.resolve());
-
-				} else {
-					return Promise.resolve();
-				}
-
-
 			});
 		});
 	}).then(() => {
