@@ -45,6 +45,56 @@ exports.upload = (metadata, collectionID, db) => {
 		.catch(error => {
 			logger.error("Problem inserting azgs metadata record: " + global.pp(error));
 			return Promise.reject("Problem inserting azgs metadata record. Error from DB: " + error);
+		}).then(() => {
+			//I've moved maintenance of metadata for previous collections here
+			//to keep metadata stuff together.
+			if (!metadata.identifiers.supersedes) {
+				return Promise.resolve();
+			}
+			//...if there were previous collections...
+			const previousPromises = metadata.identifiers.supersedes.map(
+				previousCollection => {
+					logger.info("previousCollection = " + previousCollection)
+					//...get identifiers from db then...
+					const identifiersSQL = `
+						select
+							c.collection_id,
+							m.json_data['identifiers'] as identifiers
+						from
+							metadata.azgs m,
+							public.collections c
+						where
+							c.collection_id = m.collection_id and
+							c.perm_id = $1
+					`;
+					return db.one(identifiersSQL, [
+						previousCollection
+					]).then((result) => {
+						//...update their superseded_by...
+						if (result.identifiers.superseded_by) {
+							result.identifiers.superseded_by.push(metadata.identifiers.perm_id)
+						} else {
+							result.identifiers.superseded_by = [metadata.identifiers.perm_id]; 
+						}	
+
+						const identifiersUpdateSQL = `
+							update
+								metadata.azgs
+							set
+								json_data['identifiers'] = $2::jsonb
+							where
+								collection_id = $1
+									
+						`
+						//...and write that change to metadata.azgs.
+						return db.none(identifiersUpdateSQL, [
+							result.collection_id,
+							JSON.stringify(result.identifiers)
+						]);
+					})
+				}
+			);
+			return Promise.all(previousPromises);
 		})
 		/*
 		.then(() => {
