@@ -82,6 +82,13 @@ CREATE TABLE lineage (
 	UNIQUE (collection, supersedes)
 );
 
+CREATE TABLE lineage_removed (
+	lineage_id integer PRIMARY KEY,
+	collection text REFERENCES collections(perm_id), 
+	supersedes text references collections(perm_id),
+	UNIQUE (collection, supersedes)
+);
+
 --This is the collections, its purpose to to keep track of what collections have been entered and their relations
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE collections (

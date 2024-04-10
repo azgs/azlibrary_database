@@ -1,7 +1,14 @@
-CREATE TABLE IF NOT EXISTS public.lineage (
+CREATE TABLE lineage (
 	lineage_id serial PRIMARY KEY,
-	collection text REFERENCES public.collections(perm_id), 
-	supersedes text unique references public.collections(perm_id)
+	collection text REFERENCES collections(perm_id), 
+	supersedes text references collections(perm_id),
+	UNIQUE (collection, supersedes)
+);
+
+CREATE TABLE if not exists lineage_removed (
+	lineage_id integer PRIMARY KEY,
+	collection text REFERENCES collections(perm_id), 
+	supersedes text references collections(perm_id),
 	UNIQUE (collection, supersedes)
 );
 
