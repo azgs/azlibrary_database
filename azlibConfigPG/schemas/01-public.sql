@@ -59,6 +59,11 @@ INSERT INTO public.collection_groups (collection_group_name, collection_group_de
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Maps (DM)', 'Thematic environmental geology maps and reports: - earth fissures, debris flows, and Holocene river maps', 'AGDM');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geology Magazine', 'A publication of the Arizona Geological Survey (AZGS)', 'GMAG');
 
+--For testing
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 01 - DO NOT USE', 'This collection group is for testing only', 'TST1');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 2 - DO NOT USE', 'This collection group is for testing only', 'TST2');
+
+
 
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.

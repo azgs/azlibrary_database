@@ -1,3 +1,7 @@
+--For testing
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 01 - DO NOT USE', 'This collection group is for testing only', 'TST1');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 2 - DO NOT USE', 'This collection group is for testing only', 'TST2');
+
 CREATE TABLE lineage (
 	lineage_id serial PRIMARY KEY,
 	collection text REFERENCES collections(perm_id), 
