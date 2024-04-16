@@ -39,10 +39,6 @@ declare
 	title_result text;
 	informal_query text;
 	informal_result text;
-	--supersedes_query text;
-	--supersedes_result text;
-	--superseded_by_query text;
-	--superseded_by_result text;
 	private_query text;
 	private_result boolean;
 
@@ -85,22 +81,6 @@ begin
 	$iq$; 
 	execute informal_query into informal_result;
 
-	--supersedes_query := $sq$
-	--	select 
-	--		--json_data->'identifiers'->'supersedes' 
-	--		json_data->'identifiers'->>'perm_id' as collection,
-	--		jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
-	--	from tabletemp
-	--$sq$; 
-	--execute supersedes_query into supersedes_result;
-
-	--superseded_by_query := $sbq$
-	--	select 
-	--		json_data->'identifiers'->>'superseded_by' 
-	--	from tabletemp
-	--$sbq$; 
-	--execute superseded_by_query into superseded_by_result;
-
 	private_query := $pq$
 		select 
 			cast(json_data->>'private' as boolean) 
@@ -114,8 +94,6 @@ begin
 		collection_group_id = collection_group_result,
 		formal_name = title_result,
 		informal_name = informal_result,
-		--supersedes = supersedes_result,
-		--superseded_by = superseded_by_result,
 		private = private_result
 	where
 		collection_id = new.collection_id;
