@@ -144,13 +144,14 @@ create trigger trig_make_perm_id
 		execute procedure make_perm_id();
 
 -- View to facilitate working with the lineage table
+--NOTE: the coalesce and filter are to get sql nulls when there is nothing
 create view
 	public.collections_lineage_view
 as
 	select 
 		c.*,
-		jsonb_agg(l1.collection) as superseded_by,
-		jsonb_agg (l2.supersedes) as supersedes
+  		coalesce(json_agg(l1.collection) filter (where l1.collection is not null), null)::jsonb AS superseded_by, 
+  		coalesce(json_agg(l2.supersedes) filter (where l2.supersedes is not null), null)::jsonb AS supersedes 
 	from 
 		public.collections c
 		left join public.lineage l1 on l1.supersedes = c.perm_id
