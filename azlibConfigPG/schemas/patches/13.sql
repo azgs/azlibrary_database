@@ -2,7 +2,7 @@
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 01 - DO NOT USE', 'This collection group is for testing only', 'TST1');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 2 - DO NOT USE', 'This collection group is for testing only', 'TST2');
 
-CREATE TABLE lineage (
+CREATE TABLE if not exists lineage (
 	lineage_id serial PRIMARY KEY,
 	collection text REFERENCES collections(perm_id), 
 	supersedes text references collections(perm_id),
@@ -35,10 +35,6 @@ declare
 	title_result text;
 	informal_query text;
 	informal_result text;
-	--supersedes_query text;
-	--supersedes_result text;
-	--superseded_by_query text;
-	--superseded_by_result text;
 	private_query text;
 	private_result boolean;
 
@@ -81,22 +77,6 @@ begin
 	$iq$; 
 	execute informal_query into informal_result;
 
-	--supersedes_query := $sq$
-	--	select 
-	--		--json_data->'identifiers'->'supersedes' 
-	--		json_data->'identifiers'->>'perm_id' as collection,
-	--		jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
-	--	from tabletemp
-	--$sq$; 
-	--execute supersedes_query into supersedes_result;
-
-	--superseded_by_query := $sbq$
-	--	select 
-	--		json_data->'identifiers'->>'superseded_by' 
-	--	from tabletemp
-	--$sbq$; 
-	--execute superseded_by_query into superseded_by_result;
-
 	private_query := $pq$
 		select 
 			cast(json_data->>'private' as boolean) 
@@ -110,8 +90,6 @@ begin
 		collection_group_id = collection_group_result,
 		formal_name = title_result,
 		informal_name = informal_result,
-		--supersedes = supersedes_result,
-		--superseded_by = superseded_by_result,
 		private = private_result
 	where
 		collection_id = new.collection_id;
@@ -131,17 +109,16 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER collectionsUpdate BEFORE INSERT OR UPDATE
     ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.collections_trigger();
 
-alter table public.collections drop column supersedes;
-alter table public.collections drop column superseded_by;
 
 -- View to facilitate working with the lineage table
+--NOTE: the coalesce and filter are to get sql nulls when there is nothing
 create view
 	public.collections_lineage_view
 as
 	select 
 		c.*,
-		jsonb_agg(l1.collection) as superseded_by,
-		jsonb_agg (l2.supersedes) as supersedes
+  		coalesce(json_agg(l1.collection) filter (where l1.collection is not null), null)::jsonb AS superseded_by, 
+  		coalesce(json_agg(l2.supersedes) filter (where l2.supersedes is not null), null)::jsonb AS supersedes 
 	from 
 		public.collections c
 		left join public.lineage l1 on l1.supersedes = c.perm_id
