@@ -45,6 +45,7 @@ exports.upload = (metadata, collectionID, db) => {
 		.catch(error => {
 			logger.error("Problem inserting azgs metadata record: " + global.pp(error));
 			return Promise.reject("Problem inserting azgs metadata record. Error from DB: " + error);
+		/*
 		}).then(() => {
 			//I've moved maintenance of metadata for previous collections here
 			//to keep metadata stuff together.
@@ -52,6 +53,7 @@ exports.upload = (metadata, collectionID, db) => {
 				return Promise.resolve();
 			}
 			//...if there were previous collections...
+			
 			const previousPromises = metadata.identifiers.supersedes.map(
 				previousCollection => {
 					logger.info("previousCollection = " + previousCollection)
@@ -95,6 +97,7 @@ exports.upload = (metadata, collectionID, db) => {
 				}
 			);
 			return Promise.all(previousPromises);
+		*/
 		})
 		/*
 		.then(() => {

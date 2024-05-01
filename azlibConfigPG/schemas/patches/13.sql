@@ -37,6 +37,10 @@ declare
 	informal_result text;
 	private_query text;
 	private_result boolean;
+	perm_id_query text;
+	perm_id_result jsonb;
+	supersedes_query text;
+	supersedes_result jsonb;
 
 begin
 	--This approach feels janky, but it's the only way I've been able to query jsonb
@@ -84,6 +88,21 @@ begin
 	$pq$; 
 	execute private_query into private_result;
 
+	perm_id_query := $peq$
+		select 
+			jsonb_build_array(json_data->'identifiers'->>'perm_id') 
+		from tabletemp
+	$peq$; 
+	execute perm_id_query into perm_id_result;
+
+	supersedes_query := $sq$
+		select 
+			json_data->'identifiers'->'supersedes' 
+		from tabletemp
+	$sq$; 
+	execute supersedes_query into supersedes_result;
+
+
 	update 
 		public.collections
 	set
@@ -101,6 +120,17 @@ begin
 			jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
 		from tabletemp
     on conflict do nothing;
+
+	--update superseded_by in other collections' metadata
+	update	
+		metadata.azgs
+	set
+		json_data = jsonb_set(json_data, '{identifiers, superseded_by}', coalesce(json_data->'identifiers'->'superseded_by', '[]') || perm_id_result, true)
+	where
+		json_data->'identifiers'->'perm_id' <@ supersedes_result and (
+			json_data->'identifiers'->'superseded_by' is null or
+			not json_data->'identifiers'->'superseded_by' @> perm_id_result
+		);
 
 	return new;
 end
