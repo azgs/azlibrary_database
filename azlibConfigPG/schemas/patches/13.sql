@@ -232,6 +232,8 @@ declare
 	deleted_supersedes_result jsonb;
 
 begin
+	------------------------------------------------------------------------------
+	--Stash new json_data in a temp table
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -241,6 +243,8 @@ begin
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
 
+	-----------------------------------------------------------------------------
+	--Gather all the data we need to do the work
 	collection_group_query := $cq$
 		select
 		 	cg.collection_group_id
@@ -303,6 +307,10 @@ begin
 	$dsq$; 
 	execute deleted_supersedes_query into deleted_supersedes_result;
 
+	-------------------------------------------------------------------------
+	--Now do the real work
+
+	--Update public.collections for this collection with from new json_data
 	update 
 		public.collections
 	set
@@ -313,6 +321,7 @@ begin
 	where
 		collection_id = new.collection_id;
 
+	--Add new records to public.lineage if there are new supersedes
 	insert into
 		public.lineage (collection, supersedes)
 		select 
@@ -321,6 +330,7 @@ begin
 		from tabletemp
     on conflict do nothing;
 
+	--Remove records from public.lineage if any supersedes were removed
 	with deleted_rows as (
 		delete from 
 			public.lineage l
@@ -334,7 +344,7 @@ begin
 		public.lineage_removed
 			select * from deleted_rows;
 
-	--update superseded_by in other collections' metadata
+	--If there are new supersedes, update superseded_by in those collections' metadata
 	update	
 		metadata.azgs
 	set
@@ -345,6 +355,7 @@ begin
 			not json_data->'identifiers'->'superseded_by' @> perm_id_result
 		);
 
+	--If supersedes were removed, update superseded_by in those collections' metadata
 	update	
 		metadata.azgs
 	set
