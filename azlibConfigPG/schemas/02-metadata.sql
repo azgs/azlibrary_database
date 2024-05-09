@@ -39,14 +39,18 @@ declare
 	title_result text;
 	informal_query text;
 	informal_result text;
-	supersedes_query text;
-	supersedes_result text;
-	superseded_by_query text;
-	superseded_by_result text;
 	private_query text;
 	private_result boolean;
+	perm_id_query text;
+	perm_id_result jsonb;
+	supersedes_query text;
+	supersedes_result jsonb;
+	deleted_supersedes_query text;
+	deleted_supersedes_result jsonb;
 
 begin
+	------------------------------------------------------------------------------
+	--Stash new json_data in a temp table
 	--This approach feels janky, but it's the only way I've been able to query jsonb
 	--in the "new" variable.
 	drop table if exists tabletemp;
@@ -56,6 +60,8 @@ begin
 	) on commit drop;
 	insert into tabletemp values(new.json_data);
 
+	-----------------------------------------------------------------------------
+	--Gather all the data we need to do the work
 	collection_group_query := $cq$
 		select
 		 	cg.collection_group_id
@@ -85,20 +91,6 @@ begin
 	$iq$; 
 	execute informal_query into informal_result;
 
-	supersedes_query := $sq$
-		select 
-			json_data->'identifiers'->>'supersedes' 
-		from tabletemp
-	$sq$; 
-	execute supersedes_query into supersedes_result;
-
-	superseded_by_query := $sbq$
-		select 
-			json_data->'identifiers'->>'superseded_by' 
-		from tabletemp
-	$sbq$; 
-	execute superseded_by_query into superseded_by_result;
-
 	private_query := $pq$
 		select 
 			cast(json_data->>'private' as boolean) 
@@ -106,17 +98,87 @@ begin
 	$pq$; 
 	execute private_query into private_result;
 
+	perm_id_query := $peq$
+		select 
+			jsonb_build_array(json_data->'identifiers'->>'perm_id') 
+		from tabletemp
+	$peq$; 
+	execute perm_id_query into perm_id_result;
+
+	supersedes_query := $sq$
+		select 
+			json_data->'identifiers'->'supersedes' 
+		from tabletemp
+	$sq$; 
+	execute supersedes_query into supersedes_result;
+
+	deleted_supersedes_query := $dsq$
+		select
+			jsonb_agg(l.supersedes)
+		from
+			public.lineage l
+			inner join tabletemp t on l.collection = t.json_data->'identifiers'->>'perm_id'
+		where 
+			--not l.supersedes <@ supersedes_result
+			not t.json_data->'identifiers'->'supersedes' ? l.supersedes
+	$dsq$; 
+	execute deleted_supersedes_query into deleted_supersedes_result;
+
+	-------------------------------------------------------------------------
+	--Now do the real work
+
+	--Update public.collections for this collection with from new json_data
 	update 
 		public.collections
 	set
 		collection_group_id = collection_group_result,
 		formal_name = title_result,
 		informal_name = informal_result,
-		supersedes = supersedes_result,
-		superseded_by = superseded_by_result,
 		private = private_result
 	where
 		collection_id = new.collection_id;
+
+	--Add new records to public.lineage if there are new supersedes
+	insert into
+		public.lineage (collection, supersedes)
+		select 
+			json_data->'identifiers'->>'perm_id' as collection,
+			jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
+		from tabletemp
+    on conflict do nothing;
+
+	--Remove records from public.lineage if any supersedes were removed
+	with deleted_rows as (
+		delete from 
+			public.lineage l
+		using tabletemp as t 
+		where
+			l.collection = t.json_data->'identifiers'->>'perm_id' and
+			deleted_supersedes_result ? l.supersedes
+		returning l.lineage_id, l.collection, l.supersedes
+	)
+	insert into 
+		public.lineage_removed
+			select * from deleted_rows;
+
+	--If there are new supersedes, update superseded_by in those collections' metadata
+	update	
+		metadata.azgs
+	set
+		json_data = jsonb_set(json_data, '{identifiers, superseded_by}', coalesce(json_data->'identifiers'->'superseded_by', '[]') || perm_id_result, true)
+	where
+		json_data->'identifiers'->'perm_id' <@ supersedes_result and (
+			json_data->'identifiers'->'superseded_by' is null or
+			not json_data->'identifiers'->'superseded_by' @> perm_id_result
+		);
+
+	--If supersedes were removed, update superseded_by in those collections' metadata
+	update	
+		metadata.azgs
+	set
+		json_data = jsonb_set(json_data, '{identifiers, superseded_by}', coalesce(json_data->'identifiers'->'superseded_by', '[]') - (perm_id_result->>0), true)
+	where
+		json_data->'identifiers'->'perm_id' <@ deleted_supersedes_result;
 
 	return new;
 end

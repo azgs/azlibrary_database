@@ -59,6 +59,11 @@ INSERT INTO public.collection_groups (collection_group_name, collection_group_de
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geological Survey Digital Maps (DM)', 'Thematic environmental geology maps and reports: - earth fissures, debris flows, and Holocene river maps', 'AGDM');
 INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Arizona Geology Magazine', 'A publication of the Arizona Geological Survey (AZGS)', 'GMAG');
 
+--For testing
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 01 - DO NOT USE', 'This collection group is for testing only', 'TST1');
+INSERT INTO public.collection_groups (collection_group_name, collection_group_desc, collection_group_abbrv) VALUES ('Test Group 2 - DO NOT USE', 'This collection group is for testing only', 'TST2');
+
+
 
 
 --Create the publications table. This table is for defining the publication associated with a set of data. Not all data will have been published - e.g., journal, book, field guide.
@@ -73,6 +78,20 @@ CREATE TABLE publications (
 	year smallint NOT NULL,
 	bibjson json, --json of publication metadata
 	mapjson json --json of map metadata
+);
+
+CREATE TABLE lineage (
+	lineage_id serial PRIMARY KEY,
+	collection text REFERENCES collections(perm_id), 
+	supersedes text references collections(perm_id),
+	UNIQUE (collection, supersedes)
+);
+
+CREATE TABLE lineage_removed (
+	lineage_id integer PRIMARY KEY,
+	collection text REFERENCES collections(perm_id), 
+	supersedes text references collections(perm_id),
+	UNIQUE (collection, supersedes)
 );
 
 --This is the collections, its purpose to to keep track of what collections have been entered and their relations
@@ -90,8 +109,6 @@ CREATE TABLE collections (
 	usgs_path text,
 	doi text,
 	archive_id oid,
-	supersedes text unique references collections(perm_id),
-	superseded_by text unique references collections(perm_id),
 	removed boolean not null default true
 );
 
@@ -125,6 +142,22 @@ create trigger trig_make_perm_id
 	on collections
 	for each row
 		execute procedure make_perm_id();
+
+-- View to facilitate working with the lineage table
+--NOTE: the coalesce and filter are to get sql nulls when there is nothing
+create view
+	public.collections_lineage_view
+as
+	select 
+		c.*,
+  		coalesce(json_agg(l1.collection) filter (where l1.collection is not null), null)::jsonb AS superseded_by, 
+  		coalesce(json_agg(l2.supersedes) filter (where l2.supersedes is not null), null)::jsonb AS supersedes 
+	from 
+		public.collections c
+		left join public.lineage l1 on l1.supersedes = c.perm_id
+		left join public.lineage l2 on l2.collection = c.perm_id
+	group by c.collection_id;
+
 
 --This is the upload_log table, its purpose is to help keep track of what uploads have been attempted and whether they were successful, and whether they were removed if unsuccessfull
 create type actions as enum ('CREATE', 'REPLACE', 'PATCH', 'DELETE');

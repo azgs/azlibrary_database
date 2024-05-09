@@ -263,38 +263,35 @@ function processCollection(collection)  {
 			toPostgres: () => 'default'
 		};
 
-		//Upsert collection record
-		const insertSQL = `insert into public.collections (
-								private, 		
-								formal_name, 
-								informal_name, 
-								azgs_old_url, 
-								ua_library, 
-								collection_group_id, 
-								perm_id,
-								supersedes)
-							values ($1, $2, $3, $4, $5, $6, $7, $8)
-							on conflict (perm_id) do update set
-								private = $1,
-								formal_name = $2,
-								informal_name = $3,
-								azgs_old_url = $4,
-								ua_library = $5,
-								collection_group_id = $6
-							returning collection_id, perm_id, (xmax=0) as inserted`;
-		const upsertParams = [
-			(global.args.private || metadata.private ? true : false),
-			metadata.title,
-			metadata.informal_name,
-			azgs_old_url,
-			ua_library,
-			collection.collectionGroupID,
-			metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT,
-			metadata.identifiers.supersedes
-		];
-
 		//Everything happens in a transaction. This way failures will be rolled back automatically.
 		return db.tx((t) => {
+			//Upsert collection record
+			const insertSQL = `insert into public.collections (
+				private, 		
+				formal_name, 
+				informal_name, 
+				azgs_old_url, 
+				ua_library, 
+				collection_group_id, 
+				perm_id)
+			values ($1, $2, $3, $4, $5, $6, $7)
+			on conflict (perm_id) do update set
+				private = $1,
+				formal_name = $2,
+				informal_name = $3,
+				azgs_old_url = $4,
+				ua_library = $5,
+				collection_group_id = $6
+			returning collection_id, perm_id, (xmax=0) as inserted`;
+			const upsertParams = [
+				(global.args.private || metadata.private ? true : false),
+				metadata.title,
+				metadata.informal_name,
+				azgs_old_url,
+				ua_library,
+				collection.collectionGroupID,
+				metadata.identifiers.perm_id ? metadata.identifiers.perm_id : DEFAULT
+			];
 
 			return t.one(insertSQL, upsertParams).then((result) => {
 				logger.silly("Upserting...");
@@ -308,10 +305,10 @@ function processCollection(collection)  {
 				//If this is an update, rollback the old collection data
 				if (result.inserted) {
 					logger.debug("Inserted");
-					return Promise.resolve();
+					return Promise.resolve(collection);
 				} else {
 					logger.debug("Updated");
-					return clean.prep(collection.collectionID, t);
+					return clean.prep(collection.collectionID, t).then((collection) => Promise.resolve(collection));
 				}
 			}).then(() => { //update files in metadata
 				const readDir = require("recursive-readdir");
@@ -383,27 +380,6 @@ function processCollection(collection)  {
 					"update public.collections set archive_id = $1, removed = false where collection_id = $2",
 					[oid, collection.collectionID]
 				).catch(error => {throw new Error(error);});
-			}).then(() => {
-				//Deprecate old collection if necessary
-				if (metadata.identifiers.supersedes) {
-					return t.one(
-						"select collection_id from public.collections where perm_id = $1", 
-						[metadata.identifiers.supersedes]).then((result) => {
-						//TODO: Using template variable for param to jsonb_set because I kept getting
-						//a syntax error from postgres when I tried to use pg-promise index variable.
-						//Maybe figure out why?
-						return t.none(
-							`update 
-								metadata.azgs
-							set
-								json_data = jsonb_set(json_data, '{identifiers, superseded_by}', '"${collection.permID}"')
-							where
-								collection_id = $1`,
-							[result.collection_id]);
-					}).catch(error => {throw new Error(error);});
-				} else {
-					return Promise.resolve();
-				}
 			});
 		});
 	}).then(() => {
