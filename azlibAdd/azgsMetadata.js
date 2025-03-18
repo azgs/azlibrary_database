@@ -34,6 +34,10 @@ exports.upload = (metadata, collectionID, db) => {
 			return Promise.reject("Invalid bounding box in metadata");
 		}
 
+		if (!/\d{4}/.test(metadata.year)) {
+			return Promise.reject("Invalid year in metadata");
+		}
+
 		const metadataInsert = 
 			"insert into metadata.azgs (collection_id, json_data) values (" +
 			collectionID + ", $$" + 
