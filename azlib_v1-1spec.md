@@ -21,7 +21,7 @@
 ## Mandatory Changes
 Mandatory changes are feature upgrades that were proposed in a National Geophysical and Geological Data Preservation Program Grant and agreed upon in the final scope of work. These must be completed by project end -- currently slated for end of May 2024.
 
-- [ ] [Multi-branch versioning](#multi-branch-versioning)
+- [x] [Multi-branch versioning](#multi-branch-versioning)
 - [ ] [Automate Upload to ScienceBase](#automate-upload-to-sciencebase)
 
 ### Multi-branch Versioning
@@ -60,7 +60,7 @@ I've combined a variety of different search parameter upgrades here into one cat
 ## Unfinished Changes
 Unfinished changes are features that were partially implemented during version 1.0 development, but were left unfinished -- often times with unsightly "placeholders" left.
 
-- [ ] [Remove Rasters Route](#remove-rasters-route)
+- [x] [Remove Rasters Route](#remove-rasters-route)
 - [ ] [NCMGP and GeMS Routes](#ncgmp-and-gems-routes)
 - [ ] [Revised Upload Form](#revised-upload-form)
 
@@ -79,8 +79,8 @@ We currently have a temporary upload form that is functional, but operates compl
 Team changes are features that have been heavily requested internally by AZGS geoinformatics team members. These changes are not mandatory and may be impossible to implement within a reasonable expenditure of resources, but must be reasonably investigated.
 
 - [ ] [Refactor MineData Documents](#refactor-minedata-documents)
-- [x] [Redeploy Servers](#redeploy-servers)
-- [ ] [Metadata Validation Scripts](#metadata-validation-scripts)
+- [ ] [Redeploy Servers](#redeploy-servers)
+- [ ] ~~[Metadata Validation Scripts](#metadata-validation-scripts)~~
 
 ### Refactor MineData Documents
 ~~AZLIB currently serves data from two original sources: http://repository.azgs.az.gov (now decomissioned) and https://minedata.azgs.arizona.edu. Items from the latter source are currently placed in the `ADMMR` `collection_group` and can be identified by having a https://minedata.azgs.arizona.edu URL in the `AZGS_old` field of the `collections` table. Currently these are all marked as private so as not to overwhelm the search returns of the main AZLIB webpage (the ratio is 8:1).~~
@@ -90,7 +90,10 @@ Team changes are features that have been heavily requested internally by AZGS ge
 > This task has been moved to version 1.2 work spec (June 2025 due date).
 
 ### Redeploy Servers
-At a minimum we need to blow away and then recreate the dev environment. Its database and pretty much everything else is *behind* rather than ahead of master. More ambitiously, we should consider moving both prod and dev into CCI early.
+~~At a minimum we need to blow away and then recreate the dev environment. Its database and pretty much everything else is *behind* rather than ahead of master. More ambitiously, we should consider moving both prod and dev into CCI early.~~
+
+We are required to redeploy our servers in Amazon Linux 2023 from AL2.
 
 ### Metadata Validation Scripts
-We need scripts or triggers that make sure the information in collections table matches the information in metadata.azgs.
+~~We need scripts or triggers that make sure the information in collections table matches the information in metadata.azgs.~~
+This is implicit in the design of the system. As we move away from the original bulk upload script workflow and only manipulate data through the API, there is really no method for the two to get out of sync.
