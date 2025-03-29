@@ -68,18 +68,19 @@ pwPromise.then(async (password) => {
 		database: args[0],
 		port: '5432',
 	};
-	conn.ssl = {
-		rejectUnauthorized: true,
-		ca: fs.readFileSync('global-bundle.pem').toString(),
-	};
+	if ("localhost" !== server) {
+		conn.ssl = {
+			rejectUnauthorized: true,
+			ca: fs.readFileSync('global-bundle.pem').toString(),
+		};
+	}
 
 	db = pgp(conn);
 	console.log("have db")
 	console.log(db)
 
 	//get old azgs link for each ADMM collection...
-	//return db.any(`
-	const results = await db.any(`
+	const oldLinks = await db.any(`
 		SELECT 
 			collection_id,
 			json_data->'identifiers'->>'perm_id' as perm_id,
@@ -92,15 +93,8 @@ pwPromise.then(async (password) => {
 			json_data->'identifiers'->>'perm_id' like 'ADMM%' and
 			arr.link_object->>'name' = 'AZGS old' and
 			arr.link_object->>'url' ~ '^https:\/\/minedata'	
-	`)/*
-	.catch(error => {
-		console.log("uhoh")
-		throw new Error(error);
-	});
-	*/
-	//console.log(results)
-	return results
-}).then(async (oldLinks) => {
+	`)
+
 	console.log("process oldLinks")
 	for (link of oldLinks) {
 		//console.log(link)
@@ -124,6 +118,9 @@ pwPromise.then(async (password) => {
 			} 
 
 			console.log("----------------------")
+			console.log(link.azgsurl);
+			console.log(link.collection_id)
+			console.log(link.perm_id)
 			console.log(resourceID);
 			console.log(collection);
 			console.log(startDate);
@@ -141,8 +138,14 @@ pwPromise.then(async (password) => {
 			console.log(link.json_data.mine_data)
 			console.log("----------------------\n\n")
 
-
-
+			await db.none(`
+				update
+					metadata.azgs
+				set
+					json_data = $1 
+				where 
+					collection_id = $2
+			`, [link.json_data, link.collection_id])
 
 		} catch (error) {
 			console.error(error.message);
