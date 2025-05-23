@@ -10,6 +10,10 @@ create table if not exists public.roles (
 );
 insert into public.roles (name) values ('Admin');
 insert into public.roles (name) values ('End User');
+insert into
+	public.roles (role_id, name)
+values
+	(73, 'Superuser');
 
 create table if not exists public.users (
 	user_id serial PRIMARY KEY, 
