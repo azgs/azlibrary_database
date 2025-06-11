@@ -99,7 +99,8 @@ pwPromise.then(async (password) => {
 	for (link of oldLinks) {
 		//console.log(link)
 		try {
-			const response = await fetch(link.azgsurl);
+			//Note: minedata url has been replaced with magazine url, due to DDOS attack on minedata.azgs.az.gov
+			const response = await fetch(link.azgsurl.replace('minedata', 'magazine'));
 			if (!response.ok) {
 				throw new Error(`Response status: ${response.status}`);
 			}
@@ -138,6 +139,8 @@ pwPromise.then(async (password) => {
 			console.log(link.json_data.mine_data)
 			console.log("----------------------\n\n")
 
+			/* 
+			//Test fetch before uncommenting update
 			await db.none(`
 				update
 					metadata.azgs
@@ -146,7 +149,7 @@ pwPromise.then(async (password) => {
 				where 
 					collection_id = $2
 			`, [link.json_data, link.collection_id])
-
+			*/
 		} catch (error) {
 			console.error(error.message);
 			console.error("     " + link.perm_id)
