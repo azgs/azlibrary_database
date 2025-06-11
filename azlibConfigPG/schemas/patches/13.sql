@@ -26,144 +26,6 @@ ALTER TABLE public.collections
 ALTER TABLE public.collections
     DROP COLUMN superseded_by;
 
-CREATE OR REPLACE FUNCTION metadata.collections_trigger() RETURNS trigger AS $$
-declare
-	json_path text;
-	collection_group_query text;
-	collection_group_result integer;
-	title_query text;
-	title_result text;
-	informal_query text;
-	informal_result text;
-	private_query text;
-	private_result boolean;
-	perm_id_query text;
-	perm_id_result jsonb;
-	supersedes_query text;
-	supersedes_result jsonb;
-	deleted_supersedes_query text;
-	deleted_supersedes_result jsonb;
-
-begin
-	--This approach feels janky, but it's the only way I've been able to query jsonb
-	--in the "new" variable.
-	drop table if exists tabletemp;
-	CREATE TEMP TABLE tabletemp 
-	( 
-		json_data jsonb
-	) on commit drop;
-	insert into tabletemp values(new.json_data);
-
-	collection_group_query := $cq$
-		select
-		 	cg.collection_group_id
-		from
-			public.collection_groups cg
-		where
-			cg.collection_group_name = (
-				select
-					json_data->'collection_group'->>'name'
-				from
-					tabletemp
-			)
-	$cq$; 
-	execute collection_group_query into collection_group_result;
-
-	title_query := $jq$
-		select 
-			json_data->>'title' 
-		from tabletemp
-	$jq$; 
-	execute title_query into title_result;
-
-	informal_query := $iq$
-		select 
-			json_data->>'informal_name' 
-		from tabletemp
-	$iq$; 
-	execute informal_query into informal_result;
-
-	private_query := $pq$
-		select 
-			cast(json_data->>'private' as boolean) 
-		from tabletemp
-	$pq$; 
-	execute private_query into private_result;
-
-	perm_id_query := $peq$
-		select 
-			jsonb_build_array(json_data->'identifiers'->>'perm_id') 
-		from tabletemp
-	$peq$; 
-	execute perm_id_query into perm_id_result;
-
-	supersedes_query := $sq$
-		select 
-			json_data->'identifiers'->'supersedes' 
-		from tabletemp
-	$sq$; 
-	execute supersedes_query into supersedes_result;
-
-	deleted_supersedes_query := $dsq$
-		select
-			l.supersedes
-		from
-			public.lineage l
-			inner join tabletemp t on l.collection = t.json_data->'identifiers'->>'perm_id'
-		where 
-			not l.supersedes in supersedes_result
-	$dsq$; 
-	execute deleted_supersedes_query into deleted_supersedes_result;
-
-	update 
-		public.collections
-	set
-		collection_group_id = collection_group_result,
-		formal_name = title_result,
-		informal_name = informal_result,
-		private = private_result
-	where
-		collection_id = new.collection_id;
-
-	insert into
-		public.lineage (collection, supersedes)
-		select 
-			json_data->'identifiers'->>'perm_id' as collection,
-			jsonb_array_elements_text(json_data->'identifiers'->'supersedes') as supersedes
-		from tabletemp
-    on conflict do nothing;
-
-	delete from 
-		public.lineage l
-	using tabletemp as t 
-	where
-		l.collection = t.json_data->'identifiers'->>'perm_id' and
-		l.supersedes in deleted_supersedes_result
-
-	--update superseded_by in other collections' metadata
-	update	
-		metadata.azgs
-	set
-		json_data = jsonb_set(json_data, '{identifiers, superseded_by}', coalesce(json_data->'identifiers'->'superseded_by', '[]') || perm_id_result, true)
-	where
-		json_data->'identifiers'->'perm_id' <@ supersedes_result and (
-			json_data->'identifiers'->'superseded_by' is null or
-			not json_data->'identifiers'->'superseded_by' @> perm_id_result
-		);
-
-	update	
-		metadata.azgs
-	set
-		jsonb_set(json_data, '{identifiers, superseded_by}', coalesce(json_data->'identifiers'->'superseded_by', '[]') - (perm_id_result->>0), true)
-	where
-		json_data->'identifiers'->'perm_id' <@ deleted_supersedes_result;
-
-	return new;
-end
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER collectionsUpdate BEFORE INSERT OR UPDATE
-    ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.collections_trigger();
 
 
 -- View to facilitate working with the lineage table
@@ -181,37 +43,7 @@ as
 		left join public.lineage l2 on l2.collection = c.perm_id
 	group by c.collection_id;
 
-/*
---This updates the metadata so supersedes is an array. Only run this after trigger 
---is updated. 
-update 
-    metadata.azgs
-set
-	json_data =
-	jsonb_set(
-		json_data,
-		'{identifiers,supersedes}',
-        jsonb_build_array(json_data->'identifiers'->>'supersedes'),
-        false)
-where
-	json_data->'identifiers'->'supersedes' is not null
 
---This updates the metadata so superseded_by is an array. Only run this after trigger 
---is updated. 
-update 
-    metadata.azgs
-set
-	json_data =
-	jsonb_set(
-		json_data,
-		'{identifiers,superseded_by}',
-        jsonb_build_array(json_data->'identifiers'->>'superseded_by'),
-        false)
-where
-	json_data->'identifiers'->'superseded_by' is not null
-
-
-*/
 
 CREATE OR REPLACE FUNCTION metadata.collections_trigger() RETURNS trigger AS $$
 declare
@@ -371,3 +203,36 @@ CREATE OR REPLACE TRIGGER collectionsUpdate BEFORE INSERT OR UPDATE
     ON metadata.azgs FOR EACH ROW EXECUTE PROCEDURE metadata.collections_trigger();
 
 
+/*
+--This updates the metadata so supersedes is an array. Only run this after trigger 
+--is updated. 
+update 
+    metadata.azgs
+set
+	json_data =
+	jsonb_set(
+		json_data,
+		'{identifiers,supersedes}',
+        jsonb_build_array(json_data->'identifiers'->>'supersedes'),
+        false)
+where
+	json_data->'identifiers'->'supersedes' is not null
+
+
+--TODO: skip this with new trigger?
+--This updates the metadata so superseded_by is an array. Only run this after trigger 
+--is updated. 
+update 
+    metadata.azgs
+set
+	json_data =
+	jsonb_set(
+		json_data,
+		'{identifiers,superseded_by}',
+        jsonb_build_array(json_data->'identifiers'->>'superseded_by'),
+        false)
+where
+	json_data->'identifiers'->'superseded_by' is not null
+
+
+*/
