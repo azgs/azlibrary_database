@@ -102,7 +102,11 @@ const doTheWork = async (args) => {
 				console.log("Directory created successfully, fetching files...");
 	
 				for (const url of row.tmp_fileURLs) {
-					await fetchFile(url, args[1] + "/" + row.mine_data.resource_id + "/" + url.split("/").pop())
+					const fileName = url.split("/").pop();
+					const dirPath = `${args[1]}/${row.mine_data.resource_id}/${fileName.endsWith(".pdf") ? "document" : "image"}`;
+					fs.mkdirSync(dirPath, { recursive: true }); // Ensure the directory exists
+					//await fetchFile(url, args[1] + "/" + row.mine_data.resource_id + "/" + url.split("/").pop())
+					await fetchFile(url, `${dirPath}/${fileName}`);
 				}
 				delete row.tmp_fileURLs; // Remove the temporary URLs after fetching files
 	
