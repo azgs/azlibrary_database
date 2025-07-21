@@ -6,35 +6,169 @@ const csv = require('fast-csv');
 //import csv from 'fast-csv';
 const { Readable } = require('stream');
 const { finished } = require('stream/promises');
+const {Downloader} = require("nodejs-file-downloader");
+const axios = require('axios');
+const { promisify } = require('util');
 
 const fetchFile = async (url, path) => {
 	console.log(`Fetching file from ${url}`);
 	console.log(`Saving to ${path}`);
-	try {
-		const response = await fetch(url);
-	
-		if (!response.ok) {
-			if (response.status !== 404) {
-				throw new Error(`Unexpected response: ${response.statusText}`);
-			} else {
-				console.log(`File not found at ${url}, skipping download.`);
-				return
+
+	let attempts = 1; // Number of attempts to fetch the file
+	while (attempts <= 5) { // Retry up to 3 times
+		try {
+			const response = await fetch(url);
+		
+			if (!response.ok) {
+				if (response.status !== 404) {
+					throw new Error(`Unexpected response: ${response.statusText}`);
+				} else {
+					console.log(`File not found at ${url}, skipping download.`);
+					//TODO: Determine what to do in this situation
+					return
+				}
 			}
+	
+			// Create a write stream to the output file
+			const writeStream = fs.createWriteStream(path);
+
+			// Convert the web stream body to a Node.js readable stream and pipe it
+			// to the write stream
+			await finished(Readable.fromWeb(response.body).pipe(writeStream));
+			attempts = 5; // Exit loop if download is successful
+			console.log(`File downloaded successfully to ${path}`);
+		} catch (error) {
+			//console.error('Download failed:', error);
+			console.error(`Attempt ${attempts}, error fetching file from ${url}:`, error.message);
+			//TODO: Determine what to do in this situation
+			attempts++;
 		}
-  
-		// Create a write stream to the output file
-		const writeStream = fs.createWriteStream(path);
-
-		// Convert the web stream body to a Node.js readable stream and pipe it
-		// to the write stream
-		await finished(Readable.fromWeb(response.body).pipe(writeStream));
-
-	  console.log(`File downloaded successfully to ${path}`);
-	} catch (error) {
-	  //console.error('Download failed:', error);
-	  console.error(`Error fetching file from ${url}:`, error.message);
 	}
 }
+
+const fetchFile2 = async (url, path, fileName) => {
+	console.log(`Fetching file from ${url} into ${path}/${fileName}`);
+	const downloader = new Downloader({
+		url: url,
+		directory: path,  
+		fileName: fileName,
+		cloneFiles: false,
+		maxAttempts: 3,
+		shouldStop: (error) => {
+			if (error.statusCode && error.statusCode === 404) {
+			  return true; 
+			}
+		  },
+	});
+	try {
+		const {filePath,downloadStatus} = await downloader.download(); 
+		console.log(`File downloaded with ${downloadStatus} to ${filePath}`);
+		downloadsSuccess.push(url);
+	} catch (error) {
+		console.log(`Download failed for ${url}`, error.message, error.statusCode, error.statusMessage);
+		if (error.statusCode === 404) {
+			downloads404.push(url);
+		} else {
+			downloadsError.push(url);
+		}
+		throw error
+	}
+}
+
+const fetchFile3 = async (url, path, fileName) => {
+	console.log(`Fetching file from ${url} into ${path}/${fileName}`);
+
+	const writer = fs.createWriteStream(`${path}/${fileName}`);
+
+	const response = await axios({
+		method: 'GET',
+		url: url,
+		responseType: 'stream',
+		timeout: 300000, // Set a timeout for the request
+		clarifyTimeoutError: true, // Clarify timeout errors
+	});
+
+	/*
+	if (response.status !== 200) {
+		if (response.status === 404) {
+			console.log(`File not found at ${url}, skipping download.`);
+			downloads404.push(url);
+			return;
+		} else {
+			console.error(`Unexpected response: ${response.statusText}`);
+			downloadsError.push(url);
+			throw new Error(`Unexpected response: ${response.statusText}`);
+		}
+	} else {}
+	*/
+
+	response.data.pipe(writer);
+	await finished(writer);
+}
+
+const fetchFile4 = async (url, path, fileName) => {
+	console.log(`Fetching file from ${url} into ${path}/${fileName}`);
+
+	const response = await axios({
+		method: 'GET',
+		url: url,
+		responseType: 'arraybuffer', // Use arraybuffer for binary data
+		timeout: 300000, // Set a timeout for the request
+		clarifyTimeoutError: true, // Clarify timeout errors
+	});
+
+	
+	if (response.status !== 200) {
+		if (response.status === 404) {
+			console.log(`File not found at ${url}, skipping download.`);
+			downloads404.push(url);
+			return;
+		} else {
+			console.error(`Unexpected response: ${response.statusText}`);
+			downloadsError.push(url);
+			throw new Error(`Unexpected response: ${response.statusText}`);
+		}
+	} else {
+		downloadsSuccess.push(url);
+
+	}
+	
+	const fileData = Buffer.from(response.data, 'binary');
+	await fs.writeFile(`${path}/${fileName}`, fileData);
+}
+
+const fetchFile5 = async (url, path, fileName) => {
+	console.log(`Fetching file from ${url} into ${path}/${fileName}`);
+
+	await axios({
+		method: 'GET',
+		url: url,
+		responseType: 'arraybuffer', // Use arraybuffer for binary data
+		timeout: 300000, // Set a timeout for the request
+		clarifyTimeoutError: true, // Clarify timeout errors
+	}).then(async response => {
+		const fileData = Buffer.from(response.data, 'binary');
+		await fs.writeFile(`${path}/${fileName}`, fileData);
+		downloadsSuccess.push(url);
+	}).catch(error => {	
+		console.log(`Error fetching file from ${url}:`, error.message);
+		if (error.response) {
+		if (error.response.status === 404) {
+			console.log(`File not found at ${url}, skipping download.`);
+			downloads404.push(url);
+			return;
+		} else {
+			console.error(`Unexpected response: ${error.response.status}, ${error.response.statusText}`);
+			downloadsError.push(url);
+			throw new Error(`Unexpected response: ${error.response.statusText}`);
+		}
+		}
+	})
+}
+
+const downloadsSuccess = [];
+const downloads404 = [];
+const downloadsError = [];
 
 const doTheWork = async (args) => {
 	const transformStream = csv.parse({ headers: true })
@@ -106,7 +240,8 @@ const doTheWork = async (args) => {
 					const dirPath = `${args[1]}/${row.mine_data.resource_id}/${fileName.endsWith(".pdf") ? "document" : "image"}`;
 					fs.mkdirSync(dirPath, { recursive: true }); // Ensure the directory exists
 					//await fetchFile(url, args[1] + "/" + row.mine_data.resource_id + "/" + url.split("/").pop())
-					await fetchFile(url, `${dirPath}/${fileName}`);
+					//await fetchFile(url, `${dirPath}/${fileName}`);
+					await fetchFile5(url, dirPath, fileName);
 				}
 				delete row.tmp_fileURLs; // Remove the temporary URLs after fetching files
 	
@@ -114,16 +249,43 @@ const doTheWork = async (args) => {
 				fs.writeFileSync(dirPath + "/azgs.json", JSON.stringify(row, null, 4));
 				console.log('Synchronous data written successfully!');
 			} catch (err) {
-				console.error('Error writing synchronously:', err);
+				console.error('Error writing synchronously:', err.message);
 			}
 			csvStream.resume(); // Resume the stream after processing the row
 		})
-		.on('end', rowCount => console.log(`Parsed ${rowCount} rows`));
-	
+		/*
+		.on('end', rowCount => {
+			console.log(`Parsed ${rowCount} rows`)
+			console.log("\n********************************************************")
+			console.log("Download successes:", downloadsSuccess.length)
+			console.log(downloadsSuccess.join(",\n"));
+			console.log("\n********************************************************")
+			console.log("Download 404s:", downloads404.length)
+			console.log(downloads404.join(",\n"));
+			console.log("\n********************************************************")
+			console.log("Download errors:", downloadsError.length)
+			console.log(downloadsError.join(",\n"));
+		});
+		*/
+		
+	console.log("/n/n********************************************************")
 	console.log("Processing file:", args[0]);
-	console.log("File content preview:", fs.readFileSync(args[0], 'utf-8').slice(0, 100)); // Print first 100 characters
+	//console.log("File content preview:", fs.readFileSync(args[0], 'utf-8').slice(0, 100)); // Print first 100 characters
 	const csvStream = fs.createReadStream(args[0])
 		.pipe(transformStream)
+		.on('end', rowCount => {
+			console.log(`Parsed ${rowCount} rows`)
+			console.log("\n********************************************************")
+			console.log("Download successes:", downloadsSuccess.length)
+			console.log(downloadsSuccess.join(",\n"));
+			console.log("\n********************************************************")
+			console.log("Download 404s:", downloads404.length)
+			console.log(downloads404.join(",\n"));
+			console.log("\n********************************************************")
+			console.log("Download errors:", downloadsError.length)
+			console.log(downloadsError.join(",\n"));
+		});
+
 }
 
 const args = process.argv.slice(2);
