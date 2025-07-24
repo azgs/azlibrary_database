@@ -5,8 +5,6 @@ const csv = require('fast-csv');
 //import fs from 'fs-extra';
 //import csv from 'fast-csv';
 const { Readable } = require('stream');
-const { finished } = require('stream/promises');
-const {Downloader} = require("nodejs-file-downloader");
 const axios = require('axios');
 const { promisify } = require('util');
 const { pipeline } = require('stream/promises');
