@@ -8,6 +8,7 @@ exports.readMetadata = (rootDir) => {
 
 	const path = require('path');
 	const azgsPath = path.join(rootDir, "azgs.json");
+	logger.silly("azgsPath = " + azgsPath);
 
 	//Verify that azgs.json exists
 	const fs = require('fs-extra');
@@ -34,7 +35,7 @@ exports.upload = (metadata, collectionID, db) => {
 			return Promise.reject("Invalid bounding box in metadata");
 		}
 
-		if (!/\d{4}/.test(metadata.year)) {
+		if (!/^\d{4}$/.test(metadata.year)) {
 			return Promise.reject("Invalid year in metadata");
 		}
 
