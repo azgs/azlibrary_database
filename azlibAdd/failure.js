@@ -11,7 +11,11 @@ exports.process = (collection, source) => {
 
 	return new Promise((resolve, reject) => {
 		if (!global.args.failure_directory) {
-			resolve();
+			return fs.remove(source).catch((error) => {
+				logger.error("Unable to remove failure source directory: " + global.pp(error));
+				return reject(error);
+			}
+			//resolve();
 		} else {
 			const dest = path.join(global.args.failure_directory, (collection.permID ? collection.permID + "-" : "") + collection.uploadID);
 			logger.silly("dest = " + dest);
