@@ -96,10 +96,20 @@ checks AS (
     WHERE (length(json_data->>'abstract')
            - length(replace(json_data->>'abstract', 'Please cite by using', ''))) / 20 > 1
 
-    UNION ALL SELECT 16, 'row count matches backup (nothing deleted)',
-        abs((SELECT count(*) FROM metadata.azgs)
-          - (SELECT count(*) FROM metadata.azgs_backup_normalize))
+    -- Tests that nothing was LOST, not that the counts match. Records created
+    -- while the migration runs are legitimate and land in a later batch, so a
+    -- count comparison false-alarms on them; check 17 reports them instead.
+    UNION ALL SELECT 16, 'no backed-up row is missing (nothing deleted)', count(*)
+    FROM metadata.azgs_backup_normalize b
+    LEFT JOIN metadata.azgs a USING (collection_id)
+    WHERE a.collection_id IS NULL
+
+    UNION ALL SELECT 17, 'INFO: rows created during the run (not in backup)', count(*)
+    FROM metadata.azgs a
+    LEFT JOIN metadata.azgs_backup_normalize b USING (collection_id)
+    WHERE b.collection_id IS NULL
 )
 SELECT n, assertion, violations,
-       CASE WHEN violations = 0 THEN 'PASS' ELSE 'FAIL' END AS result
+       CASE WHEN n = 17 THEN 'INFO'
+            WHEN violations = 0 THEN 'PASS' ELSE 'FAIL' END AS result
 FROM checks ORDER BY n;

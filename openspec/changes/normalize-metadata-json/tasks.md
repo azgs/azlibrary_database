@@ -109,16 +109,26 @@
       from the earlier reading (23,897 rows, 17,148 string years, 45
       `informalname`, max collection_id 32687). Read-only pre-flight against
       live prod data: 17/17 PASS, 23,897 rows would be rewritten.
-- [ ] 5.1 Schedule a maintenance window and notify consumers that the license
+- [x] 5.1 Schedule a maintenance window and notify consumers that the license
       string in `/metadata` and the ISO 19139 export changes from
       `CC BY-NC-SA 4.0` to `CC BY-SA 4.0`.
-- [ ] 5.2 Run the migration against `azlibrary`. Budget roughly 16-17 minutes
-      at `batch_size=500`, scaling dev's 15m27s by prod's 23,897 rows, and
-      expect it to vary with cluster load.
-- [ ] 5.3 Run the verification suite against `azlibrary`; every check returns
+- [x] 5.2 Run the migration against `azlibrary`. Completed 2026-11-12:
+      23,898 rows in 16m13s at `batch_size=500`. That is one more row than
+      the pre-flight predicted, because a record was created while the
+      migration ran and was normalized by a later batch — evidence that
+      batching tolerates concurrent writes. No backed-up row is missing.
+      Idempotency was then confirmed read-only via the pre-flight (0 rows
+      would be rewritten) rather than by a second write to production.
+- [x] 5.3 Run the verification suite against `azlibrary`; every check returns
       zero violations.
-- [ ] 5.4 `VACUUM (ANALYZE) metadata.azgs` on `azlibrary`.
-- [ ] 5.5 Spot-check the production site for the same four behaviors as 4.4.
+- [x] 5.4 `VACUUM (ANALYZE) metadata.azgs` on `azlibrary`. Table 162 MB,
+      backup table 41 MB.
+- [x] 5.5 Spot-check the production site for the same four behaviors as 4.4.
+      `library.azgs.arizona.edu` serves `year: null`, CC BY-SA 4.0, an empty
+      `journal`, numeric bounding boxes, keyword types place/theme/temporal
+      with none untrimmed, and a RIS export reading `PY - `. `mininginfo`
+      was deliberately not redeployed, so its ADMM citation exports show
+      `PY - null` until that site is next rebuilt from `main`.
 
 ## 6. Cleanup and follow-up
 
