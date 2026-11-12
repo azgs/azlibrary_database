@@ -103,6 +103,12 @@
 
 ## 5. Production run
 
+- [x] 5.0 Prepare the prod run: `migrations/RUNBOOK-normalize-metadata-json.md`
+      carries the ordered commands, expected timings, verification, rollback
+      and the known exclusions. Prod re-profiled 2026-11-12 and unchanged
+      from the earlier reading (23,897 rows, 17,148 string years, 45
+      `informalname`, max collection_id 32687). Read-only pre-flight against
+      live prod data: 17/17 PASS, 23,897 rows would be rewritten.
 - [ ] 5.1 Schedule a maintenance window and notify consumers that the license
       string in `/metadata` and the ISO 19139 export changes from
       `CC BY-NC-SA 4.0` to `CC BY-SA 4.0`.
