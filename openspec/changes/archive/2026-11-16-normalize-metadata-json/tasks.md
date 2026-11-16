@@ -132,16 +132,27 @@
 
 ## 6. Cleanup and follow-up
 
-- [ ] 6.1 After the release is accepted, drop
-      `metadata.azgs_backup_normalize` on both databases.
-- [ ] 6.2 Update the official metadata format in `README.md` to state the types
+- [x] 6.1 After the release is accepted, drop
+      `metadata.azgs_backup_normalize` on both databases. Dropped 2026-11-16
+      (40 MB on dev, 41 MB on prod), together with the backup from
+      `fix-bounding-box-geometries`, after re-running both verification
+      suites. Rollback of this change is no longer possible.
+- [x] 6.2 Update the official metadata format in `README.md` to state the types
       this change establishes and the new license, and note where it currently
       disagrees with reality (`private` shown as a string, `files[].extension`,
-      the `doi` link entry, and the undocumented `mine_data` object).
-- [ ] 6.3 Open a follow-up change for the producer fixes listed in
-      proposal.md — Impact, covering `azlibConvert`, `azlibAdd`,
-      `azlibContriveMineCollections` and the API repository.
-- [ ] 6.4 Open a follow-up change for the deferred content questions: test and
-      placeholder records, always-null `identifiers.doi` and
-      `identifiers.collection_id`, missing `collection_group.id`, and
-      near-duplicate `collection_group.name` values.
+      the `doi` link entry, and the undocumented `mine_data` object). Done
+      2026-11-16: every listed discrepancy corrected against production, plus
+      `collection_group.id`, the `identifiers` placeholders and supersession
+      arrays, and a Notes section covering the type and vocabulary invariants
+      this change establishes.
+- [~] 6.3 ~~Open a follow-up change for the producer fixes listed in
+      proposal.md — Impact.~~ Not doing: producer changes are out of scope by
+      decision on 2026-11-16. **The defects this change repaired will regrow
+      as records are ingested.** The migration and its verification are
+      idempotent and can be run again.
+- [~] 6.4 ~~Open a follow-up change for the deferred content questions.~~ Not
+      doing: out of scope by decision on 2026-11-16, along with the curation
+      of the quarantined geometry records. The always-null `identifiers.doi`
+      and `identifiers.collection_id` and the optional `collection_group.id`
+      are now documented as the structural placeholders they are, in
+      `README.md`.
