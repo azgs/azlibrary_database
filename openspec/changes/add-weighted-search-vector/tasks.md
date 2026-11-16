@@ -75,14 +75,24 @@ nowhere else.
       untrimmed `keywords[].name`, and its backup tables dropped. The vector
       will therefore be built over normalized shapes on both, which was the
       prerequisite.
-- [ ] 3.5 Apply to `devazlib` in a quiet window, then run verify.
-- [ ] 3.5a After applying to dev, sanity-check the citation-boilerplate noise
-      described in design.md: confirm that a real search term still outranks
-      the ~5,300 collections whose abstracts carry "Please cite by using".
-      Revisit the options in design.md only if it actually interferes.
-- [ ] 3.6 Spot-check ranking on dev against real records: confirm a title match
-      outranks an abstract match for a handful of terms AZGS staff would
-      actually search.
+- [x] 3.5 Applied to `devazlib` 2026-11-16. Preflight: all four CHECK rows
+      PASS. The table rewrite took **14 seconds** over 23,003 rows / 158 MB.
+      Verify reports **10 of 10 assertions PASS** against real data, including
+      the staleness detector and the check that every abstract lexeme now
+      appears in the vector.
+- [x] 3.5a Citation-boilerplate noise checked on dev and **it does not
+      interfere**. For `grand canyon`, 120 records match and 21 of them carry
+      "Please cite by using" — but the best-ranked boilerplate record sits at
+      **position 37**, below every genuine hit. Weight `D` does what it was
+      chosen to do. No need for the remedies in design.md; leaving the
+      boilerplate indexed.
+- [x] 3.6 Ranking spot-checked on dev against real records. The top six for
+      `grand canyon` are all title matches, led by "The Redwall Limestone",
+      "Grand Canyon Stratigraphy" and "Breccia-pipe Uranium Mining in the Grand
+      Canyon Region". Across the corpus for `copper`, the 1,222 records
+      matching in the title score 1.0000-5.0000 while the 8,731 matching
+      elsewhere score 0.1000-2.4000 — the weighting separates the two
+      populations on real data as designed.
 - [ ] 3.7 Apply to `azlibrary` in a quiet window, then run verify.
 
 ## 4. Follow-ups (not this change)
