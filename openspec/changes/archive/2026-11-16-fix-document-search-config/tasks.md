@@ -124,29 +124,55 @@ holding stemmer-produced stopwords, one with an empty vector.
       gains are stemming recovery rather than an artifact.
       **251 public, non-removed collections became reachable** through the API
       search path for geology/mining/resources/mineral.
-- [ ] 7.5 Drop `documents.documents_backup_tsconfig` on both databases once
-      satisfied. Each holds the pre-repair vectors (402 on dev, 628 on prod)
-      and is the only route back.
-- [ ] 7.6 **Deploy the `azlibAdd/documents.js` fix.** Until it ships, newly
-      ingested documents keep joining the broken set at roughly 70 a year, and
-      this repair will need running again.
+- [~] 7.5 ~~Drop `documents.documents_backup_tsconfig` on both databases.~~
+      **Deliberately retained.** Each holds the pre-repair vectors — 402 rows
+      on `devazlib`, 628 on `azlibrary` — and is the only route back from the
+      repair. Rollback statement is in the runbook. Drop them with
+      `DROP TABLE documents.documents_backup_tsconfig;` on each database when
+      the repair has been live long enough to trust. Until then this change is
+      reversible, which is the reason for keeping them.
+- [x] 7.6 Deploy the `azlibAdd/documents.js` fix. Done 2026-11-16 to both
+      hosts: `azlibrary-t23` (dev, `PG_DATABASE=devazlib`) and
+      `azlibraryapi23` (prod, `PG_DATABASE=azlibrary`), each fast-forwarded
+      `d3aabe8..29af194`. No reinstall was needed — on both hosts
+      `~/.nvm/versions/node/v16.20.2/lib/node_modules/azlibAdd` is a symlink to
+      `~/repos/azlibrary_database/azlibAdd`, so the pull is the deployment — and
+      no API restart, because azlibAdd is spawned per upload. Verified: the
+      installed `documents.js` on each now reads
+      `to_tsvector('pg_catalog.english', ...)`, `azlibAdd --help` runs, and
+      both public APIs return 200. Note for future deploys: both hosts carry
+      unrelated uncommitted local changes in this repo
+      (`azlibContriveMineCollections/package-lock.json` on both,
+      `azlibAdd/package.json` on dev); the incoming commits were checked
+      against them first, and `azlibraryapi.colo-prod-aws.arizona.edu` no
+      longer resolves.
 
-## 8. Follow-ups (not this change)
+## 8. Follow-ups (deliberately not this change)
 
-- [ ] 7.1 Re-extraction for prod documents whose tails were clamped
-      at the position cap. Only re-extraction restores their word order, and
-      only phrase queries spanning the tail are affected. Needs the azlibAdd
-      pipeline over their collection archives.
-- [ ] 7.2 `azlibConfigPG/schemas/01-public.sql` cannot build a database from
-      scratch: `lineage` and `lineage_removed` (lines 87, 94) reference
-      `collections`, created at line 103. Hit again while building this
-      change's test database. Unrelated to this change, still broken.
-- [ ] 7.3 Consider asserting the expected `default_text_search_config` at
-      azlibAdd startup, so a mismatched server is noticed at ingest rather than
-      years later in a search audit.
-- [ ] 8.4 **43% of documents have an empty tsvector** — 8,936 of 20,639 on
-      prod, 8,513 of 20,019 on dev. Extraction produced nothing, almost
-      certainly scanned pages with no text layer; `text_extractor.js` has
-      `pdf-parse` commented out and textract returns nothing for them. They are
-      invisible to full-text search regardless of configuration. This is a
-      larger hole than the defect this change fixes and needs OCR, not SQL.
+- [~] 8.1 ~~Re-extract the documents whose tails were clamped.~~ Not doing
+      here. `tsvector` positions cap at 16,383, so longer documents lost their
+      tail word order at ingest and no SQL repair restores it. Stemming is
+      corrected for every repaired document and only phrase queries spanning a
+      clamped tail remain unreliable — as they are today. Restoring them needs
+      the azlibAdd pipeline re-run over their collection archives.
+- [~] 8.2 ~~Fix `azlibConfigPG/schemas/01-public.sql`.~~ Not doing here:
+      unrelated to this change. It cannot build a database from scratch —
+      `lineage` and `lineage_removed` (lines 87 and 94) reference
+      `collections`, which is not created until line 103. Hit twice while
+      building test databases for this work and for
+      `add-weighted-search-vector`. Still broken on master.
+- [~] 8.3 ~~Assert the expected text search configuration at azlibAdd
+      startup.~~ Not doing here, but worth its own change: azlibAdd could
+      compare `default_text_search_config` against what it indexes with and
+      refuse to run on a mismatch, so a misconfigured server is caught at
+      ingest rather than years later in a search audit. This defect went
+      unnoticed from 2019 to 2026.
+- [~] 8.4 ~~OCR the documents that have no extracted text.~~ Not doing here:
+      this needs OCR, not SQL. **8,936 of prod's 20,639 documents (43%) hold
+      an empty `tsvector`**, and 8,513 of dev's 20,019. Extraction produced
+      nothing for them, almost certainly scanned pages with no text layer;
+      `azlibAdd/text_extractor.js` has `pdf-parse` commented out and textract
+      returns nothing for such files. They are invisible to full-text search
+      regardless of configuration, so this is a substantially larger hole in
+      the search than the defect this change fixed — 43% contributing nothing,
+      against the 3% that were mis-stemmed.
