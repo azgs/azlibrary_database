@@ -25,6 +25,10 @@ psql -h <host> -U <user> -d devazlib -v target_db=devazlib \
   always holds the original pre-migration state.
 - Every migration has a matching `verify-*.sql` that returns one row per
   assertion with a violation count; all counts must be zero.
+- Every migration has a matching `preflight-*.sql`: a strictly read-only script
+  that computes what the migration would do and asserts the spec against the
+  computed result. It is what lets a migration be proved correct against
+  production before anything is written to it.
 
 Note that `metadata.azgs` carries six `BEFORE INSERT OR UPDATE` row triggers
 that recompute `geom` and five `tsvector` columns from `json_data`. Those

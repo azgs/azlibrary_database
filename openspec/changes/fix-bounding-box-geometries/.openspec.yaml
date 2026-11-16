@@ -1,0 +1,5 @@
+schema: spec-driven
+created: 2026-11-16
+goal: Repair 463 bounding boxes with mechanically-identifiable defects, returning
+  456 collections to Arizona map search, and report the residue that needs
+  human adjudication.
