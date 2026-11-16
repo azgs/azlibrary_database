@@ -93,11 +93,18 @@ nowhere else.
       matching in the title score 1.0000-5.0000 while the 8,731 matching
       elsewhere score 0.1000-2.4000 — the weighting separates the two
       populations on real data as designed.
-- [ ] 3.7 Apply to `azlibrary` in a quiet window, then run verify.
+- [ ] 3.7 Apply to `azlibrary` — **GATED, do not treat this as the next
+      action.** By the user's decision on 2026-11-16, nothing reaches the
+      production database until the whole workflow is finished and tested
+      together: client (`azlibrary_react`), API (`azlibrary_api`) and database.
+      This column is populated on dev but no query reads it, so shipping it to
+      prod alone would change nothing a user can see while leaving prod in a
+      state nobody has tested end to end. Unblocks only once section 4 lands
+      and the three layers have been exercised together on dev.
 
 ## 4. Follow-ups (not this change)
 
-- [ ] 4.1 `azlibrary_api`: add a ranked `q` parameter reading
+- [ ] 4.1 **The real next step.** `azlibrary_api`: add a ranked `q` parameter reading
       `kitchensink_search`, fix the `ORDER BY` precedence bug in
       `metadata.model.js` (ranks are prepended, so query-string order decides
       sort priority), and replace `sum(ts_rank_cd(...))` over
