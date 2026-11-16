@@ -147,20 +147,40 @@
       18698 (Rule E) matches the Gila Bend box.
 - [x] 5.9 `VACUUM ANALYZE metadata.azgs` on `azlibrary` so the planner sees
       the new `geom` distribution. (Done on `devazlib` in 5.6b.)
-- [ ] 5.10 Hand the quarantine report to curation. Exported to
+- [x] 5.10 Hand the quarantine report to curation. Exported to
       `quarantine-azlibrary-2026-11-16.csv` (10 records, with `perm_id` so
-      curators can open each one directly).
+      curators can open each one directly). The in-person curation of those
+      records is out of scope by decision on 2026-11-16; the report is the
+      deliverable.
 
 ## 6. Follow-ups
 
-- [ ] 6.1 Drop `metadata.azgs_backup_geometry` on both databases after release
-      acceptance.
-- [ ] 6.2 Update `azlibrary_database/README.md` to document that longitudes are
-      signed and that `west <= east`.
-- [ ] 6.3 Open a producer change: find and fix whatever writes absolute
+- [x] 6.1 Drop `metadata.azgs_backup_geometry` on both databases after release
+      acceptance. Dropped 2026-11-16, together with the previous change's
+      `metadata.azgs_backup_normalize`, after re-running both verification
+      suites: geometry 11/11 PASS on each database, normalize 15/16 with its
+      check 13 ("geom unchanged vs backup") reporting 457 — the 463 repaired
+      less the 6 transpositions that leave the rectangle in place, which is
+      this change deliberately superseding that invariant. About 96 MB
+      reclaimed. Rollback is no longer possible.
+- [x] 6.2 Update `azlibrary_database/README.md` to document that longitudes are
+      signed and that `west <= east`. Done, and the surrounding format
+      documentation was corrected against production at the same time: the
+      license was still shown as `CC BY-NC-SA 4.0`, `private` as the string
+      `"false"` rather than a boolean, `files[]` with a non-existent
+      `extension`, a `doi` entry in `links[]` that does not exist, and
+      `mine_data` omitted entirely.
+- [~] 6.3 ~~Open a producer change: find and fix whatever writes absolute
       longitudes, and add a `CHECK` constraint rejecting a box with both
-      longitudes positive. Fold into the producer change already recorded
-      against `normalize-metadata-json`.
-- [ ] 6.4 Open a curatorial change for the 10 quarantined records, including
-      whether collections 15738 and 16615 share a recoverable reprojection
-      error (design.md — Open Questions).
+      longitudes positive.~~ Not doing: producer changes are out of scope by
+      decision on 2026-11-16, consistent with the scope taken for
+      `normalize-metadata-json`. **The defect will regrow as records are
+      ingested**, and this change repairs stored data only. The migration,
+      preflight and verification scripts are idempotent and can simply be run
+      again.
+- [~] 6.4 ~~Open a curatorial change for the 10 quarantined records.~~ Not
+      doing: out of scope by decision on 2026-11-16. The records remain as
+      found and are listed in the quarantine report, which
+      `verify-fix-bounding-box-geometries.sql` reproduces on demand. Whether
+      collections 15738 and 16615 share a recoverable reprojection error is
+      left open in design.md.
