@@ -64,11 +64,19 @@ exports.upload = (rootDir, collectionID, db) => {
 				.then(data => {
 					logger.silly("data.text = " + data.text);
 					data.text = data.text.replace(/\$+/g, "$"); //I can think of no valid reason for there to be "$$" in these strings, but cases have shown up. 
+					//The text search configuration is named explicitly and must stay that way.
+					//The one-argument to_tsvector() takes the server's default_text_search_config,
+					//which is 'simple' on both RDS databases, while the API always queries this
+					//column as 'english'. Under that mismatch a document stores 'geological'
+					//where the API searches for 'geolog', so it is findable only by words that
+					//lex identically under both. It hid 628 of prod's 20,639 documents, across
+					//454 collections, until they were repaired in November 2026.
+					//See openspec/changes/fix-document-search-config/.
 					const insert = "insert into documents.documents (collection_id, metadata_id, path, text_search) values (" +
 						collectionID + ", " + 
 						metadataID + ", " +
 						"'" + path.join(myDir, file) + "', " +
-						"to_tsvector($tsvector$" + data.text + "$tsvector$))";
+						"to_tsvector('pg_catalog.english', $tsvector$" + data.text + "$tsvector$))";
 					logger.silly("insert = " + insert);
 					return t.none(insert)
 					.catch(error => {

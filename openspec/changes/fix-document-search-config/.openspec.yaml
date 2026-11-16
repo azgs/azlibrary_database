@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-16
+goal: documents.documents.text_search is English-stemmed on every row and cannot
+  vary with server configuration.
