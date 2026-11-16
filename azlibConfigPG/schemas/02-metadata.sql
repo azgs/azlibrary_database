@@ -1,5 +1,52 @@
 CREATE SCHEMA metadata;
 
+-- Weighted composite search vector backing metadata.azgs.kitchensink_search.
+-- A = title, B = keywords, C = authors + series, D = abstract.
+--
+-- Defined before the table because a generated column must be able to resolve
+-- the function at CREATE TABLE time. It lives in a function rather than inline
+-- because a generated column expression may not contain a subquery, and
+-- aggregating keywords[].name and authors[].person requires one.
+--
+-- to_tsvector is always given an explicit configuration: the two-argument form
+-- is IMMUTABLE, the one-argument form is only STABLE.
+--
+-- NOTE: changing this function does NOT recompute kitchensink_search on
+-- existing rows. See migrations/add-weighted-search-vector.sql.
+CREATE FUNCTION metadata.search_vector(d jsonb)
+RETURNS tsvector
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+AS $fn$
+	SELECT
+		setweight(to_tsvector('pg_catalog.english',
+			coalesce(d->>'title', '')), 'A')
+	 || setweight(to_tsvector('pg_catalog.english',
+			coalesce(
+				(SELECT string_agg(e.x->>'name', ' ' ORDER BY e.ord)
+				   FROM jsonb_array_elements(
+							CASE WHEN jsonb_typeof(d->'keywords') = 'array'
+								 THEN d->'keywords'
+								 ELSE '[]'::jsonb
+							END
+						) WITH ORDINALITY AS e(x, ord)),
+				'')), 'B')
+	 || setweight(to_tsvector('pg_catalog.english',
+			concat_ws(' ',
+				(SELECT string_agg(e.x->>'person', ' ' ORDER BY e.ord)
+				   FROM jsonb_array_elements(
+							CASE WHEN jsonb_typeof(d->'authors') = 'array'
+								 THEN d->'authors'
+								 ELSE '[]'::jsonb
+							END
+						) WITH ORDINALITY AS e(x, ord)),
+				d->>'series')), 'C')
+	 || setweight(to_tsvector('pg_catalog.english',
+			coalesce(d->>'abstract', '')), 'D')
+$fn$;
+
+
 
 CREATE TABLE metadata.azgs
 (
@@ -10,7 +57,8 @@ CREATE TABLE metadata.azgs
 	author_search tsvector,
 	keyword_search tsvector,
 	series_search tsvector,
-	kitchensink_search tsvector,
+	kitchensink_search tsvector
+		GENERATED ALWAYS AS (metadata.search_vector(json_data)) STORED,
 	geom geometry
 );
 CREATE INDEX azgs_id_idx ON metadata.azgs (metadata_id);
