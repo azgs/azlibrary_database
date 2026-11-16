@@ -65,7 +65,7 @@ None. No existing spec in `openspec/specs/` describes the search index.
   `metadata.search_vector(jsonb)`.
 - **Table rewrite**: adding a `STORED` generated column rewrites the table under
   `ACCESS EXCLUSIVE`. Measured: `metadata.azgs` is 158 MB over 23,003 rows on
-  `devazlib` and 130 MB over 23,897 rows on `azlibrary`. Expect tens of seconds,
+  `devazlib` and 162 MB over 23,898 rows on `azlibrary`. Expect tens of seconds,
   not minutes — the rewrite calls one function per row rather than firing the
   six per-row triggers that made the `normalize-metadata-json` pass take 15
   minutes. The API blocks for the duration, so run it in a quiet window.
@@ -75,10 +75,11 @@ None. No existing spec in `openspec/specs/` describes the search index.
   stale. The migration aborts below 12 regardless.
 - **Recall gained**: measured by the preflight, the share of collections that
   gain at least one lexeme held by no current per-field vector is **98.4% on
-  dev** (22,627 of 23,003) and **74.8% on prod** (17,869 of 23,897). The gap is
-  `normalize-metadata-json`, which has run on dev and moves `journal` citation
-  boilerplate into `abstract`: dev has 22,913 non-blank abstracts against
-  prod's 18,479. Prod's figure will rise to dev's once normalize runs there.
+  dev** (22,627 of 23,003) and **97.1% on prod** (23,201 of 23,898). An earlier
+  measurement put prod at 74.8%; `normalize-metadata-json` has since run there,
+  moving `journal` citation boilerplate into `abstract` and lifting prod's
+  non-blank abstracts from 18,479 to 23,811. The two databases now agree, as
+  that change predicted they would.
 - **Ingest**: `azlibAdd` writes `json_data` and the generated column follows
   automatically. No ingest code changes, and no backfill step: the table rewrite
   *is* the backfill.

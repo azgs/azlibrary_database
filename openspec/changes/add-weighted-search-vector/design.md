@@ -162,7 +162,7 @@ of jsonb to protect against nothing.
 ## Risks
 
 - **Rewrite under `ACCESS EXCLUSIVE`.** Measured at 158 MB / 23,003 rows on dev
-  and 130 MB / 23,897 rows on prod. Expect tens of seconds: the rewrite calls
+  and 162 MB / 23,898 rows on prod. Expect tens of seconds: the rewrite calls
   `search_vector` once per row and fires no triggers, unlike the
   `normalize-metadata-json` pass that took 15m27s because each row fired six.
   It is still a full-table lock and the API blocks behind it.
@@ -176,9 +176,10 @@ of jsonb to protect against nothing.
   retires `journal` by appending its citation boilerplate to the record's
   `abstract` rather than discarding it, which is the right call for data
   preservation but puts near-identical text into the field this change indexes.
-  Measured on `devazlib` after normalize: **5,331 of 22,913 non-blank abstracts
-  (23%) contain "Please cite by using"**, and an English query for `cite`
-  matches 5,339 collections.
+  Measured after normalize, now on both databases: **5,331 abstracts contain
+  "Please cite by using"** — 23% of dev's 22,913 non-blank abstracts and 22.4%
+  of prod's 23,811 — and an English query for `cite` matches 5,339 collections
+  on each.
 
   At weight `D` a boilerplate hit contributes a tenth of a title hit, so it
   cannot outrank a genuine match, and the affected words (`cite`, `item`,

@@ -62,17 +62,19 @@ nowhere else.
       22,913 non-blank abstracts, 22,627 rows (98.4%) gaining a lexeme no
       current per-field vector holds.
 - [x] 3.2 Run the preflight against `azlibrary` (prod). All four CHECK rows
-      PASS. 23,897 rows, 130 MB, 18,479 non-blank abstracts, 17,869 rows
-      (74.8%) gaining a lexeme. Prod's lower abstract coverage is the
-      normalize-metadata-json difference, not a shape problem.
+      PASS. Re-run 2026-11-16 after `normalize-metadata-json` landed on prod:
+      23,898 rows, 162 MB, 23,811 non-blank abstracts, 23,201 rows (**97.1%**)
+      gaining a lexeme. The earlier run recorded 18,479 abstracts and 74.8%;
+      normalize moving `journal` boilerplate into `abstract` accounts for the
+      whole difference, and prod now matches dev.
 - [x] 3.3 If either server is below PostgreSQL 12, stop. Both are **PostgreSQL
       14.22**; the design applies.
-- [x] 3.4 Decide whether `normalize-metadata-json` lands first. Settled by
-      events: it has already been applied to `devazlib` (23,003 rows, all
-      assertions passing) on the `normalize-metadata-json` branch, which this
-      branch is based on. `series` and `keywords[].name` are therefore already
-      normalized on dev, and prod must be normalized before this change is
-      applied there, or the vector gets built over untrimmed keyword names.
+- [x] 3.4 Decide whether `normalize-metadata-json` lands first. Resolved: it
+      has now run on **both** databases and been archived. Verified 2026-11-16
+      on each: zero string `year` values, zero bare `journal` strings, zero
+      untrimmed `keywords[].name`, and its backup tables dropped. The vector
+      will therefore be built over normalized shapes on both, which was the
+      prerequisite.
 - [ ] 3.5 Apply to `devazlib` in a quiet window, then run verify.
 - [ ] 3.5a After applying to dev, sanity-check the citation-boilerplate noise
       described in design.md: confirm that a real search term still outranks
