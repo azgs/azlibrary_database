@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-11-12
+goal: A single weighted search vector over title, keywords, authors, series and
+  abstract, maintained as a generated column.
