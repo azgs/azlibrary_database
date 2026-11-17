@@ -212,8 +212,8 @@ The source directory must be in the following layout (note: this is still evolvi
 		],
 		"language": "English",
 		"license": {
-			"type": "CC BY-NC-SA 4.0",
-			"url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+			"type": "CC BY-SA 4.0",
+			"url": "https://creativecommons.org/licenses/by-sa/4.0/"
 		},
 		"keywords": [
 			{
